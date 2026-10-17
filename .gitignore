@@ -20,3 +20,10 @@ test-results/
 .worktrees/
 docs/cuentas-prueba.local.md
 work/
+.env-example
+!.env-example
+media/
+backend/staticfiles/
+.idea/
+.vscode/
+.DS_Store
