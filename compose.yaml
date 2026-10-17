@@ -35,8 +35,9 @@ services:
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
     volumes:
-      - ./frontend:/app
-      - frontend_dependencies:/app/node_modules
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
     ports:
       - "127.0.0.1:5173:5173"
   mailpit:
@@ -46,4 +47,3 @@ services:
 volumes:
   postgres_data:
   media_data:
-  frontend_dependencies:

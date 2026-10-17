@@ -9,22 +9,33 @@ Set-Location $root
 
 function Initialize-Environment {
   if (-not (Test-Path -LiteralPath '.env')) {
-    $secret = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
-    $password = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(24))
-    @"
-DJANGO_SETTINGS_MODULE=config.settings.local
-DJANGO_SECRET_KEY=$secret
-DJANGO_DEBUG=1
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
-POSTGRES_DB=llaveextra
-POSTGRES_USER=llaveextra
-POSTGRES_PASSWORD=$password
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-MAILPIT_HOST=mailpit
-MAILPIT_PORT=1025
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-"@ | Set-Content -LiteralPath '.env' -Encoding utf8
+    $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+      $secretBytes = New-Object byte[] 48
+      $passwordBytes = New-Object byte[] 24
+      $rng.GetBytes($secretBytes)
+      $rng.GetBytes($passwordBytes)
+      $secret = [Convert]::ToBase64String($secretBytes)
+      $password = [Convert]::ToBase64String($passwordBytes)
+    } finally {
+      $rng.Dispose()
+    }
+    $content = @(
+      'DJANGO_SETTINGS_MODULE=config.settings.local'
+      "DJANGO_SECRET_KEY=$secret"
+      'DJANGO_DEBUG=1'
+      'DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend'
+      'POSTGRES_DB=llaveextra'
+      'POSTGRES_USER=llaveextra'
+      "POSTGRES_PASSWORD=$password"
+      'POSTGRES_HOST=db'
+      'POSTGRES_PORT=5432'
+      'MAILPIT_HOST=mailpit'
+      'MAILPIT_PORT=1025'
+      'VITE_API_BASE_URL=http://localhost:8000/api/v1'
+    ) -join "`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText((Join-Path $root '.env'), "$content`n", $utf8NoBom)
   }
 }
 

@@ -1,6 +1,8 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class UserManager(BaseUserManager):
@@ -16,7 +18,9 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email: str, password: str | None = None, **extra_fields):
-        extra_fields.setdefault("role", User.Role.ADMIN)
+        role = extra_fields.setdefault("role", User.Role.ADMIN)
+        if role != User.Role.ADMIN:
+            raise ValueError("Un superusuario debe tener el rol ADMIN")
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
@@ -40,6 +44,20 @@ class User(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
     objects = UserManager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(Lower("email"), name="accounts_user_email_ci_uniq"),
+            models.CheckConstraint(
+                condition=models.Q(is_superuser=False) | models.Q(role="ADMIN"),
+                name="accounts_superuser_requires_admin_role",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.is_superuser and self.role != self.Role.ADMIN:
+            raise ValidationError({"role": "Un superusuario debe tener el rol ADMIN."})
 
     def save(self, *args, **kwargs):
         if self.email:
