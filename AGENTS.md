@@ -10,6 +10,7 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 - Usuario por email antes de la primera migración. No usar SQLite para validar código del dominio o pruebas de integración.
 - Carpetas y referencias privadas: autorización del servidor por QR válido, colaborador habilitado y prestador perteneciente a esa carpeta. Ocultar enlaces en React no satisface este requisito.
 - Prestador y colaborador son roles diferentes. Solo un administrador asigna carpetas, habilita colaboradores y configura las reglas de créditos.
+- Existen exactamente cuatro roles: Cliente (`TOURIST`, identificador técnico compatible), Colaborador (`COLLABORATOR`), Prestador (`PROVIDER`) y Administrador (`ADMIN`). El Cliente es la experiencia principal; el registro público crea solo `TOURIST` sin privilegios.
 - Consumos, créditos y stock requieren transacciones, restricciones de base de datos e idempotencia.
 - No versionar credenciales, `.env`, códigos privados ni cuentas reales. `.env-example` contiene valores vacíos.
 - Mantener `ToDo.md`, contexto, instrucciones y contrato OpenAPI alineados con cada funcionalidad.

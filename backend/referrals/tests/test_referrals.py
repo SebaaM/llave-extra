@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from accounts.security import issue_session
-from referrals.access import active_folder_access, locked_folder_access, sign_qr
+from referrals.access import active_folder_access, locked_folder_access, parse_qr, sign_qr
 from referrals.admin import CollaboratorProfileAdmin
 from referrals.models import CollaboratorProfile, FolderAccess
 
@@ -133,7 +133,7 @@ def test_admin_cannot_reassign_collaborator_profile_and_historical_grants():
     grant.refresh_from_db()
     assert profile.user_id == original.pk
     assert grant.collaborator_id == profile.pk
-    assert sign_qr(profile) == original_qr
+    assert parse_qr(sign_qr(profile)) == parse_qr(original_qr)
     assert active_folder_access(tourist, profile)
 
 

@@ -82,10 +82,11 @@ def test_seed_demo_is_idempotent_and_keeps_existing_password(tmp_path):
     assert destination.read_text(encoding="utf-8") == file_after_first
     assert existing_entry in file_after_first
     assert destination.exists()
-    assert User.objects.count() == 6
+    assert User.objects.count() == 7
     assert "turista@llaveextra.test" in file_after_first
     assert User.objects.get(email="prestador.tiger@llaveextra.test").role == User.Role.PROVIDER
     assert User.objects.get(email="colaborador@llaveextra.test").role == User.Role.COLLABORATOR
+    assert User.objects.get(email="colaborador.secundario@llaveextra.test").role == User.Role.COLLABORATOR
     assert User.objects.get(email="turista.pendiente@llaveextra.test").role == User.Role.TOURIST
 
 

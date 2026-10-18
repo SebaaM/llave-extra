@@ -1,0 +1,11 @@
+# E3 — Prestadores, beneficios y carpetas privadas del Cliente
+
+El Cliente es el usuario principal y conserva el identificador técnico `TOURIST`. Los cuatro roles son Cliente, Colaborador, Prestador y Administrador. La carpeta es la relación administrada `FolderProvider` entre perfil colaborador y prestador. Redimir un QR crea un grant de versión; las vistas del Cliente lo revalidan en cada solicitud con `active_folder_access` y comprueban pertenencia y publicación. Los IDs cruzados devuelven 404, incluyendo medios. Beneficios requieren publicación y vigencia. No se expone catálogo global.
+
+Un usuario PROVIDER solo accede a sus negocios mediante `ProviderMembership` administrada y puede editar campos seguros de ficha e imágenes. Crea beneficios en borrador; cualquier cambio a uno publicado lo devuelve a borrador. Admin decide publicaciones y asignaciones en Django Admin. El colaborador habilitado ve su propia carpeta y QR en modo lectura.
+
+Los medios se validan por contenido y se guardan en `PRIVATE_MEDIA_ROOT`; la API solo devuelve rutas con autorización. El inventario saneado de 12 comercios conserva datos factuales públicos y procedencia, sin negocios genéricos. Seis prestadores y sus beneficios se publican **solo en la demo local** para ejercitar la carpeta principal; Cumbre no tiene oferta. Nada de esto certifica acuerdos comerciales vigentes. `seed_demo` está protegido por `DEBUG`, hace preflight de credenciales y usa una marca de primera carga para preservar edición y remoción administrativa en reintentos.
+
+Interfaz para E4: `providers.access.locked_provider_eligibility(user, profile_id, provider_id)` conserva una transacción y retorna `(profile, provider)` bajo locks en orden usuario → perfil → prestador. En el mismo contexto E4 debe validar QR/PIN de consumo, email y unicidad, acreditar y registrar atribución. Publicación de prestador bloquea prestador; asignar/remover carpeta bloquea perfil y luego prestador; baja/rotación de perfil bloquea perfil. No escribir estados de elegibilidad con actualizaciones masivas fuera de estos métodos.
+
+Verificación y límites concretos se registran en el informe de tarea `.superpowers/sdd/00-roadmap/task-3-report.md`. F1 sigue pendiente de elección de prototipo; este cambio no integra una UI funcional.
