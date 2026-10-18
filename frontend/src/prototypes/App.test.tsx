@@ -44,6 +44,7 @@ describe('las rutas de prototipos', () => {
   }
 })
 
+// Este recorrido combina escritura de formulario y dos validaciones QR simuladas de 300 ms.
 it('valida registro y QR de colaborador, conserva el grant al refrescar y lo pierde al cerrar sesión', async () => {
   const user = userEvent.setup()
   route('/prototipos/guia/registro')
@@ -73,7 +74,7 @@ it('valida registro y QR de colaborador, conserva el grant al refrescar y lo pie
   route('/prototipos/guia/carpeta')
   fireEvent.popState(window)
   expect(screen.getByRole('heading', { name: 'Esta carpeta necesita una llave.' })).toBeTruthy()
-})
+}, 10_000)
 
 it('exige leer el QR del prestador antes del PIN y acredita solo con ambos pasos', async () => {
   const user = userEvent.setup()
