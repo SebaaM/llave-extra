@@ -19,6 +19,7 @@ services:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.local}
       POSTGRES_HOST: db
       MAILPIT_HOST: mailpit
+      TRUSTED_PROXY_HOST: frontend
       DEMO_CREDENTIALS_PATH: /workspace/docs/cuentas-prueba.local.md
     volumes:
       - ./backend:/app

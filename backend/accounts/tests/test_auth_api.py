@@ -214,6 +214,59 @@ def test_auth_rate_limit_is_shared_by_account_across_origins(operation, expected
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("operation,expected", [
+    ("login", 401), ("forgot-password", 202), ("resend-verification", 202),
+])
+def test_distinct_clients_behind_trusted_proxy_have_separate_origin_limits(operation, expected):
+    client_a, client_b = browser(), browser()
+    scope_limits = {"login": (2, 60), "reset": (2, 60), "resend": (2, 60)}
+
+    def attempt(client, email, forwarded_ip):
+        return client.post(
+            f"/api/v1/auth/{operation}/",
+            {"email": email, **({"password": PASSWORD} if operation == "login" else {})},
+            format="json", REMOTE_ADDR="192.0.2.10", HTTP_X_LLAVE_CLIENT_IP=forwarded_ip,
+            HTTP_X_FORWARDED_FOR="203.0.113.200",
+        ).status_code
+
+    with override_settings(RATE_LIMITS=scope_limits, TRUSTED_PROXY_HOST="192.0.2.10"):
+        assert attempt(client_a, "a-1@example.test", "198.51.100.1") == expected
+        assert attempt(client_a, "a-2@example.test", "198.51.100.1") == expected
+        assert attempt(client_b, "b@example.test", "198.51.100.2") == expected
+        assert attempt(client_a, "a-3@example.test", "198.51.100.1") == 429
+
+
+@pytest.mark.django_db
+def test_direct_client_cannot_forge_forwarded_origin_to_evade_limit():
+    client = browser()
+    with override_settings(RATE_LIMITS={"login": (2, 60)}, TRUSTED_PROXY_HOST="192.0.2.10"):
+        for index in range(3):
+            response = client.post(
+                "/api/v1/auth/login/",
+                {"email": f"direct-{index}@example.test", "password": PASSWORD},
+                format="json", REMOTE_ADDR="192.0.2.20",
+                HTTP_X_LLAVE_CLIENT_IP=f"198.51.100.{index + 1}",
+                HTTP_X_FORWARDED_FOR=f"198.51.100.{index + 10}",
+            )
+            assert response.status_code == (429 if index == 2 else 401)
+
+
+@pytest.mark.django_db
+def test_proxy_origin_limiter_fails_closed_when_redis_is_unavailable(monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise redis.ConnectionError("offline")
+
+    monkeypatch.setattr(redis.Redis, "eval", unavailable)
+    with override_settings(TRUSTED_PROXY_HOST="192.0.2.10"):
+        client = browser()
+        response = client.post(
+            "/api/v1/auth/login/", {"email": "offline@example.test", "password": PASSWORD},
+            format="json", REMOTE_ADDR="192.0.2.10", HTTP_X_LLAVE_CLIENT_IP="198.51.100.1",
+        )
+        assert response.status_code == 429
+
+
+@pytest.mark.django_db
 def test_redis_limit_is_atomic_across_connections():
     with override_settings(RATE_LIMITS={"login": (1, 60)}):
         def attempt(_):

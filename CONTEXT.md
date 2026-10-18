@@ -26,7 +26,7 @@ Un turista puede acceder a más de una carpeta después de escanear sus respecti
 
 ## Arquitectura
 
-Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit; Redis y worker al necesitar límites compartidos y tareas.
+Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit y Redis para límites compartidos; no hay worker de correo.
 
 ## Estado
 

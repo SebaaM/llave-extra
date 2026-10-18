@@ -53,6 +53,7 @@ JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", "")
 QR_SIGNING_KEY = os.environ.get("QR_SIGNING_KEY", "")
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "http://localhost:5173").rstrip("/")
+TRUSTED_PROXY_HOST = os.environ.get("TRUSTED_PROXY_HOST", "")
 
 
 def positive_env(name: str, default: int) -> int:

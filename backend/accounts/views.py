@@ -1,4 +1,6 @@
 import logging
+import socket
+from ipaddress import ip_address
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
@@ -41,14 +43,30 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+def client_origin(request):
+    peer = request.META.get("REMOTE_ADDR", "unknown")
+    forwarded = request.META.get("HTTP_X_LLAVE_CLIENT_IP")
+    trusted_host = settings.TRUSTED_PROXY_HOST
+    if not forwarded or not trusted_host:
+        return peer
+    try:
+        peer_ip = ip_address(peer)
+        proxy_ips = {ip_address(info[4][0]) for info in socket.getaddrinfo(trusted_host, None, type=socket.SOCK_STREAM)}
+        if peer_ip in proxy_ips:
+            return str(ip_address(forwarded))
+    except (ValueError, OSError):
+        pass
+    return peer
+
+
 def identity(request, email=""):
-    return f"{request.META.get('REMOTE_ADDR', 'unknown')}:{email.strip().lower()}"
+    return f"{client_origin(request)}:{email.strip().lower()}"
 
 
 def limit_auth_operation(scope, request, email):
     # Dos cuotas independientes: variar emails no elude el origen, y variar IPs
     # no elude la cuota de una cuenta. rate_limit usa Redis/Lua atómico.
-    rate_limit(scope, f"origin:{request.META.get('REMOTE_ADDR', 'unknown')}")
+    rate_limit(scope, f"origin:{client_origin(request)}")
     rate_limit(scope, f"account:{email.strip().lower()}")
 
 
@@ -236,7 +254,7 @@ class ResetView(APIView):
     def post(self, request):
         data = ResetSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        rate_limit("reset_submit", f"origin:{request.META.get('REMOTE_ADDR', 'unknown')}")
+        rate_limit("reset_submit", f"origin:{client_origin(request)}")
         with transaction.atomic():
             user = consume_one_time_token(data.validated_data["token"], OneTimeToken.Purpose.RESET)
             validate_password(data.validated_data["password"], user)
