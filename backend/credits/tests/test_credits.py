@@ -1,3 +1,4 @@
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from threading import Event
@@ -9,6 +10,7 @@ from django.core.management import call_command
 from django.db import DatabaseError, IntegrityError, close_old_connections, connections, transaction
 from django.db.models import Sum
 from django.test import override_settings
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APIClient
 
@@ -100,6 +102,36 @@ def test_award_idempotency_snapshot_and_lifetime_uniqueness(domain):
     with pytest.raises(IntegrityError), transaction.atomic():
         Consumption.objects.create(tourist=tourist, provider=provider, collaborator=profile,
                                    award=1, rule_snapshot={})
+
+
+@pytest.mark.django_db
+@override_settings(RATE_LIMITS={"consumption": (2, 300)})
+def test_changed_body_with_confirmed_key_consumes_quota_but_identical_retry_does_not(domain):
+    tourist, _, _, profile, provider, _, token, _ = domain
+    client = authorized(tourist)
+    original = post(client, profile, token)
+    assert original.status_code == 201
+    assert post(client, profile, token, pin="111111").status_code == 409
+    assert post(client, profile, token, pin="222222").status_code == 429
+    rotate_provider_qr(provider.pk)
+    set_provider_pin(provider.pk, "333333")
+    retry = post(client, profile, token)
+    assert retry.status_code == 201 and retry.data == original.data
+
+
+@pytest.mark.django_db
+def test_annul_transition_cannot_change_consumption_uuid(domain):
+    tourist, _, admin, profile, _, _, token, _ = domain
+    item = award_consumption(tourist, profile.pk, token, "123456", "identity")[0]
+    old_id = item["id"]
+    with pytest.raises(DatabaseError), transaction.atomic(), connections["default"].cursor() as cursor:
+        cursor.execute(
+            "UPDATE credits_consumption SET id = %s, state = 'ANNULLED', "
+            "annulled_at = %s, annulled_by_id = %s, annul_reason = %s WHERE id = %s",
+            [str(uuid.uuid4()), timezone.now(), admin.pk, "Cambio inválido", old_id],
+        )
+    assert Consumption.objects.get(pk=old_id).state == Consumption.State.VALID
+    assert WalletEntry.objects.get(reference=f"consumption:{old_id}:earn").delta == 1000
 
 
 @pytest.mark.django_db

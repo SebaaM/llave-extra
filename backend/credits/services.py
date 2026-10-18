@@ -162,9 +162,13 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
             raise PermissionDenied("Solo clientes activos pueden acreditar")
         prior = ConsumptionIdempotency.objects.filter(actor=actor, operation="consume", key=key).first()
         if prior:
-            if prior.fingerprint != digest:
-                raise Conflict("La clave de idempotencia ya se usó con otros datos")
-            return prior.response, prior.status_code
+            if hmac.compare_digest(prior.fingerprint, digest):
+                return prior.response, prior.status_code
+            if origin is not None:
+                rate_limit("consumption", f"origin:{origin}")
+            rate_limit("consumption", f"account:{actor.pk}")
+            rate_limit("consumption", f"account-provider:{actor.pk}:{prior.response['provider_id']}")
+            raise Conflict("La clave de idempotencia ya se usó con otros datos")
         if origin is not None:
             rate_limit("consumption", f"origin:{origin}")
         rate_limit("consumption", f"account:{actor.pk}")

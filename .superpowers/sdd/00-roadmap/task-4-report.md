@@ -6,7 +6,7 @@ Se implementó la acreditación única de por vida por Cliente (`TOURIST`) y Pre
 
 La política global empieza en 1.000 créditos y meta de cinco visitas. `ProviderCreditRule.reward` admite `0` como override explícito y `None` por ausencia de fila; ambos caminos se prueban. Los valores se limitan a 1.000.000 por acreditación y meta 1–1.000 tanto en Admin/modelos como en restricciones de base. Cada consumo guarda monto, origen de regla y meta histórica. No hay bono de meta ni vencimiento de créditos. `GET /me/progress/` cuenta solo consumos válidos y permanece independiente del gasto.
 
-La idempotencia durable usa `(actor, operation, key)` único y HMAC del cuerpo con clave del servidor; el PIN no se almacena en claro ni como hash enumerable. Una respuesta confirmada se lee después de verificar que el actor sigue activo, antes de validar QR/PIN, accesos o consumir cuotas Redis. La misma clave y cuerpo devuelve el mismo JSON y `201`, incluso luego de rotación; la misma clave con otro cuerpo devuelve `409`. Otra clave para el mismo par Cliente/Prestador devuelve `409` sin doble saldo. Las cuotas Redis por origen confiable E2, cuenta y cuenta/Prestador fallan cerrado.
+La idempotencia durable usa `(actor, operation, key)` único y HMAC del cuerpo con clave del servidor; el PIN no se almacena en claro ni como hash enumerable. Una respuesta confirmada se lee después de verificar que el actor sigue activo. La misma clave y cuerpo devuelve el mismo JSON y `201`, incluso luego de rotación, sin consumir cuotas Redis. La misma clave con otro cuerpo consume cuotas por origen confiable, cuenta y cuenta/Prestador antes de devolver `409`. Otra clave para el mismo par Cliente/Prestador devuelve `409` sin doble saldo. Las cuotas Redis fallan cerrado.
 
 El libro `WalletEntry` usa UUID, delta firmado, tipo, referencia de negocio única y vínculo al débito original para reintegros. Saldo y entrada comparten transacción. PostgreSQL restringe saldo no negativo, tipo/signo y origen del reintegro, e impide UPDATE/DELETE de entradas con trigger. Anulación mediante Admin y motivo conserva el consumo, registra reversión cuando alcanza el saldo o abre caso pendiente y congela canjes. Resolución con motivo usa reversión posterior, aporte del faltante más reversión, o condonación auditada del faltante y reversión del saldo disponible. El caso conserva el faltante inicial y audita aporte/condonación efectiva; el bloqueo solo se levanta cuando no quedan casos pendientes. Un trigger impide editar atribución, monto, snapshot o borrar consumos históricos.
 
@@ -24,6 +24,7 @@ Admin configura política y overrides, PIN y rotación QR; consulta consumo, wal
 - `credits.0004_walletentry_source_entry`: vínculo reintegro→débito.
 - `credits.0005_adjustmentcase_forgiven_amount_and_more`: faltante inicial, aporte/condonación y auditoría de resolución.
 - `credits.0006_walletentry_wallet_entry_kind_sign_source`: coherencia entre tipo, signo y vínculo del movimiento.
+- `credits.0007_guard_consumption_identity`: reemplaza la función del trigger en instalaciones E4 ya migradas y prohíbe cambiar el UUID del consumo durante la anulación.
 
 ## Contrato para E5
 
@@ -55,3 +56,15 @@ Proyecto aislado `llaveextra-acceptance8`: PostgreSQL 17 y Redis sanos. La image
 Las pruebas E4 cubren QR/PIN inválidos y rotados, roles y email, ausencia/rotación de acceso, Prestador ajeno, ownership, regla global y override cero, snapshot, unicidad de por vida, idempotencia y conflicto, cuota Redis fail closed, saldo/libro, anulaciones, casos múltiples, funding/forgiveness, permisos Admin y vistas propias. Las carreras de dos acreditaciones y débitos paralelos usan conexiones PostgreSQL independientes; la prueba de revocación comprueba con `pg_blocking_pids` que la acreditación espera el lock, y otra prueba cruza acreditación con resolución.
 
 No se tocó el frontend. Beneficios + Pasaporte sigue siendo la dirección confirmada para F2, ahora programado después de E4 revisado. La integración real con Mercado Pago y el stock pertenecen a E5. El PIN fijo puede compartirse; QR+PIN no demuestra presencia física por sí solo.
+
+## Fix de revisión independiente — ronda 1
+
+Se corrigieron únicamente los dos hallazgos Important de `task-4-review.md`. La comparación de huellas ahora usa `hmac.compare_digest`; un cuerpo distinto con clave confirmada carga las cuotas de origen, cuenta y cuenta/Prestador antes de responder `409`, mientras el reintento idéntico conserva el `201` sin cuota. La migración `0007` endurece el trigger existente con la comparación `OLD.id IS DISTINCT FROM NEW.id`. Su reversión no debilita el guard ya instalado.
+
+Prueba roja antes de la migración: `pytest -q credits/tests/test_credits.py::test_annul_transition_cannot_change_consumption_uuid` terminó `1 failed in 8.55s` porque el `UPDATE` de UUID más estado `ANNULLED` no produjo `DatabaseError`. Se aplicó `python manage.py migrate --noinput` en PostgreSQL aislado ya migrado a 0006: `Applying credits.0007_guard_consumption_identity... OK`.
+
+Prueba verde focal, con `docker compose -p llaveextra-acceptance8 run --no-deps --rm backend pytest -q credits/tests/test_credits.py::test_changed_body_with_confirmed_key_consumes_quota_but_identical_retry_does_not credits/tests/test_credits.py::test_annul_transition_cannot_change_consumption_uuid`: `2 passed in 15.39s`. La primera prueba agota la cuota con conflictos repetidos de la misma clave y confirma que el cuerpo idéntico sigue respondiendo `201` tras rotar QR y PIN; la segunda verifica el rechazo PostgreSQL y la conservación de ID, estado y referencia del libro.
+
+Regresiones existentes relacionadas, con `docker compose -p llaveextra-acceptance8 run --no-deps --rm backend pytest -q credits/tests/test_credits.py::test_award_idempotency_snapshot_and_lifetime_uniqueness credits/tests/test_credits.py::test_annul_freeze_resolution_and_progress_independent_of_spending`: `2 passed in 18.58s`. No se repitió la suite completa por el alcance focal del fix; se conserva la evidencia anterior de `63 passed` y `13 passed`.
+
+Comprobaciones finales con el mismo prefijo Docker aislado: `ruff check .` → `All checks passed!`; `python manage.py makemigrations --check --dry-run` → `No changes detected`; `python manage.py spectacular --validate --fail-on-warn --file /tmp/e4-openapi.yaml` → salida 0 sin warnings; `python manage.py check` → `System check identified no issues (0 silenced)`.
