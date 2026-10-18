@@ -24,3 +24,8 @@
 .brand img{display:block;width:145px;height:auto}.site-footer .brand{background:#fff;padding:3px 9px;border-radius:4px}.header-nav a{display:inline-flex;align-items:center;min-height:44px}.back-link{min-height:44px;display:inline-flex;align-items:center}.auth-switch a{display:inline-flex;align-items:center;min-height:44px}
 .eyebrow{color:#9c4300}em{color:#d96a05}.benefits-hero em{color:#b35200}.provider-benefit{color:#d96a05!important}.offer-action strong{color:#b35200}
 @media(max-width:680px){.brand img{width:128px}}
+/* Targets de teclado/tacto y texto naranja pequeño sobre fondos claros. */
+.field-heading .text-button,.compare-toolbar select,.skip-link{min-height:44px}
+.demo-strip a,.progress-card a{display:inline-flex;align-items:center;min-height:44px}
+.three-steps b,.benefits-value b{color:#9c4300}
+.consume-dialog .form-submit{white-space:normal;text-align:center}

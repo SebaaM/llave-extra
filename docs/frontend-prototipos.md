@@ -8,9 +8,9 @@ Abrí `/prototipos` en el servidor de desarrollo. Cada opción conserva su ruta 
 | [Pasaporte](/prototipos/pasaporte) | Progreso y próximas paradas. | Registro → QR → carpeta → Mi viaje. |
 | [Beneficios](/prototipos/beneficios) | Jerarquía de ahorro y condiciones. | Registro → QR → comparar → ficha. |
 
-Para probar: email con formato válido y contraseña de al menos ocho caracteres; son datos de demostración y no se autentican. Usá `DEMO-FARO` en la entrada QR. `DEMO-PAUSADO` representa una referencia deshabilitada y cualquier otro valor da error. En Mi viaje podés simular verificación de email. En una ficha aún no consumida, el PIN demo `1234` simula la validación del QR del prestador. No ingreses credenciales reales.
+Para probar: email con formato válido y contraseña de al menos ocho caracteres; son datos de demostración y no se autentican. Usá `DEMO-FARO` en la entrada QR. `DEMO-PAUSADO` representa una referencia deshabilitada y cualquier otro valor da error. En Mi viaje podés simular verificación de email. En una ficha aún no consumida, primero pulsá “Simular lectura del QR del prestador” y luego ingresá el PIN demo `1234`. Ambos pasos son locales e ilustrativos. No ingreses credenciales reales.
 
-La portada no enumera carpetas ni prestadores. El simulador local permite evaluar la experiencia, mientras E2/E3 definirán acceso real en el servidor. El estado demo se limita a la pestaña; un acceso directo nuevo a una ruta privada muestra el gate. Para reiniciar, usá “Cerrar sesión demo” en Mi viaje.
+La portada no enumera carpetas ni prestadores. El inventario demo está incluido en el bundle estático y el gate solo controla qué se presenta en pantalla; E2/E3 deberán autorizar el acceso real en el servidor. El estado demo se limita a la pestaña; un acceso directo nuevo a una ruta privada muestra el gate. Para reiniciar, usá “Cerrar sesión demo” en Mi viaje.
 
 La meta visual inicial es cinco visitas. La cuenta demo arranca en cero; cada primera visita elegible suma 1.000 créditos simulados, sin duplicar el mismo prestador. La tienda muestra productos ilustrativos y distingue pago ARS de canje de créditos; no hay compra real.
 
