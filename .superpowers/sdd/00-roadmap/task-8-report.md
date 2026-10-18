@@ -60,3 +60,16 @@ Resultados de los probes Docker:
 - `docker run --rm <imagen-de-prueba> python -c <comprobación>` → `image check: no synthetic media markers` para las tres rutas.
 - Se retiró la imagen de prueba por su tag exacto y los tres archivos sintéticos se eliminaron por sus rutas exactas; los directorios de prueba quedaron intactos. No se hizo build del contexto real ni se repitieron las suites backend/frontend, pues este cambio solo afecta exclusiones Docker y el controlador ya confirmó esas suites.
 - `git diff --check` → correcto, sin salida.
+## Corrección del fallo CI remoto — referencia de `setup-uv`
+
+El informe `task-8-ci-failure.md` registra el run `39133775391` (commit `e627f2f`): el job backend `117694052213` falló durante `Set up job` con `Unable to resolve action astral-sh/setup-uv@v10, unable to find version v10`; no llegó a ejecutar código del proyecto. El job frontend del mismo run terminó correctamente. La causa fue el ref de la acción inexistente, no el binario uv, Python, pytest ni el lockfile.
+
+Se cambió solo `uses:` a `astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0`. El SHA completo y la etiqueta se cotejaron con la documentación oficial de [uv para GitHub Actions](https://docs.astral.sh/uv/guides/integration/github/), que publica exactamente ese pin; la [publicación oficial v9.0.0 de setup-uv](https://github.com/astral-sh/setup-uv/releases/tag/v9.0.0) confirma la existencia de la release/commit `c771a70` y su firma verificada. La opción `with.version: 0.11.3` se mantuvo: el ref selecciona el código de la acción GitHub, mientras que `version` selecciona la versión de la herramienta uv.
+
+Verificaciones focales, sin repetir suites backend/frontend:
+
+- `uv run --locked python -c "import yaml; ... yaml.safe_load('../.github/workflows/ci.yml') ..."` → `workflow YAML valid; action ref and uv version verified`.
+- La misma comprobación afirmó que `jobs.backend.steps[1].uses` es el SHA completo con comentario `v9.0.0` y que `with.version` sigue en `0.11.3`.
+- `git diff --check` → correcto, sin salida.
+
+El fallo ocurrió antes de ejecutar los comandos del workflow. No se modificaron intérprete, runtime, dependencias, locks ni comandos CI. Este commit solo corrige la referencia de la acción; el CI remoto aún debe volver a ejecutarse y pasar antes de declararlo validado.
