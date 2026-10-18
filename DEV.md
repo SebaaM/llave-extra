@@ -1,6 +1,6 @@
 # Guía de desarrollo
 
-El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24, y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. El nombre del directorio puede contener espacios.
+El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. El nombre del directorio puede contener espacios.
 
 ```powershell
 ./scripts/dev.ps1 up
@@ -17,4 +17,4 @@ Si ya se habían creado las cuentas demo y falta su archivo local de contraseña
 
 Si el backend no inicia, revisá que Docker esté activo y que la base figure healthy con `docker compose ps`. Si cambiaste credenciales en `.env` después de inicializar el volumen, PostgreSQL conserva las credenciales anteriores; recreá el entorno solo si podés descartar sus datos. Si las fuentes web de Google no están disponibles, la interfaz conserva tipografía de respaldo del sistema.
 
-Configuración de producción exige `DJANGO_SECRET_KEY` de al menos 50 caracteres y `DJANGO_ALLOWED_HOSTS`; nunca uses las credenciales locales. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local; no hay proveedor de correo externo configurado. Mercado Pago y tareas asíncronas están pendientes para etapas posteriores.
+El bootstrap añade `JWT_SIGNING_KEY`, `QR_SIGNING_KEY` y `REDIS_URL` a un `.env` E1 existente sin cambiar claves previas. Configuración de producción exige tres claves independientes de al menos 50 caracteres y `DJANGO_ALLOWED_HOSTS`; nunca uses las credenciales locales. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local; no hay proveedor de correo externo configurado. Si SMTP falla al registrar, la cuenta queda creada y el usuario puede pedir reenvío. Mercado Pago y tareas asíncronas están pendientes para etapas posteriores.

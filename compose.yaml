@@ -19,6 +19,7 @@ services:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.local}
       POSTGRES_HOST: db
       MAILPIT_HOST: mailpit
+      TRUSTED_PROXY_HOST: frontend
       DEMO_CREDENTIALS_PATH: /workspace/docs/cuentas-prueba.local.md
     volumes:
       - ./backend:/app
@@ -28,12 +29,22 @@ services:
       - "127.0.0.1:8000:8000"
     depends_on:
       db: {condition: service_healthy}
+      redis: {condition: service_healthy}
       mailpit: {condition: service_started}
+  redis:
+    image: redis:7.4.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
   frontend:
     build: ./frontend
     image: llaveextra-frontend
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+      VITE_API_BASE_URL: /api/v1
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/index.html:/app/index.html:ro
@@ -47,3 +58,4 @@ services:
 volumes:
   postgres_data:
   media_data:
+  redis_data:

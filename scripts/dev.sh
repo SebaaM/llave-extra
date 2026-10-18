@@ -27,6 +27,14 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 EOF
     chmod 600 .env 2>/dev/null || true
   fi
+  for key in JWT_SIGNING_KEY QR_SIGNING_KEY; do
+    if ! grep -q "^${key}=" .env; then
+      printf '%s=%s\n' "$key" "$(openssl rand -hex 48)" >> .env
+    fi
+  done
+  if ! grep -q '^REDIS_URL=' .env; then printf '%s\n' 'REDIS_URL=redis://redis:6379/0' >> .env; fi
+  if ! grep -q '^PUBLIC_APP_URL=' .env; then printf '%s\n' 'PUBLIC_APP_URL=http://localhost:5173' >> .env; fi
+  if ! grep -q '^DEFAULT_FROM_EMAIL=' .env; then printf '%s\n' 'DEFAULT_FROM_EMAIL=no-reply@llaveextra.local' >> .env; fi
 }
 
 case "${1:-}" in
@@ -39,7 +47,7 @@ case "${1:-}" in
   test)
     bootstrap
     docker compose build backend
-    docker compose up -d --build db
+    docker compose up -d --build db redis
     docker compose run --rm backend python manage.py migrate
     docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.test backend pytest -q
     ;;

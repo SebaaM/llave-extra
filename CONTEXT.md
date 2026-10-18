@@ -26,8 +26,8 @@ Un turista puede acceder a más de una carpeta después de escanear sus respecti
 
 ## Arquitectura
 
-Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit; Redis y worker al necesitar límites compartidos y tareas.
+Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit y Redis para límites compartidos; no hay worker de correo.
 
 ## Estado
 
-E0: documentación inicial. E1: base reproducible del proyecto entregada; autenticación y dominio siguen pendientes. E2-E6 y F1 pendientes. Los prototipos detienen la integración visual hasta elección del usuario. No se fusionan PRs; las ramas de backend se apilan para revisión incremental.
+E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y referencia QR privada implementadas en la rama de etapa, pendientes de revisión/PR. E3-E6 y F1 pendientes. Los prototipos detienen la integración visual definitiva hasta elección del usuario. No se fusionan PRs; las ramas de backend se apilan para revisión incremental.
