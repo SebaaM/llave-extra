@@ -1,7 +1,7 @@
 # Pendientes
 
 - [x] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL (ver [entrega](docs/plans/01-base-proyecto.md)).
-- [ ] E2: autenticación y referencias privadas mediante QR de colaborador.
+- [x] E2: autenticación y referencias privadas mediante QR de colaborador (implementación local; ver [detalle](docs/plans/02-autenticacion-api.md)).
 - [ ] E3: prestadores, beneficios, carpetas y permisos.
 - [ ] E4: consumos únicos, créditos y anulaciones.
 - [ ] E5: tienda, Mercado Pago, stock y retiro.

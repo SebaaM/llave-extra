@@ -37,6 +37,31 @@ function Initialize-Environment {
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText((Join-Path $root '.env'), "$content`n", $utf8NoBom)
   }
+  $envPath = Join-Path $root '.env'
+  $existing = [System.IO.File]::ReadAllText($envPath)
+  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+  $jwtBytes = New-Object byte[] 48
+  $qrBytes = New-Object byte[] 48
+  try {
+    $rng.GetBytes($jwtBytes)
+    $rng.GetBytes($qrBytes)
+  } finally {
+    $rng.Dispose()
+  }
+  $keys = @{
+    JWT_SIGNING_KEY = [Convert]::ToBase64String($jwtBytes)
+    QR_SIGNING_KEY = [Convert]::ToBase64String($qrBytes)
+    REDIS_URL = 'redis://redis:6379/0'
+    PUBLIC_APP_URL = 'http://localhost:5173'
+    DEFAULT_FROM_EMAIL = 'no-reply@llaveextra.local'
+  }
+  foreach ($key in $keys.Keys) {
+    if ($existing -notmatch "(?m)^$key=") {
+      $existing = $existing.TrimEnd("`r", "`n") + "`n$key=$($keys[$key])`n"
+    }
+  }
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($envPath, $existing, $utf8NoBom)
 }
 
 switch ($Action) {
@@ -52,7 +77,7 @@ switch ($Action) {
     Initialize-Environment
     docker compose build backend
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    docker compose up -d --build db
+    docker compose up -d --build db redis
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
     docker compose run --rm backend python manage.py migrate
     if ($LASTEXITCODE) { exit $LASTEXITCODE }

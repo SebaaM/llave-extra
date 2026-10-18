@@ -30,4 +30,4 @@ Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.
 
 ## Estado
 
-E0: documentación inicial. E1: base reproducible del proyecto entregada; autenticación y dominio siguen pendientes. E2-E6 y F1 pendientes. Los prototipos detienen la integración visual hasta elección del usuario. No se fusionan PRs; las ramas de backend se apilan para revisión incremental.
+E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y referencia QR privada implementadas en la rama de etapa, pendientes de revisión/PR. E3-E6 y F1 pendientes. Los prototipos detienen la integración visual definitiva hasta elección del usuario. No se fusionan PRs; las ramas de backend se apilan para revisión incremental.

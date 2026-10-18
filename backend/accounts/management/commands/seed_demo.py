@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from accounts.models import User
+from referrals.models import CollaboratorProfile
 
 DEMO_ACCOUNTS = [
     ("admin@llaveextra.test", User.Role.ADMIN),
@@ -53,6 +54,8 @@ class Command(BaseCommand):
                 generated[email] = password
             elif email not in credentials:
                 unresolved.append(email)
+            if role == User.Role.COLLABORATOR and user.role == User.Role.COLLABORATOR:
+                CollaboratorProfile.objects.get_or_create(user=user, defaults={"enabled": True})
 
         if generated:
             destination.parent.mkdir(parents=True, exist_ok=True)

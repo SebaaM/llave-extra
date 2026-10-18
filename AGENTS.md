@@ -13,6 +13,7 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 - Consumos, créditos y stock requieren transacciones, restricciones de base de datos e idempotencia.
 - No versionar credenciales, `.env`, códigos privados ni cuentas reales. `.env-example` contiene valores vacíos.
 - Mantener `ToDo.md`, contexto, instrucciones y contrato OpenAPI alineados con cada funcionalidad.
+- Desde E2, E3 usa `referrals.access.active_folder_access(user, profile)` para visibilidad; E4 usa `referrals.access.locked_folder_access(user, profile_id)` dentro de la transacción de acreditación. Ninguna etapa infiere acceso solo por existencia histórica de `FolderAccess`.
 - Commits Conventional Commits con descripción en español. Trabajar fuera de main después del commit inicial. No fusionar PRs.
 
 ## Verificación
