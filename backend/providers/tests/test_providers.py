@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from io import BytesIO
+from queue import Queue
+from time import monotonic, sleep
 
 import pytest
 from django.contrib.admin.sites import AdminSite
@@ -8,8 +10,8 @@ from django.contrib.auth.models import Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.db import DatabaseError, connections, transaction
-from django.test import RequestFactory, override_settings
+from django.db import DatabaseError, connection, connections, transaction
+from django.test import Client, RequestFactory, override_settings
 from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
@@ -17,7 +19,12 @@ from rest_framework.test import APIClient
 from accounts.models import User
 from accounts.security import issue_session
 from providers.access import locked_provider_eligibility
-from providers.admin import FolderProviderAdmin
+from providers.admin import (
+    BenefitAdmin,
+    FolderProviderAdmin,
+    ProviderAdmin,
+    ProviderMembershipAdmin,
+)
 from providers.models import Benefit, FolderProvider, Provider, ProviderMembership, Publication
 from providers.serializers import BenefitWriteSerializer, ProviderWriteSerializer
 from referrals.models import CollaboratorProfile, FolderAccess
@@ -120,6 +127,10 @@ def test_provider_ownership_offer_review_and_mass_assignment(domain):
     assert benefit.status == Publication.DRAFT
     assert client.delete(f"{offers}{new.pk}/").status_code == 204
     assert not Benefit.objects.filter(pk=new.pk).exists()
+    other_draft = Benefit.objects.create(provider=provider, title="Otra", conditions="Con reserva")
+    ProviderMembership.objects.filter(user=owner, provider=provider).delete()
+    assert client.delete(f"{offers}{other_draft.pk}/").status_code == 404
+    assert Benefit.objects.filter(pk=other_draft.pk).exists()
     assert authorized(profile.user).patch(root, {"description": "bad"}, format="json").status_code == 403
 
 
@@ -241,6 +252,81 @@ def test_only_admin_can_assign_folder_even_when_provider_has_django_permission(d
         request, FolderProvider(collaborator=profile, provider=other_provider), form=None, change=False,
     )
     assert FolderProvider.objects.filter(collaborator=profile, provider=other_provider).exists()
+
+
+@pytest.mark.django_db
+def test_staff_provider_cannot_delete_admin_models_with_explicit_django_permissions(domain):
+    _, profile, _, provider, _, _ = domain
+    assignment = FolderProvider.objects.get(collaborator=profile, provider=provider)
+    staff_provider = User.objects.create_user(
+        "delete-provider@example.test", "Secret-123", role=User.Role.PROVIDER, is_staff=True,
+    )
+    admin_user = User.objects.create_superuser("delete-admin@example.test", "Secret-123")
+    admin_models = (
+        (Provider, ProviderAdmin), (ProviderMembership, ProviderMembershipAdmin),
+        (FolderProvider, FolderProviderAdmin), (Benefit, BenefitAdmin),
+    )
+    staff_provider.user_permissions.add(*[
+        Permission.objects.get(content_type__app_label="providers", codename=f"delete_{model._meta.model_name}")
+        for model, _ in admin_models
+    ])
+    request = RequestFactory().get("/admin/providers/folderprovider/")
+    request.user = staff_provider
+    for model, admin_class in admin_models:
+        assert not admin_class(model, AdminSite()).has_delete_permission(request)
+    folder_admin = FolderProviderAdmin(FolderProvider, AdminSite())
+    assert "delete_selected" not in folder_admin.get_actions(request)
+
+    client = Client()
+    client.force_login(staff_provider)
+    delete_url = f"/admin/providers/folderprovider/{assignment.pk}/delete/"
+    assert client.post(delete_url, {"post": "yes"}).status_code == 403
+    assert FolderProvider.objects.filter(pk=assignment.pk).exists()
+
+    request.user = admin_user
+    assert folder_admin.has_delete_permission(request)
+    assert "delete_selected" in folder_admin.get_actions(request)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_provider_delete_waits_for_admin_publication_and_keeps_published_benefit():
+    provider = Provider.objects.create(slug="race-delete", name="Race delete", status=Publication.PUBLISHED)
+    owner = User.objects.create_user("race-owner@example.test", "Secret-123", role=User.Role.PROVIDER)
+    ProviderMembership.objects.create(user=owner, provider=provider)
+    benefit = Benefit.objects.create(provider=provider, title="Oferta", conditions="Con reserva")
+    token, _ = issue_session(owner)
+    delete_url = f"/api/v1/provider/providers/{provider.pk}/benefits/{benefit.pk}/"
+    worker_pid: Queue[int] = Queue()
+
+    def delete_from_other_connection():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_backend_pid()")
+                worker_pid.put(cursor.fetchone()[0])
+            client = APIClient()
+            client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+            return client.delete(delete_url).status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with transaction.atomic():
+            Benefit.set_status(benefit.pk, Publication.PUBLISHED)
+            result = pool.submit(delete_from_other_connection)
+            pid = worker_pid.get(timeout=5)
+            deadline = monotonic() + 5
+            blocked = False
+            while monotonic() < deadline:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT cardinality(pg_blocking_pids(%s))", [pid])
+                    blocked = cursor.fetchone()[0] > 0
+                if blocked:
+                    break
+                sleep(0.02)
+            assert blocked, "DELETE no esperó el lock de publicación"
+        assert result.result(timeout=5) == 403
+    benefit.refresh_from_db()
+    assert benefit.status == Publication.PUBLISHED
 
 
 @pytest.mark.django_db

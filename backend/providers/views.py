@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -12,7 +13,7 @@ from referrals.models import CollaboratorProfile
 from referrals.views import current_profile, qr_url
 
 from .access import owned_provider, visible_benefits, visible_provider
-from .models import Benefit, Provider, Publication
+from .models import Benefit, Provider, ProviderMembership, Publication
 from .serializers import (
     BenefitReadSerializer,
     BenefitWriteSerializer,
@@ -182,10 +183,23 @@ class OwnBenefitView(APIView):
 
     @extend_schema(responses={204: None})
     def delete(self, request, provider_id, benefit_id):
-        benefit = owned_benefit(request.user, provider_id, benefit_id)
-        if benefit.status == Publication.PUBLISHED:
-            raise PermissionDenied("Solicitá revisión administrativa para retirar una oferta publicada")
-        benefit.delete()
+        with transaction.atomic():
+            user = User.objects.select_for_update().filter(pk=request.user.pk).first()
+            if user is None or not user.is_active or user.role != User.Role.PROVIDER:
+                raise PermissionDenied("Solo prestadores activos")
+            membership = ProviderMembership.objects.select_for_update().filter(
+                user=user, provider_id=provider_id,
+            ).first()
+            if membership is None:
+                raise NotFound()
+            benefit = Benefit.objects.select_for_update().filter(
+                pk=benefit_id, provider_id=provider_id,
+            ).first()
+            if benefit is None:
+                raise NotFound()
+            if benefit.status == Publication.PUBLISHED:
+                raise PermissionDenied("Solicitá revisión administrativa para retirar una oferta publicada")
+            benefit.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
