@@ -19,9 +19,10 @@ const route = (variant: Variant, page: string) => `/prototipos/${variant}/${page
 
 function useLocation() {
   const [path, setPath] = useState(window.location.pathname)
-  useEffect(() => { const update = () => setPath(window.location.pathname); window.addEventListener('popstate', update); return () => window.removeEventListener('popstate', update) }, [])
-  const go = (next: string) => { if (window.location.pathname !== next) window.history.pushState({}, '', next); setPath(next); window.scrollTo(0, 0) }
-  return { path, go }
+  const [navigation, setNavigation] = useState(0)
+  useEffect(() => { const update = () => { setPath(window.location.pathname); setNavigation(count => count + 1) }; window.addEventListener('popstate', update); return () => window.removeEventListener('popstate', update) }, [])
+  const go = (next: string) => { if (window.location.pathname !== next) { window.history.pushState({}, '', next); setPath(next); setNavigation(count => count + 1) } window.scrollTo(0, 0) }
+  return { path, go, navigation }
 }
 function Link({ to, go, children, className = '' }: { to: string; go: (path: string) => void; children: ReactNode; className?: string }) {
   return <a href={to} className={className} onClick={event => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); go(to) } }}>{children}</a>
@@ -57,9 +58,10 @@ function ConsumeDialog({ provider, onClose, onConsume }: { provider: Provider; o
 }
 function ProviderPage({ variant, provider, go, state, onConsume }: { variant: Variant; provider: Provider; go: (path: string) => void; state: DemoState; onConsume: (id: string) => void }) {
   const [dialog, setDialog] = useState(false), consumed = state.consumed.includes(provider.id)
+  const [focusSuccess, setFocusSuccess] = useState(false)
   const successRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (consumed) successRef.current?.focus() }, [consumed])
-  return <main id="contenido" className="provider-page page-container"><Link to={route(variant, 'carpeta')} go={go} className="back-link">← Volver a la carpeta</Link><div className="provider-layout"><div className={`provider-hero-art art-${provider.color}`} aria-hidden="true"><span>{provider.glyph}</span><small>USHUAIA / LLAVE EXTRA</small></div><div className="provider-info"><DemoTag /><p className="eyebrow">{provider.category} · CARPETA FARO DEMO</p><h1>{provider.name}</h1><p className="provider-benefit">{provider.benefit}</p><p>{provider.condition}</p><p className="offer-status">Beneficio publicado · pendiente de confirmar con el comercio</p><div className="detail-line"><span>Ubicación</span><strong>{provider.address}</strong></div><div className="detail-line"><span>Tu primera visita</span><strong>+1.000 créditos demo</strong></div><p className="form-help">Solo una acreditación por turista y prestador durante el programa. El email debe estar verificado.</p>{consumed ? <div className="form-success" role="status" tabIndex={-1} ref={successRef}><strong>Visita ya acreditada en la demo.</strong><p>Podés seguir explorando otros prestadores.</p></div> : !state.verified ? <div className="verify-card"><strong>Verificá tu email antes de acreditar.</strong><p>En este prototipo podés simular la verificación desde Mi viaje.</p><Link to={route(variant, 'perfil')} go={go} className="button button-dark">Ir a Mi viaje ↗</Link></div> : <button className="button button-orange" onClick={() => setDialog(true)}>Validar consumo demo ↗</button>}</div></div>{dialog && <ConsumeDialog provider={provider} onClose={() => setDialog(false)} onConsume={() => { onConsume(provider.id); setDialog(false) }} />}</main>
+  useEffect(() => { if (consumed && focusSuccess) successRef.current?.focus() }, [consumed, focusSuccess])
+  return <main id="contenido" className="provider-page page-container"><Link to={route(variant, 'carpeta')} go={go} className="back-link">← Volver a la carpeta</Link><div className="provider-layout"><div className={`provider-hero-art art-${provider.color}`} aria-hidden="true"><span>{provider.glyph}</span><small>USHUAIA / LLAVE EXTRA</small></div><div className="provider-info"><DemoTag /><p className="eyebrow">{provider.category} · CARPETA FARO DEMO</p><h1>{provider.name}</h1><p className="provider-benefit">{provider.benefit}</p><p>{provider.condition}</p><p className="offer-status">Beneficio publicado · pendiente de confirmar con el comercio</p><div className="detail-line"><span>Ubicación</span><strong>{provider.address}</strong></div><div className="detail-line"><span>Tu primera visita</span><strong>+1.000 créditos demo</strong></div><p className="form-help">Solo una acreditación por turista y prestador durante el programa. El email debe estar verificado.</p>{consumed ? <div className="form-success" role="status" tabIndex={-1} ref={successRef}><strong>Visita ya acreditada en la demo.</strong><p>Podés seguir explorando otros prestadores.</p></div> : !state.verified ? <div className="verify-card"><strong>Verificá tu email antes de acreditar.</strong><p>En este prototipo podés simular la verificación desde Mi viaje.</p><Link to={route(variant, 'perfil')} go={go} className="button button-dark">Ir a Mi viaje ↗</Link></div> : <button className="button button-orange" onClick={() => setDialog(true)}>Validar consumo demo ↗</button>}</div></div>{dialog && <ConsumeDialog provider={provider} onClose={() => setDialog(false)} onConsume={() => { onConsume(provider.id); setFocusSuccess(true); setDialog(false) }} />}</main>
 }
 function Profile({ variant, go, state, onVerify, onLogout }: { variant: Variant; go: (path: string) => void; state: DemoState; onVerify: () => void; onLogout: () => void }) {
   const visits = state.consumed.length
@@ -69,7 +71,7 @@ function Shop({ variant, go, state }: { variant: Variant; go: (path: string) => 
   return <main id="contenido" className="shop-page page-container"><Link to={route(variant, 'perfil')} go={go} className="back-link">← Volver a Mi viaje</Link><DemoTag /><p className="eyebrow">TIENDA / VISTA PREVIA</p><h1>Recuerdos para llevar.</h1><p>Ejemplos ilustrativos de futura regalería 3D. No hay catálogo real ni compras habilitadas.</p><div className="shop-grid"><article><div className="shop-object">✳</div><h2>Imán Fin del Mundo</h2><p>Producto ilustrativo</p><strong>$ 8.000 ARS <span>o 2.000 créditos</span></strong></article><article><div className="shop-object object-two">✦</div><h2>Mini faro austral</h2><p>Producto ilustrativo</p><strong>$ 15.000 ARS <span>o 4.000 créditos</span></strong></article></div><div className="selector-note"><span className="note-icon">i</span><p>En la tienda final cada pedido se pagará en ARS o con créditos, sin mezclar medios. El retiro será en un punto configurable. Esta vista no inicia pagos ni reserva stock. Tu saldo demo: <strong>{state.consumed.length * 1000} créditos</strong>.</p></div></main>
 }
 export default function App() {
-  const { path, go } = useLocation(), [state, setState] = useState<DemoState>(readDemo)
+  const { path, go, navigation } = useLocation(), [state, setState] = useState<DemoState>(readDemo)
   const update = (next: DemoState) => { setState(next); sessionStorage.setItem(KEY, JSON.stringify(next)) }
   const parts = path.split('/').filter(Boolean), variant = variants.find(item => item.id === parts[1])?.id, section = parts[2] || ''
   let content: ReactNode
@@ -91,7 +93,7 @@ export default function App() {
     const title = headingText?.textContent?.replace(/\s+/g, ' ').trim() || 'Prototipos'
     document.title = `${title} · Llave Extra`
     main?.setAttribute('tabindex', '-1')
-    main?.focus()
-  }, [path])
+    if (navigation > 0) main?.focus()
+  }, [path, navigation])
   return <Shell variant={variant} state={state} go={go}>{content}</Shell>
 }

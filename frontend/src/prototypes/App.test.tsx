@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { StrictMode } from 'react'
 import App from '../App'
 
 const demoKey = 'llave-extra-prototipo-v1'
@@ -106,12 +107,35 @@ it('exige leer el QR del prestador antes del PIN y acredita solo con ambos pasos
   expect(progress?.querySelector('strong')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('1 / 5')
 })
 
-it('anuncia y enfoca cada vista tras navegación interna y popstate', async () => {
+it('conserva el orden de tabulación inicial bajo StrictMode', async () => {
   const user = userEvent.setup()
-  render(<App />)
-  const firstPrototype = screen.getAllByRole('link', { name: 'Explorar prototipo ↗' })[0]
+  render(<StrictMode><App /></StrictMode>)
+  expect(document.activeElement).toBe(document.body)
+  expect(document.title).toContain('La misma ciudad.')
   await user.tab()
-  expect(document.activeElement).toBe(firstPrototype)
+  expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Saltar al contenido' }))
+  await user.tab()
+  expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Comparar opciones ↗' }))
+  await user.tab()
+  expect(document.activeElement).toBe(screen.getAllByRole('link', { name: 'Llave Extra' })[0])
+})
+
+it('no enfoca una acreditación previa al cargar una ficha bajo StrictMode', async () => {
+  const user = userEvent.setup()
+  sessionStorage.setItem(demoKey, JSON.stringify({ user: true, verified: true, grant: true, consumed: ['kuar'] }))
+  route('/prototipos/guia/prestador/kuar')
+  render(<StrictMode><App /></StrictMode>)
+  expect(screen.getByText('Visita ya acreditada en la demo.')).toBeTruthy()
+  expect(document.activeElement).toBe(document.body)
+  await user.tab()
+  expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Saltar al contenido' }))
+})
+
+it('anuncia y enfoca cada vista tras navegación interna y popstate bajo StrictMode', async () => {
+  const user = userEvent.setup()
+  render(<StrictMode><App /></StrictMode>)
+  const firstPrototype = screen.getAllByRole('link', { name: 'Explorar prototipo ↗' })[0]
+  firstPrototype.focus()
   await user.keyboard('{Enter}')
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('main')))
   expect(document.title).toContain('La ciudad tiene mucho por contar.')
