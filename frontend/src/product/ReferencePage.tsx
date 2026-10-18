@@ -1,0 +1,12 @@
+import { useState } from 'react'
+import { api } from './api'
+import type { Folder } from './api'
+import { messageOf } from './shared'
+import { referralToken, setReferralToken } from './qr-intent'
+import { ProductLink } from './navigation'
+
+export function QrPage({ signedIn, folders, onRedeemed }: { signedIn: boolean; folders: Folder[]; onRedeemed: () => void }) {
+  const [token, setToken] = useState(referralToken ?? ''), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('')
+  const redeem = async (value: string) => { if (!value || !signedIn) return; setBusy(true); setError(''); try { await api('/api/v1/referrals/redeem/', { method: 'POST', body: { token: value } }); setReferralToken(null); setToken(''); setNotice('La referencia se vinculó a tu cuenta.'); onRedeemed() } catch (caught) { setError(messageOf(caught)) } finally { setBusy(false) } }
+  return <main id="contenido" className="qr-page page-container"><div className="qr-copy"><p className="eyebrow">TUS RECOMENDACIONES</p><h1>Una referencia abre nuevas puertas.</h1><p>El QR de un colaborador habilita el acceso a su carpeta privada de recomendaciones. No acredita una visita por sí solo.</p><div className="qr-hint"><span aria-hidden="true">✳</span><div><strong>¿Todavía no tenés cuenta?</strong><p>Creala desde el enlace de registro del mismo QR. La referencia se conserva durante ese paso.</p><ProductLink href="/registro">Crear cuenta con este QR</ProductLink><br /><ProductLink href="/ingresar">Ya tengo cuenta</ProductLink></div></div></div><form className="qr-form" onSubmit={event => { event.preventDefault(); void redeem(token.trim()) }}><div className="qr-symbol" aria-hidden="true">⌑</div><label htmlFor="referral-token">Código de referencia</label><input id="referral-token" value={token} onChange={event => { const value = event.target.value; setToken(value); setReferralToken(value || null) }} autoComplete="off" aria-invalid={!!error} placeholder="Escaneá un QR o pegá su token" />{error && <p className="form-error" role="alert">{error}</p>}{notice && <p className="form-success" role="status">{notice}</p>}{!signedIn && <p className="form-help">Ingresá para vincular la referencia a tu cuenta.</p>}<button className="button button-orange form-submit" disabled={busy || !signedIn}>{busy ? 'Validando…' : signedIn ? 'Abrir recomendaciones' : 'Iniciá sesión para continuar'}</button>{folders.length > 0 && <a className="inline-link" href="/beneficios">Ver mis carpetas actuales →</a>}</form></main>
+}
