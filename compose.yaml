@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Ejecuta primero scripts/dev.ps1 o scripts/dev.sh}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.local}
+      POSTGRES_HOST: db
+      MAILPIT_HOST: mailpit
+      DEMO_CREDENTIALS_PATH: /workspace/docs/cuentas-prueba.local.md
+    volumes:
+      - ./backend:/app
+      - ./docs:/workspace/docs
+      - media_data:/app/media
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db: {condition: service_healthy}
+      mailpit: {condition: service_started}
+  frontend:
+    build: ./frontend
+    image: llaveextra-frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+    ports:
+      - "127.0.0.1:5173:5173"
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - "127.0.0.1:8025:8025"
+volumes:
+  postgres_data:
+  media_data:

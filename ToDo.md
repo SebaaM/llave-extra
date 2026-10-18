@@ -1,6 +1,6 @@
 # Pendientes
 
-- [ ] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL.
+- [x] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL (ver [entrega](docs/plans/01-base-proyecto.md)).
 - [ ] E2: autenticación y referencias privadas mediante QR de colaborador.
 - [ ] E3: prestadores, beneficios, carpetas y permisos.
 - [ ] E4: consumos únicos, créditos y anulaciones.
