@@ -3,8 +3,9 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connections, transaction
-from django.test import RequestFactory
+from django.test import Client, RequestFactory
 from rest_framework.test import APIClient
 
 from accounts.models import User
@@ -100,6 +101,40 @@ def test_provider_and_collaborator_do_not_acquire_tourist_permissions():
     request = RequestFactory().get("/admin/")
     request.user = provider
     assert not CollaboratorProfileAdmin(CollaboratorProfile, AdminSite()).has_change_permission(request)
+
+
+@pytest.mark.django_db
+def test_admin_cannot_reassign_collaborator_profile_and_historical_grants():
+    original = User.objects.create_user("original@example.test", "Secret-123", role="COLLABORATOR")
+    replacement = User.objects.create_user("replacement@example.test", "Secret-123", role="COLLABORATOR")
+    tourist = User.objects.create_user("tourist@example.test", "Secret-123")
+    profile = CollaboratorProfile.objects.create(user=original, enabled=True)
+    grant = FolderAccess.objects.create(tourist=tourist, collaborator=profile, qr_version=profile.qr_version)
+    original_qr = sign_qr(profile)
+    admin_user = User.objects.create_superuser("admin@example.test", "Secret-123")
+    request = RequestFactory().get(f"/admin/referrals/collaboratorprofile/{profile.pk}/change/")
+    request.user = admin_user
+    profile_admin = CollaboratorProfileAdmin(CollaboratorProfile, AdminSite())
+    assert "user" in profile_admin.get_readonly_fields(request, profile)
+    assert "user" not in profile_admin.get_form(request, profile).base_fields
+    admin_client = Client()
+    admin_client.force_login(admin_user)
+    response = admin_client.post(
+        f"/admin/referrals/collaboratorprofile/{profile.pk}/change/",
+        {"user": str(replacement.pk), "_save": "Guardar"},
+    )
+    assert response.status_code == 302
+    profile.refresh_from_db()
+    assert profile.user_id == original.pk
+    profile.user = replacement
+    with pytest.raises(ValidationError, match="titular"):
+        profile.save(update_fields=["user"])
+    profile.refresh_from_db()
+    grant.refresh_from_db()
+    assert profile.user_id == original.pk
+    assert grant.collaborator_id == profile.pk
+    assert sign_qr(profile) == original_qr
+    assert active_folder_access(tourist, profile)
 
 
 @pytest.mark.django_db

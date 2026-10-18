@@ -16,8 +16,21 @@ class CollaboratorProfile(models.Model):
         constraints = [models.CheckConstraint(condition=Q(qr_version__gte=1), name="qr_version_positive")]
 
     def clean(self):
+        if self.pk and not self._state.adding:
+            original_user_id = type(self).objects.filter(pk=self.pk).values_list("user_id", flat=True).first()
+            if original_user_id is not None and original_user_id != self.user_id:
+                raise ValidationError({"user": "No se puede cambiar el titular de un perfil existente"})
         if self.user.role != self.user.Role.COLLABORATOR:
             raise ValidationError("El perfil requiere un colaborador")
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.pk:
+                original_user_id = (type(self).objects.select_for_update()
+                                    .filter(pk=self.pk).values_list("user_id", flat=True).first())
+                if original_user_id is not None and original_user_id != self.user_id:
+                    raise ValidationError({"user": "No se puede cambiar el titular de un perfil existente"})
+            return super().save(*args, **kwargs)
 
     @classmethod
     def set_enabled(cls, pk, enabled: bool):

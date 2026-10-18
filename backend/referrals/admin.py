@@ -12,6 +12,10 @@ class CollaboratorProfileAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     readonly_fields = ("id", "enabled", "qr_version")
     actions = ("enable", "disable", "rotate")
 
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        return (*fields, "user") if obj is not None else fields
+
     def has_delete_permission(self, request, obj=None):
         return False
 

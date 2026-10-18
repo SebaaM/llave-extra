@@ -170,6 +170,50 @@ def test_shared_redis_rate_limit():
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("operation,expected", [
+    ("login", 401), ("forgot-password", 202), ("resend-verification", 202),
+])
+def test_auth_rate_limit_is_shared_by_origin_when_emails_change(operation, expected):
+    client = browser()
+    with override_settings(RATE_LIMITS={"login": (2, 60), "reset": (2, 60), "resend": (2, 60)}):
+        for index in range(2):
+            response = client.post(
+                f"/api/v1/auth/{operation}/",
+                {"email": f"vary-{index}@example.test", **({"password": PASSWORD} if operation == "login" else {})},
+                format="json", REMOTE_ADDR="198.51.100.10",
+            )
+            assert response.status_code == expected
+        limited = client.post(
+            f"/api/v1/auth/{operation}/",
+            {"email": "vary-2@example.test", **({"password": PASSWORD} if operation == "login" else {})},
+            format="json", REMOTE_ADDR="198.51.100.10",
+        )
+        assert limited.status_code == 429
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("operation,expected", [
+    ("login", 401), ("forgot-password", 202), ("resend-verification", 202),
+])
+def test_auth_rate_limit_is_shared_by_account_across_origins(operation, expected):
+    client = browser()
+    with override_settings(RATE_LIMITS={"login": (2, 60), "reset": (2, 60), "resend": (2, 60)}):
+        for index in range(2):
+            response = client.post(
+                f"/api/v1/auth/{operation}/",
+                {"email": "target@example.test", **({"password": PASSWORD} if operation == "login" else {})},
+                format="json", REMOTE_ADDR=f"198.51.100.{index + 1}",
+            )
+            assert response.status_code == expected
+        limited = client.post(
+            f"/api/v1/auth/{operation}/",
+            {"email": "target@example.test", **({"password": PASSWORD} if operation == "login" else {})},
+            format="json", REMOTE_ADDR="198.51.100.3",
+        )
+        assert limited.status_code == 429
+
+
+@pytest.mark.django_db
 def test_redis_limit_is_atomic_across_connections():
     with override_settings(RATE_LIMITS={"login": (1, 60)}):
         def attempt(_):

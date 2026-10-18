@@ -45,6 +45,13 @@ def identity(request, email=""):
     return f"{request.META.get('REMOTE_ADDR', 'unknown')}:{email.strip().lower()}"
 
 
+def limit_auth_operation(scope, request, email):
+    # Dos cuotas independientes: variar emails no elude el origen, y variar IPs
+    # no elude la cuota de una cuenta. rate_limit usa Redis/Lua atómico.
+    rate_limit(scope, f"origin:{request.META.get('REMOTE_ADDR', 'unknown')}")
+    rate_limit(scope, f"account:{email.strip().lower()}")
+
+
 def private_response(data, status_code=status.HTTP_200_OK):
     response = Response(data, status=status_code)
     response["Cache-Control"] = "no-store"
@@ -108,7 +115,7 @@ class LoginView(APIView):
         data = LoginSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
-        rate_limit("login", identity(request, email))
+        limit_auth_operation("login", request, email)
         user = authenticate(request, email=email, password=data.validated_data["password"])
         if user is None or not user.is_active:
             raise InvalidSession("Credenciales inválidas")
@@ -171,7 +178,7 @@ class ResendView(APIView):
         data = EmailSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
-        rate_limit("resend", identity(request, email))
+        limit_auth_operation("resend", request, email)
         user = User.objects.filter(email=email, is_active=True, email_verified=False).first()
         if user:
             raw = make_one_time_token(user, OneTimeToken.Purpose.VERIFY)
@@ -209,7 +216,7 @@ class ForgotView(APIView):
         data = EmailSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
-        rate_limit("reset", identity(request, email))
+        limit_auth_operation("reset", request, email)
         user = User.objects.filter(email=email, is_active=True).first()
         if user:
             raw = make_one_time_token(user, OneTimeToken.Purpose.RESET)
@@ -229,7 +236,7 @@ class ResetView(APIView):
     def post(self, request):
         data = ResetSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        rate_limit("reset", f"reset:{request.META.get('REMOTE_ADDR', 'unknown')}")
+        rate_limit("reset_submit", f"origin:{request.META.get('REMOTE_ADDR', 'unknown')}")
         with transaction.atomic():
             user = consume_one_time_token(data.validated_data["token"], OneTimeToken.Purpose.RESET)
             validate_password(data.validated_data["password"], user)
