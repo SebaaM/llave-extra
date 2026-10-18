@@ -2,6 +2,7 @@
   "name": "llave-extra-frontend",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "pnpm@11.22.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty",
     "test:proxy": "node --test tests/proxy-config.test.mjs",
-    "test": "npm run test:proxy && vitest run && node --experimental-strip-types --test src/prototypes/*.test.mjs"
+    "test": "pnpm run test:proxy && vitest run && node --experimental-strip-types --test src/prototypes/*.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.2.0",

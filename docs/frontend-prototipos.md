@@ -10,15 +10,17 @@ Abrí `/prototipos` en el servidor de desarrollo. Cada opción conserva su ruta 
 
 Para probar: email con formato válido y contraseña de al menos ocho caracteres; son datos de demostración y no se autentican. Usá `DEMO-FARO` en la entrada QR. `DEMO-PAUSADO` representa una referencia deshabilitada y cualquier otro valor da error. En Mi viaje podés simular verificación de email. En una ficha aún no consumida, primero pulsá “Simular lectura del QR del prestador” y luego ingresá el PIN demo `1234`. Ambos pasos son locales e ilustrativos. No ingreses credenciales reales.
 
-La portada no enumera carpetas ni prestadores. El inventario demo está incluido en el bundle estático y el gate solo controla qué se presenta en pantalla; E2/E3 deberán autorizar el acceso real en el servidor. El estado demo se limita a la pestaña; un acceso directo nuevo a una ruta privada muestra el gate. Para reiniciar, usá “Cerrar sesión demo” en Mi viaje.
+La portada no enumera carpetas ni prestadores. El inventario demo está incluido en el bundle estático y el gate local solo controla qué se presenta en pantalla; el prototipo no llama a las API. E2/E3 ya implementan autorización real en el servidor y la experiencia funcional los consumirá en F2. El estado demo se limita a la pestaña; un acceso directo nuevo a una ruta privada muestra el gate. Para reiniciar, usá “Cerrar sesión demo” en Mi viaje.
 
 La meta visual inicial es cinco visitas. La cuenta demo arranca en cero; cada primera visita elegible suma 1.000 créditos simulados, sin duplicar el mismo prestador. La tienda muestra productos ilustrativos y distingue pago ARS de canje de créditos; no hay compra real.
 
-**Decisión pendiente: elegir una opción** antes de conectar la API o consolidar la interfaz final.
+**Dirección elegida el 18-10-2026:** Beneficios para la portada principal y Pasaporte en Mi viaje. La demo comparativa sigue disponible en `/prototipos`; F2 implementará la experiencia conectada después de E6.
 
 ## Comprobaciones realizadas
 
-En `frontend/`, con Node 24.19.0 y npm 11.17.0:
+La tabla siguiente es evidencia histórica de la revisión F1 con Node 24.19.0 y npm 11.17.0; esos comandos no son la instalación vigente. La cobertura completa actual (proxy + 14 pruebas UI + 2 pruebas puras) se ejecuta con `pnpm run test` y se registra junto al resto de verificaciones en `.superpowers/sdd/00-roadmap/task-8-report.md`.
+
+En la verificación histórica F1, en `frontend/`:
 
 | Comando | Resultado |
 | --- | --- |
@@ -29,7 +31,7 @@ En `frontend/`, con Node 24.19.0 y npm 11.17.0:
 | `npm run build` | Vite 7.3.7; 31 módulos transformados, salida 0. |
 | `npm audit --audit-level=moderate` | `found 0 vulnerabilities`, salida 0. |
 
-La auditoría inicial del lockfile E1 reportó diez vulnerabilidades altas: Vite 7.1.12 y dependencias transitivas de `typescript-eslint` 8.46.2. También avisó que ESLint 9.38.0 ya no tenía soporte. Se fijaron React 19.3.1, Vite 7.3.7, plugin React 5.2.0, Tailwind 4.3.3, ESLint 10.13.0, `@eslint/js` 10.0.1, `typescript-eslint` 8.71.2 y plugins compatibles. Las versiones y peer dependencies se consultaron con `npm view` en el registro oficial; [ESLint mantiene su política de soporte](https://eslint.org/version-support/) y [Vite publica las versiones 7.x en npm](https://www.npmjs.com/package/vite). Se actualizó el lockfile sin `--force`.
+La auditoría inicial del lockfile E1 reportó diez vulnerabilidades altas: Vite 7.1.12 y dependencias transitivas de `typescript-eslint` 8.46.2. También avisó que ESLint 9.38.0 ya no tenía soporte. Se fijaron React 19.3.1, Vite 7.3.7, plugin React 5.2.0, Tailwind 4.3.3, ESLint 10.13.0, `@eslint/js` 10.0.1, `typescript-eslint` 8.71.2 y plugins compatibles. Las versiones y peer dependencies se consultaron históricamente con `npm view` en el registro oficial; [ESLint mantiene su política de soporte](https://eslint.org/version-support/) y [Vite publica las versiones 7.x en npm](https://www.npmjs.com/package/vite). El lockfile de pnpm actual mantiene esas versiones.
 
 El logo público vigente se comprobó con `curl --head --location` (HTTP 200, PNG, 55.594 bytes), se inspeccionó y se guardó en `frontend/public/logo-llave-extra.png` para evitar dependencia de red al mostrarlo. La imagen conserva la llave naranja y el wordmark negro. Para texto sobre fondos claros, se midió contraste WCAG: `#F47A0B` sobre `#F7F7F7` da 2,57:1 y queda como acento gráfico; `#D96A05` da 3,26:1 para títulos grandes; `#9C4300` da 6,10:1 para etiquetas pequeñas. En fondo beige se usa también `#9C4300` para texto pequeño.
 
