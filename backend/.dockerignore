@@ -5,3 +5,11 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+.env
+.env.*
+*.sqlite3
+*.db
+.git/
+media/
+private_media/
+staticfiles/

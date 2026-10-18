@@ -46,3 +46,17 @@ La decisión confirmada para F1 es Beneficios como portada principal y Pasaporte
 ## Autorrevisión y límites
 
 Se revisaron locks y manifiestos, comandos CI/Docker, exclusiones de `.venv`/`node_modules`, coherencia documental y `git diff --check`. No se añadieron credenciales, `.env`, códigos privados ni cuentas reales. La validación usó servicios efímeros aislados; no se probó el arranque del Compose de uso diario con el `.env` privado del usuario ni se afirma validar integración externa de correo. Las pruebas de dominio se ejecutaron con PostgreSQL, nunca SQLite.
+
+## Corrección del hallazgo de revisión round1/5
+
+La revisión detectó que `backend/.dockerignore` mantenía fuera `.venv` y cachés, pero no `media/`, `staticfiles/` ni `private_media/`; `backend/Dockerfile` ejecuta `COPY . .`, así que esas carpetas podían enviarse al daemon y quedar en las capas. Se restauraron las dos exclusiones existentes y se añadió `private_media/`. Para no llevar datos locales adyacentes a la imagen también se excluyeron `.env`, `.env.*`, `*.sqlite3`, `*.db` y `.git/`; se conservaron las exclusiones previas.
+
+La primera solicitud de build de diagnóstico sobre el contexto real del backend fue rechazada por auto-review porque el `.dockerignore` anterior permitía enviar medios reales al daemon. No se ejecutó ese comando ni se crearon marcadores en carpetas reales. La verificación se hizo después en un contexto aislado de `%TEMP%`, con una copia byte-a-byte del `.dockerignore` corregido (SHA-256 `1E270D04E4B06112B6D18D30D89DB05A2242D21B9D0E2FE5251549CDB557F210`) y solo archivos sintéticos bajo `media/`, `staticfiles/` y `private_media/`; no se abrió ni imprimió ningún archivo de medios existente.
+
+Resultados de los probes Docker:
+
+- `docker build --file - <contexto-sintético>` con `FROM scratch` y `COPY media/<marcador>`, y el mismo probe para `staticfiles/` y `private_media/` → los tres `COPY` fallaron como se esperaba porque cada marcador quedó excluido del contexto.
+- `docker build --file - <contexto-sintético>` con `FROM python:3.13.16-slim`, `WORKDIR /app`, `COPY . .` → build correcto.
+- `docker run --rm <imagen-de-prueba> python -c <comprobación>` → `image check: no synthetic media markers` para las tres rutas.
+- Se retiró la imagen de prueba por su tag exacto y los tres archivos sintéticos se eliminaron por sus rutas exactas; los directorios de prueba quedaron intactos. No se hizo build del contexto real ni se repitieron las suites backend/frontend, pues este cambio solo afecta exclusiones Docker y el controlador ya confirmó esas suites.
+- `git diff --check` → correcto, sin salida.
