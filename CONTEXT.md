@@ -30,6 +30,6 @@ Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.
 
 ## Estado
 
-E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y referencia QR privada con PR abierto. E3: prestadores, ofertas y carpetas privadas en rama de etapa, pendientes de revisión independiente. E4-E6 pendientes. F1 tiene tres prototipos completos y revisados en un worktree separado; falta integrar su rama y elegir la variante antes de conectar la interfaz funcional. No se fusionan PRs desde este trabajo; las ramas de backend se apilan para revisión incremental.
+E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y acceso privado por QR, con proxy de desarrollo que sanea cabeceras de cliente. E3: prestadores, ofertas y carpetas privadas implementados y revisados en `f28e9cb`. F1: tres prototipos completos integrados en esta rama; la elección de variante y la conexión de API siguen pendientes. La experiencia objetivo es Cliente (`TOURIST`); las áreas de Colaborador, Prestador y Administrador tendrán acceso y permisos propios, todavía sin implementación funcional. E4-E6 pendientes. Las ramas backend se apilan para revisión incremental y no se fusionan PRs desde este trabajo.
 
-Preferencia de herramientas confirmada para el siguiente cambio separado: `uv` en backend y `pnpm` en frontend. E3 aún se verifica con Docker y las dependencias actuales; la migración de herramientas no forma parte de esta etapa.
+Preferencia confirmada para cambio posterior: `uv` en backend y `pnpm` en frontend. npm sigue siendo el tooling de esta transición; la migración de herramientas será una tarea separada después de integrar F1.
