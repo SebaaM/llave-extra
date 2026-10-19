@@ -40,7 +40,7 @@ Preferencia confirmada: uv 0.11.3 para backend (Python 3.13, `pyproject.toml`, `
 
 ## Task 9: F2 - Experiencia principal del Cliente
 
-Elección confirmada por el usuario: Beneficios como dirección principal y Pasaporte en Mi viaje. Crear hero que destaque valor, descuentos/promociones y propósito para turistas; después explicar cómo funciona. Conectar registro/sesión/email, QR privado, beneficios, consumos y progreso con las APIs reales, con JWT en memoria y medios autorizados. No publicar carpetas ni acuerdos no confirmados en la portada. Base modular, accesible y móvil; verificar flujos UI y navegador. Ejecutar después de E6, en PR propio. Detalle en plan frontend.
+Elección confirmada por el usuario: Beneficios como dirección principal y Pasaporte en Mi viaje. Crear hero que destaque valor, descuentos/promociones y propósito para turistas; después explicar cómo funciona. Conectar registro/sesión/email, QR privado, beneficios, consumos y progreso con las APIs reales, con JWT en memoria y medios autorizados. No publicar carpetas ni acuerdos no confirmados en la portada. Base modular, accesible y móvil; verificar flujos UI y navegador. Ejecutar después de E4, en PR propio; F2 depende de E2–E4 y no de la tienda ni de la analítica. Detalle en plan frontend.
 
 ## Task 10: F3 - Tienda y espacios de la red
 
@@ -48,9 +48,9 @@ Completar tienda ARS o créditos y pedidos propios sobre servicios transaccional
 
 ## Orden de integración y Git
 
-E1 -> E2 -> E3 -> E4 -> E5 -> E6. F1 comparte base y contratos; se entrega aparte sin depender de elección para avanzar backend. Un primer commit documental en main; cada etapa posterior tiene rama y PR. Los PRs se apilan contra la rama previa para mantener diffs acotados. Pruebas y revisión antes de publicar cada PR.
+E1 -> E2 -> E3 -> E4 -> F2 -> E5 -> E6 -> F3. F1 comparte base y contratos; se entrega aparte sin depender de elección para avanzar backend. Un primer commit documental en main; cada etapa posterior tiene rama y PR. Los PRs se apilan contra la rama previa para mantener diffs acotados. Pruebas y revisión antes de publicar cada PR.
 
-Antes de E4, integrar la rama separada de F1 y migrar herramientas en un cambio propio a uv 0.11.3 para backend y pnpm 11.22.0 para frontend, según la preferencia confirmada. F2 usa la elección Beneficios + Pasaporte después de E6; F3 viene después de F2. Esto no cambia los cuatro roles persistidos.
+Antes de E4, integrar la rama separada de F1 y migrar herramientas en un cambio propio a uv 0.11.3 para backend y pnpm 11.22.0 para frontend, según la preferencia confirmada. F2 usa la elección Beneficios + Pasaporte inmediatamente después de E4 revisado; E5 y E6 siguen, y F3 viene después de F2 y E6. Esto no cambia los cuatro roles persistidos.
 
 ## Cierre de etapa
 

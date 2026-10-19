@@ -6,7 +6,7 @@ class PrivateAPIHeadersMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-        if request.path.startswith(("/api/v1/auth/", "/api/v1/referrals/", "/api/v1/me/folders/", "/api/v1/collaborator/", "/api/v1/folders/", "/api/v1/provider/", "/api/v1/admin/private-media/")):
+        if request.path.startswith(("/api/v1/auth/", "/api/v1/referrals/", "/api/v1/me/", "/api/v1/consumptions/", "/api/v1/collaborator/", "/api/v1/folders/", "/api/v1/provider/", "/api/v1/admin/private-media/")):
             response["Cache-Control"] = "no-store"
             response["Referrer-Policy"] = "no-referrer"
         return response

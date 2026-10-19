@@ -9,7 +9,7 @@ ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").spl
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers",
+    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -69,6 +69,7 @@ RATE_LIMITS = {
     "reset": (positive_env("RATE_RESET_MAX", 5), positive_env("RATE_RESET_WINDOW", 3600)),
     "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),
     "redeem": (positive_env("RATE_REDEEM_MAX", 20), positive_env("RATE_REDEEM_WINDOW", 300)),
+    "consumption": (positive_env("RATE_CONSUMPTION_MAX", 8), positive_env("RATE_CONSUMPTION_WINDOW", 300)),
 }
 RATE_LIMITS["reset_submit"] = RATE_LIMITS["reset"]
 SIMPLE_JWT = {

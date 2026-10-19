@@ -6,6 +6,8 @@ from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.test import override_settings
 
+from accounts.management.commands.seed_demo import DEMO_ACCOUNTS
+
 User = get_user_model()
 
 
@@ -82,7 +84,7 @@ def test_seed_demo_is_idempotent_and_keeps_existing_password(tmp_path):
     assert destination.read_text(encoding="utf-8") == file_after_first
     assert existing_entry in file_after_first
     assert destination.exists()
-    assert User.objects.count() == 7
+    assert User.objects.count() == len(DEMO_ACCOUNTS)
     assert "turista@llaveextra.test" in file_after_first
     assert User.objects.get(email="prestador.tiger@llaveextra.test").role == User.Role.PROVIDER
     assert User.objects.get(email="colaborador@llaveextra.test").role == User.Role.COLLABORATOR
