@@ -70,11 +70,13 @@
 
 **Interfaces:** consumir Task 2 sin JWT para datos públicos y Task 3 con sesión para consumo. `/beneficios` catálogo público; `/recomendaciones` carpetas privadas QR; detalle público por beneficio. Mantener `/referencia`, `/consumo`, Mi viaje y flujo QR antes de login. Consume form permite modo directo sin carpeta y referido explícito.
 
-- [ ] Escribir pruebas de portada con ofertas API, carga/vacío/error/deshabilitado, catálogo completo paginado/buscable, detalle/condiciones/demo y referencias privadas separadas.
-- [ ] Implementar hero centrado en beneficios activos y CTA claro; mantener fuentes, colores y pasaporte. No hardcodear descuentos ficticios.
-- [ ] Incorporar red configurable general/QR con fondo fijo, slots estables, nodos de prestadores únicos y avance automático con pausa, controles, foco/hover/visibility y movimiento reducido. Usar APIs Task5 y fotografías reales documentadas; añadir mapa de Ushuaia y mensaje de programa activo en la ciudad.
-- [ ] Retirar prototipos y scripts/pruebas exclusivos, conservar marca/estilos compartidos; ruta antigua no muestra simulación. Actualizar documentación histórica como retirada.
-- [ ] Adaptar tipos/UI al colaborador opcional; cliente puede consumir sin QR colaborador. Mantener aislamiento de sesiones, medios privados y respuestas tardías de F2. Las rutas públicas también son navegables con rol ADMIN; la redirección al backoffice se limita al ingreso/área administrativa, sin expulsar al administrador que visita portada o catálogo.
+**Medios de prueba:** incorporar fotografías de ciudad con autoría/licencia documentada y logos/fotografías reales verificadas de comercios. Las imágenes comerciales se guardan como fixtures sin ruta web y se cargan en private storage mediante `seed_demo_media`, solo en DEBUG, registros demo y campos vacíos; no sobrescribir cambios, credenciales ni publicación. Documentar fuentes y créditos en `docs/assets.md` y enlazarlos desde el frontend. Esta ampliación backend acotada pertenece a Task4; no modifica las políticas de dominio.
+
+- [x] Escribir pruebas de portada con ofertas API, carga/vacío/error/deshabilitado, catálogo completo paginado/buscable, detalle/condiciones/demo y referencias privadas separadas.
+- [x] Implementar hero centrado en beneficios activos y CTA claro; mantener fuentes, colores y pasaporte. No hardcodear descuentos ficticios.
+- [x] Incorporar red configurable general/QR con fondo fijo, slots estables, nodos de prestadores únicos y avance automático con pausa, controles, foco/hover/visibility y movimiento reducido. Usar APIs Task5 y fotografías reales documentadas; añadir mapa de Ushuaia y mensaje de programa activo en la ciudad.
+- [x] Retirar prototipos y scripts/pruebas exclusivos, conservar marca/estilos compartidos; ruta antigua no muestra simulación. Actualizar documentación histórica como retirada.
+- [x] Adaptar tipos/UI al colaborador opcional; cliente puede consumir sin QR colaborador. Mantener aislamiento de sesiones, medios privados y respuestas tardías de F2. Las rutas públicas también son navegables con rol ADMIN; la redirección al backoffice se limita al ingreso/área administrativa, sin expulsar al administrador que visita portada o catálogo.
 - [ ] Verificar pnpm tests/lint/types/build, backend suite final, QA navegador real admin+anónimo+cliente+toggle y móvil 320px; documentar evidencia y commit en español.
 - [ ] Revisión final independiente de rama, push GitFlow/PR contra develop y CI remoto; detenerse sin implementar E5/E6/F3.
 
@@ -88,4 +90,4 @@
 - [x] Agregar campos `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds` con defaults y rangos de spec. No modificar flags, QR ni reglas existentes al migrar.
 - [x] Implementar DTO y endpoints con orden estable por nombre/UUID, página limitada por configuración (sin override del cliente), elegir beneficio vigente estable por título/UUID y reusar los serializers de medios apropiados. Catálogo off no afecta red privada autorizada.
 - [x] Verificar PostgreSQL/Redis, Ruff, migraciones y OpenAPI sin warnings; actualizar docs y contrato.
-- [ ] Registrar commit Conventional en español y revisión independiente antes de Task4.
+- [x] Registrar commit Conventional en español y revisión independiente antes de Task4. Implementación Task 5 en `0494139`; informe y revisión en `.superpowers/sdd/07-catalogo-publico-gitflow/` (archivos locales ignorados).

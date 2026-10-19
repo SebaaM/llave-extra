@@ -1,12 +1,30 @@
+from django import forms
 from django.contrib import admin
 
 from accounts.admin import AdminRoleOnlyMixin
 
 from .models import Benefit, CatalogConfig, FolderProvider, Provider, ProviderMembership
 
+NETWORK_LABELS = {
+    "network_title": "Título de la red",
+    "network_layout": "Distribución",
+    "network_theme": "Tema",
+    "network_background": "Fondo",
+    "network_page_size": "Prestadores por página",
+    "network_interval_seconds": "Intervalo en segundos",
+}
+
+
+class CatalogConfigForm(forms.ModelForm):
+    class Meta:
+        model = CatalogConfig
+        fields = "__all__"
+        labels = {"enabled": "Catálogo público habilitado", **NETWORK_LABELS}
+
 
 @admin.register(CatalogConfig)
 class CatalogConfigAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    form = CatalogConfigForm
     list_display = ("singleton", "enabled", "network_title", "network_layout", "network_theme", "network_background")
     fields = ("enabled", "network_title", "network_layout", "network_theme", "network_background", "network_page_size", "network_interval_seconds")
 

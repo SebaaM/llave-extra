@@ -1,6 +1,6 @@
 # Llave Extra
 
-Red de beneficios turísticos de Ushuaia. Los **prestadores** ofrecen beneficios; los **colaboradores** refieren turistas a una carpeta de prestadores mediante un QR único habilitado por el administrador. Las carpetas no son públicas.
+Red de beneficios turísticos de Ushuaia. El catálogo general de beneficios publicados y vigentes es público cuando el administrador lo habilita. Los **prestadores** ofrecen beneficios; los **colaboradores** refieren turistas a una carpeta privada de recomendaciones mediante un QR único habilitado por el administrador.
 
 ## Desarrollo por etapas
 
@@ -23,8 +23,8 @@ Las contraseñas generadas de las seis cuentas demo se guardan en `docs/cuentas-
 - `ADMIN`: administra usuarios, carpetas, colaboradores, QR y reglas.
 - `PROVIDER`: prestador/negocio; es distinto del colaborador.
 - `COLLABORATOR`: refiere turistas a prestadores de su carpeta asignada.
-- `TOURIST`: consulta beneficios tras obtener acceso por QR autorizado.
+- `TOURIST`: consulta el catálogo general y sus recomendaciones privadas tras obtener acceso por QR autorizado.
 
-E2 entrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. E3 agrega prestadores, beneficios y carpetas con filtros de servidor. E4 implementa consumos y créditos. F2 conecta la portada Beneficios y Mi viaje estilo Pasaporte a esas API; los prototipos F1 siguen como demostración hasta que se retiren en la corrección actual. El administrador habilita perfiles y rota QR en `/admin/`; el seed demo crea el perfil del colaborador de ejemplo habilitado. Tienda y analítica siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
+E2 entrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. E3 agrega prestadores, beneficios y carpetas con filtros de servidor. E4 implementa consumos y créditos. El producto usa la portada Beneficios y Mi viaje estilo Pasaporte; `/beneficios` muestra catálogo público, `/recomendaciones` la carpeta privada por QR y `/consumo` permite validación directa o referida. Los prototipos F1 se retiraron. El administrador habilita perfiles, rota QR y controla el catálogo en `/admin/`. Para añadir fotos aprobadas a registros demo ya existentes sin alterar otros datos, ejecutar `docker compose exec backend uv run --locked python manage.py seed_demo_media` con `DEBUG` local; ver [fuentes y licencias](docs/assets.md). Tienda y analítica siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
 
 La herramienta de backend es uv 0.11.3 (Python 3.13.16) y la del frontend pnpm 11.22.0 (Node 24.19.0). Docker Compose sigue siendo el arranque predeterminado y no necesita uv, Python ni Node instalados en el host. La opción de uv para IDE y ejecución nativa, con sus requisitos de PostgreSQL/Redis/SMTP, está en [DEV.md](DEV.md).

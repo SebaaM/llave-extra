@@ -1,6 +1,6 @@
 # Pendientes
 
-- [ ] Corrección 19/10/2026: GitFlow, ingreso admin, catálogo público configurable y portada con beneficios activos; retirar prototipos y permitir consumos sin colaborador. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md).
+- [ ] Corrección 19/10/2026: GitFlow, ingreso admin, catálogo público configurable y portada con beneficios activos; prototipos retirados y consumos directos implementados. Resta QA/revisión integrados y PR. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md).
 - [x] Corrección Task 1: enrutar backoffice Django por Vite y documentar GitFlow; QA de login real realizado en desarrollo.
 - [x] Corrección Task 2: catálogo general público configurable, DTO y medios seguros; ver `docs/api.md` e informe de tarea.
 - [x] Corrección Task 3: acreditar consumos directos sin colaborador, validar estrictamente la referencia aportada y exigir beneficio publicado/vigente; ver `docs/plans/04-consumos-creditos.md`.
@@ -8,7 +8,7 @@
 - [x] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL (ver [entrega](docs/plans/01-base-proyecto.md)).
 - [x] E2: autenticación y referencias privadas mediante QR de colaborador (implementación local; ver [detalle](docs/plans/02-autenticacion-api.md)).
 - [x] E3: prestadores, beneficios, carpetas y permisos para el Cliente (`TOURIST` compatible); Colaborador, Prestador y Administrador con responsabilidades separadas (implementación revisada en `f28e9cb`).
-- [x] F1: tres prototipos navegables de demostración integrados. Elección confirmada: Beneficios como dirección principal y Pasaporte en Mi viaje. La API sigue pendiente para la experiencia funcional (ver [comparador](docs/frontend-prototipos.md) y [plan frontend](docs/plans/frontend.md)).
+- [x] F1 histórico: tres prototipos se usaron para elegir Beneficios como portada y Pasaporte en Mi viaje. Las rutas y el código demo se retiraron del producto actual; ver [archivo histórico](docs/frontend-prototipos.md).
 - [x] E4: consumos únicos, créditos, anulaciones y ajustes pendientes (ver [detalle](docs/plans/04-consumos-creditos.md)).
 - [ ] E5: tienda, Mercado Pago, stock y retiro.
 - [ ] E6: analítica, preparación operativa y seguridad.

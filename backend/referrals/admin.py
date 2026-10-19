@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin, messages
 
 from accounts.admin import AdminRoleOnlyMixin
@@ -5,8 +6,23 @@ from accounts.admin import AdminRoleOnlyMixin
 from .models import CollaboratorProfile, FolderAccess
 
 
+class CollaboratorProfileForm(forms.ModelForm):
+    class Meta:
+        model = CollaboratorProfile
+        fields = "__all__"
+        labels = {
+            "network_title": "Título de la red",
+            "network_layout": "Distribución",
+            "network_theme": "Tema",
+            "network_background": "Fondo",
+            "network_page_size": "Prestadores por página",
+            "network_interval_seconds": "Intervalo en segundos",
+        }
+
+
 @admin.register(CollaboratorProfile)
 class CollaboratorProfileAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    form = CollaboratorProfileForm
     list_display = ("user", "enabled", "qr_version", "network_title", "network_layout", "network_theme")
     search_fields = ("user__email",)
     readonly_fields = ("id", "enabled", "qr_version")

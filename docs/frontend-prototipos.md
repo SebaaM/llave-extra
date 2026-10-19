@@ -1,6 +1,8 @@
 # Comparador de prototipos F1
 
-Abrí `/prototipos` en el servidor de desarrollo. Cada opción conserva su ruta al refrescar.
+> Archivo histórico de la evaluación F1. Las rutas `/prototipos` y el código de simulación se retiraron en la corrección del catálogo público; esta guía ya no describe una pantalla disponible. El producto actual usa `/`, `/beneficios`, `/recomendaciones` y `/mi-viaje`.
+
+Durante F1 se abría `/prototipos` en el servidor de desarrollo. Cada opción conservaba su ruta al refrescar.
 
 | Dirección | Qué mirar | Recorrido sugerido |
 | --- | --- | --- |
@@ -14,7 +16,7 @@ La portada no enumera carpetas ni prestadores. El inventario demo está incluido
 
 La meta visual inicial es cinco visitas. La cuenta demo arranca en cero; cada primera visita elegible suma 1.000 créditos simulados, sin duplicar el mismo prestador. La tienda muestra productos ilustrativos y distingue pago ARS de canje de créditos; no hay compra real.
 
-**Dirección elegida el 18-10-2026:** Beneficios para la portada principal y Pasaporte en Mi viaje. La demo comparativa sigue disponible en `/prototipos`; F2 implementará la experiencia conectada después de E6.
+**Dirección elegida el 18-10-2026:** Beneficios para la portada principal y Pasaporte en Mi viaje. La demo comparativa fue retirada al conectar el producto al catálogo público y a las recomendaciones privadas.
 
 ## Comprobaciones realizadas
 
