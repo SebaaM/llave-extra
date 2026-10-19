@@ -74,7 +74,7 @@ class ProviderCreditRuleAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 
 
 class CredentialForm(forms.ModelForm):
-    pin = forms.RegexField(r"^[0-9]{6,12}$", required=False,
+    pin = forms.RegexField(r"^[0-9]{6,12}$", label="PIN del prestador", required=False,
                            widget=forms.PasswordInput(render_value=False),
                            help_text="6 a 12 dígitos; nunca se muestra")
 
@@ -103,10 +103,11 @@ class CredentialAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+    @admin.display(description="PIN configurado", boolean=True)
     def configured(self, obj):
         return bool(obj.pin_hash)
-    configured.boolean = True
 
+    @admin.display(description="Enlace QR de consumo")
     def qr_url(self, obj):
         if not obj or not obj.pk or not obj.pin_hash:
             return "Configurá un PIN primero"
@@ -126,8 +127,8 @@ class CredentialAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 
 
 class ReasonActionForm(ActionForm):
-    reason = forms.CharField(required=False, max_length=500, label="Motivo obligatorio para acción financiera")
-    resolution = forms.ChoiceField(required=False, choices=[("", "--"), *AdjustmentCase.Resolution.choices])
+    reason = forms.CharField(required=False, max_length=500, label="Motivo (obligatorio para acciones financieras)")
+    resolution = forms.ChoiceField(required=False, label="Resolución", choices=[("", "—"), *AdjustmentCase.Resolution.choices])
 
 
 @admin.register(Consumption)

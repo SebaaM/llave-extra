@@ -19,18 +19,20 @@ class CollaboratorProfile(models.Model):
         HARBOR = "HARBOR", "Puerto"
         BEAGLE = "BEAGLE", "Canal Beagle"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="collaborator_profile")
-    enabled = models.BooleanField(default=False)
-    qr_version = models.PositiveIntegerField(default=1)
-    network_title = models.CharField(max_length=100, default="Recomendaciones")
-    network_layout = models.CharField(max_length=8, choices=NetworkLayout.choices, default=NetworkLayout.RADIAL)
-    network_theme = models.CharField(max_length=5, choices=NetworkTheme.choices, default=NetworkTheme.SAND)
-    network_background = models.CharField(max_length=6, choices=NetworkBackground.choices, default=NetworkBackground.HARBOR)
-    network_page_size = models.PositiveSmallIntegerField(default=12)
-    network_interval_seconds = models.PositiveSmallIntegerField(default=10)
+    id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, verbose_name="Colaborador", on_delete=models.PROTECT, related_name="collaborator_profile")
+    enabled = models.BooleanField("Habilitado", default=False)
+    qr_version = models.PositiveIntegerField("Versión del QR", default=1)
+    network_title = models.CharField("Título de la red", max_length=100, default="Recomendaciones")
+    network_layout = models.CharField("Distribución", max_length=8, choices=NetworkLayout.choices, default=NetworkLayout.RADIAL)
+    network_theme = models.CharField("Tema", max_length=5, choices=NetworkTheme.choices, default=NetworkTheme.SAND)
+    network_background = models.CharField("Fondo", max_length=6, choices=NetworkBackground.choices, default=NetworkBackground.HARBOR)
+    network_page_size = models.PositiveSmallIntegerField("Prestadores por página", default=12)
+    network_interval_seconds = models.PositiveSmallIntegerField("Intervalo en segundos", default=10)
 
     class Meta:
+        verbose_name = "Colaborador"
+        verbose_name_plural = "Colaboradores"
         constraints = [
             models.CheckConstraint(condition=Q(qr_version__gte=1), name="qr_version_positive"),
             models.CheckConstraint(condition=Q(network_page_size__gte=10, network_page_size__lte=15), name="profile_network_page_size_range"),
@@ -39,6 +41,9 @@ class CollaboratorProfile(models.Model):
             models.CheckConstraint(condition=Q(network_theme__in=("SAND", "OCEAN")), name="profile_network_theme_choice"),
             models.CheckConstraint(condition=Q(network_background__in=("HARBOR", "BEAGLE")), name="profile_network_background_choice"),
         ]
+
+    def __str__(self):
+        return str(self.user)
 
     def clean(self):
         if self.pk and not self._state.adding:
@@ -72,10 +77,15 @@ class CollaboratorProfile(models.Model):
 
 
 class FolderAccess(models.Model):
-    tourist = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="folder_accesses")
-    collaborator = models.ForeignKey(CollaboratorProfile, on_delete=models.PROTECT, related_name="grants")
-    qr_version = models.PositiveIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    tourist = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Cliente", on_delete=models.PROTECT, related_name="folder_accesses")
+    collaborator = models.ForeignKey(CollaboratorProfile, verbose_name="Colaborador", on_delete=models.PROTECT, related_name="grants")
+    qr_version = models.PositiveIntegerField("Versión del QR")
+    created_at = models.DateTimeField("Fecha de acceso", auto_now_add=True)
 
     class Meta:
+        verbose_name = "Acceso a recomendaciones"
+        verbose_name_plural = "Accesos a recomendaciones"
         constraints = [models.UniqueConstraint(fields=["tourist", "collaborator", "qr_version"], name="unique_folder_access_version")]
+
+    def __str__(self):
+        return f"{self.tourist} — {self.collaborator}"

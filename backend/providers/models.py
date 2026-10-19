@@ -17,21 +17,25 @@ class Publication(models.TextChoices):
 
 
 class Provider(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    legacy_public_id = models.CharField(max_length=32, unique=True, null=True, blank=True)
-    slug = models.SlugField(max_length=160, unique=True)
-    name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100, blank=True)
-    description = models.TextField(blank=True)
-    address = models.CharField(max_length=250, blank=True)
-    hours = models.CharField(max_length=250, blank=True)
-    contact = models.CharField(max_length=150, blank=True)
-    map_url = models.URLField(blank=True)
-    website = models.URLField(blank=True)
-    image = models.ImageField(upload_to=private_image_path, storage=private_storage, validators=[validate_private_image], blank=True)
-    status = models.CharField(max_length=12, choices=Publication.choices, default=Publication.DRAFT)
-    demo = models.BooleanField(default=False)
-    provenance = models.URLField(blank=True)
+    id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
+    legacy_public_id = models.CharField("Identificador público anterior", max_length=32, unique=True, null=True, blank=True)
+    slug = models.SlugField("Identificador URL", max_length=160, unique=True)
+    name = models.CharField("Nombre", max_length=200)
+    category = models.CharField("Categoría", max_length=100, blank=True)
+    description = models.TextField("Descripción", blank=True)
+    address = models.CharField("Dirección", max_length=250, blank=True)
+    hours = models.CharField("Horario", max_length=250, blank=True)
+    contact = models.CharField("Contacto", max_length=150, blank=True)
+    map_url = models.URLField("Enlace al mapa", blank=True)
+    website = models.URLField("Sitio web", blank=True)
+    image = models.ImageField("Imagen", upload_to=private_image_path, storage=private_storage, validators=[validate_private_image], blank=True)
+    status = models.CharField("Estado", max_length=12, choices=Publication.choices, default=Publication.DRAFT)
+    demo = models.BooleanField("Datos de prueba", default=False)
+    provenance = models.URLField("Fuente", blank=True)
+
+    class Meta:
+        verbose_name = "Prestador"
+        verbose_name_plural = "Prestadores"
 
     def __str__(self):
         return self.name
@@ -54,11 +58,16 @@ class Provider(models.Model):
 
 
 class ProviderMembership(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="provider_memberships")
-    provider = models.ForeignKey(Provider, on_delete=models.PROTECT, related_name="memberships")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Usuario de prestador", on_delete=models.PROTECT, related_name="provider_memberships")
+    provider = models.ForeignKey(Provider, verbose_name="Prestador", on_delete=models.PROTECT, related_name="memberships")
 
     class Meta:
+        verbose_name = "Usuario de prestador"
+        verbose_name_plural = "Usuarios de prestadores"
         constraints = [models.UniqueConstraint(fields=["user", "provider"], name="unique_provider_membership")]
+
+    def __str__(self):
+        return f"{self.user} — {self.provider}"
 
     def clean(self):
         if self.user.role != self.user.Role.PROVIDER:
@@ -66,11 +75,16 @@ class ProviderMembership(models.Model):
 
 
 class FolderProvider(models.Model):
-    collaborator = models.ForeignKey(CollaboratorProfile, on_delete=models.PROTECT, related_name="folder_providers")
-    provider = models.ForeignKey(Provider, on_delete=models.PROTECT, related_name="folder_assignments")
+    collaborator = models.ForeignKey(CollaboratorProfile, verbose_name="Colaborador", on_delete=models.PROTECT, related_name="folder_providers")
+    provider = models.ForeignKey(Provider, verbose_name="Prestador recomendado", on_delete=models.PROTECT, related_name="folder_assignments")
 
     class Meta:
+        verbose_name = "Prestador recomendado"
+        verbose_name_plural = "Prestadores recomendados"
         constraints = [models.UniqueConstraint(fields=["collaborator", "provider"], name="unique_folder_provider")]
+
+    def __str__(self):
+        return f"{self.provider} — carpeta de {self.collaborator}"
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -102,23 +116,28 @@ class FolderProvider(models.Model):
 
 
 class Benefit(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    provider = models.ForeignKey(Provider, on_delete=models.PROTECT, related_name="benefits")
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    conditions = models.TextField(blank=True)
-    valid_from = models.DateField(null=True, blank=True)
-    valid_until = models.DateField(null=True, blank=True)
-    image = models.ImageField(upload_to=private_image_path, storage=private_storage, validators=[validate_private_image], blank=True)
-    status = models.CharField(max_length=12, choices=Publication.choices, default=Publication.DRAFT)
-    demo = models.BooleanField(default=False)
-    provenance = models.URLField(blank=True)
+    id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
+    provider = models.ForeignKey(Provider, verbose_name="Prestador", on_delete=models.PROTECT, related_name="benefits")
+    title = models.CharField("Título", max_length=200)
+    description = models.TextField("Descripción", blank=True)
+    conditions = models.TextField("Condiciones", blank=True)
+    valid_from = models.DateField("Vigente desde", null=True, blank=True)
+    valid_until = models.DateField("Vigente hasta", null=True, blank=True)
+    image = models.ImageField("Imagen", upload_to=private_image_path, storage=private_storage, validators=[validate_private_image], blank=True)
+    status = models.CharField("Estado", max_length=12, choices=Publication.choices, default=Publication.DRAFT)
+    demo = models.BooleanField("Datos de prueba", default=False)
+    provenance = models.URLField("Fuente", blank=True)
 
     class Meta:
+        verbose_name = "Beneficio"
+        verbose_name_plural = "Beneficios"
         constraints = [
             models.CheckConstraint(condition=Q(valid_from__isnull=True) | Q(valid_until__isnull=True) | Q(valid_from__lte=models.F("valid_until")), name="benefit_valid_window"),
             models.CheckConstraint(condition=~Q(status=Publication.PUBLISHED) | (~Q(title="") & ~Q(conditions="")), name="published_benefit_complete"),
         ]
+
+    def __str__(self):
+        return f"{self.title} — {self.provider}"
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -161,14 +180,14 @@ class CatalogConfig(models.Model):
         HARBOR = "HARBOR", "Puerto"
         BEAGLE = "BEAGLE", "Canal Beagle"
 
-    singleton = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
-    enabled = models.BooleanField(default=True)
-    network_title = models.CharField(max_length=100, default="Red Llave Extra")
-    network_layout = models.CharField(max_length=8, choices=NetworkLayout.choices, default=NetworkLayout.RADIAL)
-    network_theme = models.CharField(max_length=5, choices=NetworkTheme.choices, default=NetworkTheme.SAND)
-    network_background = models.CharField(max_length=6, choices=NetworkBackground.choices, default=NetworkBackground.HARBOR)
-    network_page_size = models.PositiveSmallIntegerField(default=12)
-    network_interval_seconds = models.PositiveSmallIntegerField(default=10)
+    singleton = models.PositiveSmallIntegerField("Identificador de configuración", primary_key=True, default=1, editable=False)
+    enabled = models.BooleanField("Catálogo público habilitado", default=True)
+    network_title = models.CharField("Título de la red", max_length=100, default="Red Llave Extra")
+    network_layout = models.CharField("Distribución", max_length=8, choices=NetworkLayout.choices, default=NetworkLayout.RADIAL)
+    network_theme = models.CharField("Tema", max_length=5, choices=NetworkTheme.choices, default=NetworkTheme.SAND)
+    network_background = models.CharField("Fondo", max_length=6, choices=NetworkBackground.choices, default=NetworkBackground.HARBOR)
+    network_page_size = models.PositiveSmallIntegerField("Prestadores por página", default=12)
+    network_interval_seconds = models.PositiveSmallIntegerField("Intervalo en segundos", default=10)
 
     class Meta:
         verbose_name = "Configuración del catálogo público"

@@ -36,18 +36,20 @@ class User(AbstractUser):
         ADMIN = "ADMIN", "Administrador"
         PROVIDER = "PROVIDER", "Prestador"
         COLLABORATOR = "COLLABORATOR", "Colaborador"
-        TOURIST = "TOURIST", "Turista"
+        TOURIST = "TOURIST", "Cliente"
 
     username = None
-    email = models.EmailField(unique=True)
-    role = models.CharField(max_length=16, choices=Role.choices, default=Role.TOURIST)
-    email_verified = models.BooleanField(default=False)
+    email = models.EmailField("Correo electrónico", unique=True)
+    role = models.CharField("Rol", max_length=16, choices=Role.choices, default=Role.TOURIST)
+    email_verified = models.BooleanField("Correo electrónico verificado", default=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
     objects = UserManager()
 
     class Meta:
+        verbose_name = "Usuario"
+        verbose_name_plural = "Usuarios"
         constraints = [
             models.UniqueConstraint(Lower("email"), name="accounts_user_email_ci_uniq"),
             models.CheckConstraint(
