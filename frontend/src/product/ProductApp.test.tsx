@@ -141,6 +141,22 @@ describe('recorridos F2 del Cliente', () => {
     expect(window.location.pathname).toBe('/ingresar')
   })
 
+  it('explica el requisito de Web Locks al enviar login sin hacer solicitudes', async () => {
+    Reflect.deleteProperty(navigator, 'locks')
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    const ProductApp = await prepareApp('/ingresar')
+    render(<ProductApp />)
+    await screen.findByRole('heading', { name: 'Qué bueno verte' })
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'viajera@example.test' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/navegador actualizado en una conexión segura/)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('oculta la carpeta si el servidor ya revocó el acceso y no consulta prestadores', async () => {
     const calls: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {

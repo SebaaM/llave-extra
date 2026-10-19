@@ -196,14 +196,18 @@ async function apiResponse(url: URL) {
 export async function authenticate(email: string, password: string) {
   invalidatePrivateState()
   const version = sessionVersion
-  return serializeAuthMutation(async () => {
+  await serializeAuthMutation(async () => {
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     const body = await api<{ access: string }>('/api/v1/auth/login/', { method: 'POST', body: { email, password }, auth: false })
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     sessionStorage.removeItem(logoutPendingKey)
     accessToken = body.access
-    return api<User>('/api/v1/auth/me/')
   })
+  // The shared-cookie lock protects the login response and its Set-Cookie.
+  // Keep /me outside it: a 401 may need refreshAccess(), which must acquire
+  // the same lock to rotate the HttpOnly cookie.
+  if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+  return api<User>('/api/v1/auth/me/')
 }
 export function verifyEmailToken(token: string) {
   const existing = verificationRequests.get(token)

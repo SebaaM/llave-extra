@@ -170,4 +170,23 @@ describe('cliente de API con sesión de cliente', () => {
     await expect(signOut()).rejects.toThrow(/conexión segura/)
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it('libera el Web Lock de login antes de /me para que un 401 pueda refrescar sin deadlock', async () => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      calls.push(url)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-demo' })
+      if (url.endsWith('/auth/login/')) return json({ access: 'access-login' })
+      if (url.endsWith('/auth/me/')) return json({ detail: 'Access vencido' }, 401)
+      if (url.endsWith('/auth/refresh/')) return json({ detail: 'Refresh vencido' }, 401)
+      return json({}, 404)
+    }))
+    const { authenticate } = await import('./api')
+
+    await expect(authenticate('viajera@example.test', 'password')).rejects.toMatchObject({ status: 401 })
+    expect(calls.map(url => url.slice(url.lastIndexOf('/auth/')))).toEqual([
+      '/auth/csrf/', '/auth/login/', '/auth/me/', '/auth/refresh/',
+    ])
+  }, 5000)
 })

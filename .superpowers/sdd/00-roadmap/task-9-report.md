@@ -55,3 +55,17 @@ La revisión visual desktop confirmó hero correcto sin desborde a 1440 (ancho d
 - `pnpm build` — OK; Vite compiló 42 módulos. En esta sesión tanto Vitest como Vite requirieron ejecución elevada porque esbuild bloqueaba `vite.config.ts` con `Acceso denegado` desde el sandbox de Windows; los comandos completos pasaron elevados.
 - Sin paquetes nuevos ni cambios en `pnpm-lock.yaml`. No se repitió `pnpm audit`; el lockfile no cambió y el error de red local ya documentado sigue pendiente de CI.
 - Re-QA navegador/API real del controlador tras los cambios: cuenta 1 mostró saldo 1.000 y progreso 1/5; desde home se navegó a Tengo QR, al ingreso y se autenticó la cuenta 2 sin logout previo. Durante el envío solo se mostró el formulario/loading; después, Mi viaje mostró 0/0 y Beneficios indicó que no había carpeta, sin saldo ni ficha de cuenta 1. Salir volvió inmediatamente a portada. No se simularon demoras de red/cookie, Blob tardío ni 403 en el navegador; esos órdenes se cubren con los tests de frontera simulados anteriores. Home quedó como preview entregable.
+
+## Correcciones de la revisión F2 — round 2
+
+- **Login y refresh sin deadlock:** `authenticate` mantiene la serialización local y el Web Lock de origen solo durante el `POST /auth/login/`, hasta procesar su respuesta y `Set-Cookie`; valida la versión de sesión y asigna el JWT. Luego libera el lock antes de pedir `/auth/me/`. Si `/me` recibe 401, el refresh puede adquirir la misma coordinación en vez de quedar esperando a que termine el login que a su vez espera al refresh. La comprobación posterior de `sessionVersion` sigue impidiendo completar el login si otra transición local sustituyó la sesión.
+- **Falta de Web Locks visible en el formulario:** el catch del formulario de autenticación conserva `AuthCoordinationError` y presenta el requisito de navegador actualizado/contexto seguro, en lugar del mensaje genérico de conectividad. La función sigue fallando cerrada sin enviar una mutación de autenticación.
+
+### Verificación round 2
+
+- `pnpm exec vitest run src/product/api.test.tsx src/product/ProductApp.test.tsx` — OK: 2 archivos, 16/16 tests. El caso focal de API envía login 200, recibe `/me` 401, ejecuta refresh 401 y termina con el error 401 en vez de colgarse. El recorrido de formulario sin `navigator.locks` muestra el requisito de coordinación y confirma cero llamadas a `fetch`. Estas pruebas son simuladas; no representan una prueba de navegador del orden real de `Set-Cookie`.
+- Ciclo red/green focal: con el comportamiento anterior, `pnpm exec vitest run src/product/api.test.tsx src/product/ProductApp.test.tsx -t "libera el Web Lock|explica el requisito" --reporter=dot` falló como esperado: API agotó 5.000 ms y el formulario mostró el aviso falso de conectividad; con ambos arreglos, la suite focal completa volvió a pasar 16/16.
+- `pnpm run lint` — OK.
+- `pnpm run typecheck` — OK (`tsc -b --pretty`).
+- `pnpm run build` — OK; Vite compiló 42 módulos. Vitest/build necesitaron ejecución elevada en Windows por `esbuild` (`Acceso denegado` al leer `vite.config.ts`) dentro del sandbox; los comandos elevados concluyeron correctamente.
+- No se cambió backend, contrato API, dependencias ni `pnpm-lock.yaml`; no se repitió la auditoría local de red ya documentada. El QA navegador/API real anterior del controlador sigue documentado en `f2-browser-report.md`; no se repitió durante esta ronda, que cambió solo el orden frontend de login y el mensaje de coordinación.
