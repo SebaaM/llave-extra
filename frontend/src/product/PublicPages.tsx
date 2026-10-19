@@ -17,12 +17,15 @@ export function Landing() {
   </main>
 }
 
-export function Auth({ mode, referral, onLogin, onRegistered }: { mode: 'login' | 'register' | 'forgot' | 'reset'; referral?: string | null; onLogin: (user: User) => void; onRegistered: (email: string) => void }) {
+export function Auth({ mode, referral, onLogin, onLoginStart, onRegistered }: { mode: 'login' | 'register' | 'forgot' | 'reset'; referral?: string | null; onLogin: (user: User) => void; onLoginStart?: () => void; onRegistered: (email: string) => void }) {
   const [email, setEmail] = useState(''), [password, setPassword] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false), [notice, setNotice] = useState('')
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault(); setError(''); setNotice(''); setBusy(true)
     try {
-      if (mode === 'login') onLogin(await authenticate(email, password))
+      if (mode === 'login') {
+        onLoginStart?.()
+        onLogin(await authenticate(email, password))
+      }
       else if (mode === 'register') { await register(email, password, referral ?? undefined); setReferralToken(null); onRegistered(email) }
       else if (mode === 'forgot') { await api('/api/v1/auth/forgot-password/', { method: 'POST', auth: false, body: { email } }); setNotice('Si corresponde, recibirás un email con los pasos para continuar.') }
       else if (resetToken) { await api('/api/v1/auth/reset-password/', { method: 'POST', auth: false, body: { token: resetToken, password } }); setResetToken(null); setNotice('La contraseña se actualizó. Ya podés ingresar.') }

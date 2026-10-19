@@ -10,9 +10,17 @@ export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly payload?: unknown) { super(message); this.name = 'ApiError' }
 }
 
+export class AuthCoordinationError extends Error {
+  constructor() {
+    super('Para proteger tu sesión, usá un navegador actualizado en una conexión segura (HTTPS).')
+    this.name = 'AuthCoordinationError'
+  }
+}
+
 let accessToken: string | null = null
 let csrfToken: string | null = null
-let refreshing: Promise<string | null> | null = null
+let refreshing: { version: number; promise: Promise<string | null> } | null = null
+let authQueue: Promise<void> = Promise.resolve()
 let sessionVersion = 0
 const privateControllers = new Set<AbortController>()
 const logoutPendingKey = 'llave-extra.logout-pending'
@@ -25,6 +33,7 @@ export function invalidatePrivateState() {
   for (const controller of privateControllers) controller.abort()
   privateControllers.clear()
   accessToken = null
+  refreshing = null
 }
 export function setAccessToken(value: string | null) { accessToken = value }
 
@@ -50,21 +59,54 @@ export async function ensureCsrf() {
 }
 async function csrfHeaders() { return { 'X-CSRFToken': await ensureCsrf() } }
 
+function serializeAuthMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = authQueue.then(async () => {
+    // The refresh cookie is shared by every tab on this origin. Web Locks keep
+    // a late Set-Cookie from an older tab from winning over a newer login.
+    const locks = navigator.locks
+    if (!locks) throw new AuthCoordinationError()
+    return await locks.request('llave-extra-auth-cookie', { mode: 'exclusive' }, operation)
+  })
+  authQueue = result.then(() => undefined, () => undefined)
+  return result
+}
+
+async function refreshInCurrentSession(version: number): Promise<string | null> {
+  return serializeAuthMutation(async () => {
+    if (version !== sessionVersion) return null
+    if (accessToken) return accessToken
+    try {
+      const response = await fetch(endpoint('/api/v1/auth/refresh/'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: await csrfHeaders(),
+      })
+      const body = await jsonOrError(response)
+      if (version !== sessionVersion) return null
+      accessToken = body.access
+      return accessToken
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        if (version === sessionVersion) accessToken = null
+        return null
+      }
+      throw error
+    }
+  })
+}
+
 async function refreshAccess(): Promise<string | null> {
-  if (!refreshing) {
-    refreshing = (async () => {
-      try {
-        const response = await fetch(endpoint('/api/v1/auth/refresh/'), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: await csrfHeaders() })
-        const body = await jsonOrError(response)
-        accessToken = body.access
-        return accessToken
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) { accessToken = null; return null }
-        throw error
-      } finally { refreshing = null }
-    })()
-  }
-  return await refreshing
+  const version = sessionVersion
+  if (refreshing?.version === version) return refreshing.promise
+  const promise = refreshInCurrentSession(version)
+  const flight = { version, promise }
+  refreshing = flight
+  void promise.then(
+    () => { if (refreshing === flight) refreshing = null },
+    () => { if (refreshing === flight) refreshing = null },
+  )
+  return promise
 }
 
 type RequestOptions = { method?: string; body?: unknown; auth?: boolean; retryAuth?: boolean; idempotencyKey?: string; signal?: AbortSignal }
@@ -90,6 +132,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     const response = await fetch(url, { method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal })
     if (isPrivate && version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     if (response.status === 401 && isPrivate && options.retryAuth !== false && retry) {
+      if (accessToken && headers.get('Authorization') === `Bearer ${accessToken}`) accessToken = null
       const token = await refreshAccess()
       if (!token) throw new ApiError(401, 'Tu sesión venció. Volvé a ingresar.')
       return send(false)
@@ -114,22 +157,34 @@ export async function signOut() {
   sessionStorage.setItem(logoutPendingKey, '1')
   invalidatePrivateState()
   try {
-    const response = await fetch(endpoint('/api/v1/auth/logout/'), { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { ...(oldToken ? { Authorization: `Bearer ${oldToken}` } : {}), 'X-CSRFToken': await ensureCsrf() } })
-    if (!response.ok) await jsonOrError(response)
+    await serializeAuthMutation(async () => {
+      const response = await fetch(endpoint('/api/v1/auth/logout/'), {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { ...(oldToken ? { Authorization: `Bearer ${oldToken}` } : {}), 'X-CSRFToken': await ensureCsrf() },
+      })
+      if (!response.ok) await jsonOrError(response)
+    })
     sessionStorage.removeItem(logoutPendingKey)
   } finally { csrfToken = null }
 }
 export async function privateImage(path: string | null) {
   if (!path) return null
+  const version = sessionVersion
   const url = endpoint(path)
   const response = await apiResponse(url)
-  return URL.createObjectURL(await response.blob())
+  const blob = await response.blob()
+  if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+  return URL.createObjectURL(blob)
 }
 async function apiResponse(url: URL) {
   const version = sessionVersion
   if (!accessToken) await refreshAccess()
   let response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} })
   if (response.status === 401) {
+    if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+    accessToken = null
     const token = await refreshAccess()
     if (token) response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Authorization: `Bearer ${token}` } })
   }
@@ -139,11 +194,16 @@ async function apiResponse(url: URL) {
 }
 
 export async function authenticate(email: string, password: string) {
-  const body = await api<{ access: string }>('/api/v1/auth/login/', { method: 'POST', body: { email, password }, auth: false })
-  sessionStorage.removeItem(logoutPendingKey)
   invalidatePrivateState()
-  accessToken = body.access
-  return api<User>('/api/v1/auth/me/')
+  const version = sessionVersion
+  return serializeAuthMutation(async () => {
+    if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+    const body = await api<{ access: string }>('/api/v1/auth/login/', { method: 'POST', body: { email, password }, auth: false })
+    if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+    sessionStorage.removeItem(logoutPendingKey)
+    accessToken = body.access
+    return api<User>('/api/v1/auth/me/')
+  })
 }
 export function verifyEmailToken(token: string) {
   const existing = verificationRequests.get(token)

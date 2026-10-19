@@ -23,3 +23,9 @@ Entorno real: Compose principal, frontend http://localhost:5173, API Django/Post
 QA real de F2 completado para este alcance. Los estados de error/idempotencia/refresh tardío y logout remoto fallido se cubren en pruebas de frontera UI/API, no se afirma haber simulado fallos de red con el servidor real durante esta sesión.
 
 Mercado Pago/tienda/paneles operativos no se probaron aquí: corresponden a E5/F3. No se usaron cuentas reales ni servicios de correo externos.
+
+## Re-QA focal de correcciones de revisión (round1)
+
+Con el código funcional estabilizado por el implementador, se recargó el preview. Cuenta1 inició sesión y Mi viaje mostró sus 1.000 créditos y una visita válida de meta5. Desde enlaces reales home→Tengo un QR→Ya tengo cuenta se inició sesión de cuenta2 sin hacer logout de cuenta1. Durante el envío se observó formulario/loading; al terminar, Mi viaje mostró0 créditos/0 visitas y Beneficios estado sin carpeta. No se observaron ficha ni saldo de cuenta1. Salir volvió inmediatamente a portada sin información privada y se dejó como entregable visible.
+
+Esta prueba confirma integración normal de cambio de cuenta con Web Locks en el navegador actual. No fuerza orden de respuestas, ausencia de LockManager, Blob diferido ni revocación403 en vivo; las pruebas controladas del implementador cubren esos casos y la revisión independiente debe comprobarlas. No se atribuye la prueba mock a tráfico real. Sin cambio de credenciales ni nuevo consumo en esta re-QA.
