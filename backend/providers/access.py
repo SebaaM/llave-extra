@@ -43,10 +43,18 @@ def visible_benefits(provider: Provider):
 
 @contextmanager
 def locked_provider_eligibility(user: User, profile_id, provider_id):
-    """E4: user -> collaborator profile -> provider, under one transaction."""
+    """E4: lock a referred folder when supplied, then provider and current benefit."""
+    if profile_id is None:
+        provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
+        if provider is None or provider.status != Publication.PUBLISHED or not visible_benefits(provider).select_for_update().exists():
+            raise PermissionDenied("Prestador sin beneficio vigente")
+        yield None, provider
+        return
     with locked_folder_access(user, profile_id) as profile:
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
         if (provider is None or provider.status != Publication.PUBLISHED or
                 not FolderProvider.objects.filter(collaborator=profile, provider=provider).exists()):
             raise PermissionDenied("Prestador no habilitado para la carpeta")
+        if not visible_benefits(provider).select_for_update().exists():
+            raise PermissionDenied("Prestador sin beneficio vigente")
         yield profile, provider

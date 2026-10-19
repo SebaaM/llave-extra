@@ -1,5 +1,6 @@
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from queue import Queue
 from threading import Event
 from time import monotonic, sleep
@@ -39,7 +40,14 @@ from credits.services import (
     set_provider_pin,
     sign_provider_qr,
 )
-from providers.models import FolderProvider, Provider, ProviderMembership, Publication
+from providers.models import (
+    Benefit,
+    CatalogConfig,
+    FolderProvider,
+    Provider,
+    ProviderMembership,
+    Publication,
+)
 from referrals.models import CollaboratorProfile, FolderAccess
 
 
@@ -59,6 +67,9 @@ def domain():
     profile = CollaboratorProfile.objects.create(user=collaborator, enabled=True)
     provider = Provider.objects.create(slug="benefit-one", name="One", status=Publication.PUBLISHED)
     other = Provider.objects.create(slug="benefit-two", name="Two", status=Publication.PUBLISHED)
+    for item in (provider, other):
+        Benefit.objects.create(provider=item, title="Oferta vigente", conditions="Con reserva",
+                               status=Publication.PUBLISHED)
     FolderProvider.assign(profile.pk, provider.pk)
     FolderProvider.assign(profile.pk, other.pk)
     for person in (tourist, second):
@@ -73,6 +84,122 @@ def domain():
 def post(client, profile, token, pin="123456", key="visit-1"):
     return client.post("/api/v1/consumptions/", {"folder_id": str(profile.pk), "qr_token": token, "pin": pin},
                        format="json", HTTP_IDEMPOTENCY_KEY=key)
+
+
+def post_direct(client, token, pin="123456", key="visit-1", *, explicit_null=False):
+    payload = {"qr_token": token, "pin": pin}
+    if explicit_null:
+        payload["folder_id"] = None
+    return client.post("/api/v1/consumptions/", payload, format="json", HTTP_IDEMPOTENCY_KEY=key)
+
+
+@pytest.mark.django_db
+def test_direct_omitted_and_null_are_same_request_without_attribution(domain):
+    tourist, _, _, profile, provider, _, token, _ = domain
+    client = authorized(tourist)
+    first = post_direct(client, token)
+    assert first.status_code == 201 and first.data["collaborator_id"] is None
+    assert post_direct(client, token, explicit_null=True).data == first.data
+    assert post(client, profile, token).status_code == 409
+    assert Consumption.objects.get(provider=provider).collaborator_id is None
+    assert client.get("/api/v1/me/consumptions/").data[0]["collaborator_id"] is None
+    assert Wallet.objects.get(tourist=tourist).balance == 1000
+    assert WalletEntry.objects.filter(kind=WalletEntry.Kind.EARN).count() == 1
+
+
+@pytest.mark.django_db
+def test_referred_key_cannot_replay_as_direct_and_invalid_reference_cannot_fallback(domain):
+    tourist, _, _, profile, provider, _, token, _ = domain
+    client = authorized(tourist)
+    assert post(client, profile, token).status_code == 201
+    assert post_direct(client, token).status_code == 409
+    assert Consumption.objects.get(provider=provider).collaborator_id == profile.pk
+    second_client = authorized(User.objects.create_user("third@example.test", "Secret-123", email_verified=True))
+    assert post(second_client, profile, token).status_code == 403
+    assert Consumption.objects.count() == 1
+    assert post_direct(second_client, token).status_code == 201
+    assert Consumption.objects.filter(collaborator__isnull=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_referred_consumption_also_requires_current_benefit(domain):
+    tourist, _, _, profile, provider, _, token, _ = domain
+    Benefit.objects.filter(provider=provider).update(status=Publication.DRAFT)
+    assert post(authorized(tourist), profile, token).status_code == 403
+    assert Consumption.objects.count() == 0
+
+
+@pytest.mark.django_db
+@override_settings(RATE_LIMITS={"consumption": (100, 300)})
+def test_direct_requires_valid_customer_qr_pin_provider_and_current_benefit(domain):
+    tourist, second, _, _, provider, other, token, other_token = domain
+    client = authorized(tourist)
+    assert post_direct(client, token + "x").status_code == 400
+    assert post_direct(client, token, pin="000000").status_code == 400
+    tourist.email_verified = False
+    tourist.save(update_fields=["email_verified"])
+    assert post_direct(client, token).status_code == 403
+    tourist.email_verified = True
+    tourist.save(update_fields=["email_verified"])
+    assert post_direct(authorized(User.objects.create_user("provider-role@example.test", "Secret-123",
+                                                        role=User.Role.PROVIDER, email_verified=True)), token).status_code == 403
+    Benefit.objects.filter(provider=provider).update(status=Publication.DRAFT)
+    assert post_direct(client, token).status_code == 403
+    benefit = Benefit.objects.get(provider=provider)
+    benefit.status = Publication.PUBLISHED
+    benefit.valid_from = timezone.localdate() + timedelta(days=1)
+    benefit.save()
+    assert post_direct(client, token).status_code == 403
+    benefit.valid_from = None
+    benefit.valid_until = timezone.localdate() - timedelta(days=1)
+    benefit.save()
+    assert post_direct(client, token).status_code == 403
+    benefit.valid_until = timezone.localdate()
+    benefit.save()
+    provider.status = Publication.INACTIVE
+    provider.save()
+    assert post_direct(client, token).status_code == 403
+    provider.status = Publication.PUBLISHED
+    provider.save()
+    rotate_provider_qr(provider.pk)
+    assert post_direct(client, token).status_code == 400
+    current = sign_provider_qr(ProviderConsumptionCredential.objects.get(provider=provider))
+    CatalogConfig.objects.update_or_create(singleton=1, defaults={"enabled": False})
+    assert post_direct(client, current).status_code == 201
+    assert post_direct(authorized(second), other_token, pin="654321", key="other").status_code == 201
+
+
+@pytest.mark.django_db
+def test_direct_consumption_attribution_is_immutable_from_null(domain):
+    tourist, _, _, profile, _, _, token, _ = domain
+    item = award_consumption(tourist, None, token, "123456", "direct-null")[0]
+    with pytest.raises(DatabaseError), transaction.atomic(), connections["default"].cursor() as cursor:
+        cursor.execute("UPDATE credits_consumption SET collaborator_id = %s WHERE id = %s",
+                       [profile.pk, item["id"]])
+    assert Consumption.objects.get(pk=item["id"]).collaborator_id is None
+
+
+@pytest.mark.django_db(transaction=True)
+def test_direct_and_referred_race_awards_once(domain):
+    tourist, _, _, profile, provider, _, token, _ = domain
+
+    def earn(folder_id, key):
+        close_old_connections()
+        try:
+            return award_consumption(tourist, folder_id, token, "123456", key)[1]
+        except Conflict:
+            return 409
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda args: earn(*args), ((None, "direct"), (profile.pk, "referred"))))
+    assert sorted(results) == [201, 409]
+    item = Consumption.objects.get(tourist=tourist, provider=provider)
+    assert item.collaborator_id in (None, profile.pk)
+    assert Consumption.objects.count() == ConsumptionIdempotency.objects.count() == 1
+    assert WalletEntry.objects.filter(reference=f"consumption:{item.pk}:earn").count() == 1
+    assert Wallet.objects.get(tourist=tourist).balance == item.award == 1000
 
 
 @pytest.mark.django_db
@@ -407,6 +534,60 @@ def test_revocation_waits_for_award_lock_and_prevents_late_award(domain):
                 break
             sleep(0.02)
         assert blocked, "La acreditación no esperó el bloqueo de revocación"
+        release.set()
+        first.result()
+        assert second.result() == 403
+    assert Consumption.objects.count() == 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_benefit_withdrawal_serializes_with_direct_award(domain):
+    tourist, _, _, _, provider, _, token, _ = domain
+    benefit = Benefit.objects.get(provider=provider)
+    held = Event()
+    release = Event()
+    worker_pid: Queue[int] = Queue()
+
+    def withdraw():
+        connections.close_all()
+        try:
+            with transaction.atomic():
+                row = Benefit.objects.select_for_update().get(pk=benefit.pk)
+                row.status = Publication.DRAFT
+                row.save(update_fields=["status"])
+                held.set()
+                release.wait(5)
+        finally:
+            connections.close_all()
+
+    def earn():
+        close_old_connections()
+        try:
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SELECT pg_backend_pid()")
+                worker_pid.put(cursor.fetchone()[0])
+            award_consumption(tourist, None, token, "123456", "withdrawal-race")
+            return 201
+        except PermissionDenied:
+            return 403
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(withdraw)
+        assert held.wait(5)
+        second = pool.submit(earn)
+        pid = worker_pid.get(timeout=5)
+        deadline = monotonic() + 5
+        blocked = False
+        while monotonic() < deadline:
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SELECT cardinality(pg_blocking_pids(%s))", [pid])
+                blocked = cursor.fetchone()[0] > 0
+            if blocked:
+                break
+            sleep(0.02)
+        assert blocked, "La acreditación no esperó el bloqueo del beneficio"
         release.set()
         first.result()
         assert second.result() == 403

@@ -118,7 +118,8 @@ class Consumption(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tourist = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="consumptions")
     provider = models.ForeignKey("providers.Provider", on_delete=models.PROTECT)
-    collaborator = models.ForeignKey("referrals.CollaboratorProfile", on_delete=models.PROTECT)
+    collaborator = models.ForeignKey("referrals.CollaboratorProfile", on_delete=models.PROTECT,
+                                     null=True, blank=True)
     award = models.PositiveIntegerField()
     rule_snapshot = models.JSONField()
     state = models.CharField(max_length=10, choices=State.choices, default=State.VALID)

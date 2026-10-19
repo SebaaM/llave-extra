@@ -46,7 +46,7 @@ class ConsumptionView(APIView):
         serializer = ConsumptionRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        result, code = award_consumption(request.user, data["folder_id"], data["qr_token"],
+        result, code = award_consumption(request.user, data.get("folder_id"), data["qr_token"],
                                          data["pin"], key, origin=client_origin(request))
         return private_response(result, code)
 
@@ -70,7 +70,8 @@ class MyConsumptionsView(APIView):
         customer(request.user)
         items = Consumption.objects.filter(tourist=request.user).order_by("-created_at")
         return private_response([{"id": str(item.pk), "provider_id": str(item.provider_id),
-                                  "collaborator_id": str(item.collaborator_id), "award": item.award,
+                                  "collaborator_id": str(item.collaborator_id) if item.collaborator_id else None,
+                                  "award": item.award,
                                   "state": item.state, "created_at": item.created_at}
                                  for item in items])
 

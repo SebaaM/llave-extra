@@ -15,7 +15,7 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 - No versionar credenciales, `.env`, códigos privados ni cuentas reales. `.env-example` contiene valores vacíos.
 - Mantener `ToDo.md`, contexto, instrucciones y contrato OpenAPI alineados con cada funcionalidad.
 - Catálogo general público de beneficios publicados/vigentes, configurable por administrador; carpetas y referencias siguen privadas. Ver `docs/plans/07-catalogo-publico-spec.md`, que prevalece sobre reglas históricas de catálogo privado.
-- E3 usa `referrals.access.active_folder_access(user, profile)` para recomendaciones privadas; E4 usa `referrals.access.locked_folder_access(user, profile_id)` si se aporta una referencia dentro de la transacción. El consumo directo permite colaborador nulo; una referencia inválida nunca degrada a directo. Ninguna etapa infiere acceso por existencia histórica de `FolderAccess`.
+- E3 usa `referrals.access.active_folder_access(user, profile)` para recomendaciones privadas; E4 usa `referrals.access.locked_folder_access(user, profile_id)` si se aporta una referencia dentro de la transacción. El consumo directo permite colaborador nulo; una referencia inválida nunca degrada a directo. Ambos consumos exigen Prestador publicado con beneficio publicado/vigente, QR/PIN válido y Cliente activo con email verificado; el interruptor del catálogo solo afecta visibilidad pública. Ninguna etapa infiere acceso por existencia histórica de `FolderAccess`.
 - GitFlow obligatorio: main estable, develop integración, feature/*, release/* y hotfix/*. Commits Conventional Commits con descripción en español. No fusionar PRs. Ver `docs/gitflow.md`.
 
 ## Verificación
