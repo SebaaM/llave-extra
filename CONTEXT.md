@@ -4,14 +4,14 @@
 
 Captar registros de turistas y verificar consumos en la red para otorgar beneficios, progreso y créditos canjeables por regalería 3D. El catálogo referido no es público.
 
-## Roles corregidos por el usuario
+## Cuatro roles y prioridad de producto
 
-- **Administrador:** gestiona usuarios, prestadores, colaboradores, carpetas, QR, reglas, pedidos y auditoría.
-- **Prestador:** negocio amigo que otorga beneficios y gestiona su propia propuesta, imágenes y ofertas.
-- **Colaborador:** refiere turistas mediante su QR único a los prestadores de su carpeta. Su habilitación y carpeta son administradas por el administrador; no modifica ofertas de prestadores.
-- **Turista:** accede a carpetas por QR, verifica consumos, consulta progreso y canjea o compra.
+- **Cliente (`TOURIST`):** usuario principal; se registra, accede por QR a recomendaciones privadas, consulta y consume beneficios, y administra su progreso, créditos, compras y canjes propios. `TOURIST` es el identificador técnico existente, no un quinto rol.
+- **Colaborador (`COLLABORATOR`):** refiere clientes mediante su QR único a los prestadores de su carpeta. El administrador controla su habilitación y carpeta; no modifica ofertas.
+- **Prestador (`PROVIDER`):** negocio amigo que otorga beneficios y gestiona solo su propuesta, imágenes y ofertas asignadas mediante revisión de publicación.
+- **Administrador (`ADMIN`):** gestiona usuarios, habilitaciones, prestadores, carpetas, QR, reglas, pedidos y auditoría.
 
-Un turista puede acceder a más de una carpeta después de escanear sus respectivos QR. Cada consumo conserva el colaborador que originó esa referencia. Deshabilitar o rotar el QR revoca el acceso de esa referencia, sin eliminar el historial transaccional.
+Un cliente puede acceder a más de una carpeta después de escanear sus respectivos QR. Cada consumo conserva el colaborador que originó esa referencia. Deshabilitar o rotar el QR revoca el acceso de esa referencia, sin eliminar el historial transaccional. El registro público crea solo `TOURIST` y no permite autoasignar privilegios.
 
 ## Reglas aprobadas
 
@@ -26,8 +26,10 @@ Un turista puede acceder a más de una carpeta después de escanear sus respecti
 
 ## Arquitectura
 
-Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit; Redis y worker al necesitar límites compartidos y tareas.
+Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit y Redis para límites compartidos; no hay worker de correo.
 
 ## Estado
 
-E0: documentación inicial. E1: base reproducible del proyecto entregada; autenticación y dominio siguen pendientes. E2-E6 y F1 pendientes. Los prototipos detienen la integración visual hasta elección del usuario. No se fusionan PRs; las ramas de backend se apilan para revisión incremental.
+E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y referencia QR privada con PR abierto. E3: prestadores, ofertas y carpetas privadas en rama de etapa, pendientes de revisión independiente. E4-E6 pendientes. F1 tiene tres prototipos completos y revisados en un worktree separado; falta integrar su rama y elegir la variante antes de conectar la interfaz funcional. No se fusionan PRs desde este trabajo; las ramas de backend se apilan para revisión incremental.
+
+Preferencia de herramientas confirmada para el siguiente cambio separado: `uv` en backend y `pnpm` en frontend. E3 aún se verifica con Docker y las dependencias actuales; la migración de herramientas no forma parte de esta etapa.

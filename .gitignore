@@ -23,6 +23,7 @@ work/
 .env-example
 !.env-example
 media/
+private_media/
 backend/staticfiles/
 .idea/
 .vscode/

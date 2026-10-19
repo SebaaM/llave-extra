@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
@@ -66,3 +68,24 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.email
+
+
+class AuthSession(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="auth_sessions")
+    refresh_jti_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+
+class OneTimeToken(models.Model):
+    class Purpose(models.TextChoices):
+        VERIFY = "VERIFY", "Verificar email"
+        RESET = "RESET", "Restablecer contraseña"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="one_time_tokens")
+    purpose = models.CharField(max_length=8, choices=Purpose.choices)
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

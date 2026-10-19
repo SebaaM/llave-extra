@@ -1,6 +1,6 @@
 # Guía de desarrollo
 
-El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24, y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. El nombre del directorio puede contener espacios.
+El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. El nombre del directorio puede contener espacios.
 
 ```powershell
 ./scripts/dev.ps1 up
@@ -15,6 +15,10 @@ El endpoint de salud es `/api/v1/health/` y verifica la base de datos, sin devol
 
 Si ya se habían creado las cuentas demo y falta su archivo local de contraseñas, `seed_demo` avisa sin cambiar claves. Solo si se desea rotar las claves de las cuentas demo que no figuran en ese archivo, ejecutar explícitamente `docker compose exec backend python manage.py seed_demo --recover-missing`. El comando conserva las demás entradas y nunca cambia contraseñas personalizadas en una ejecución normal.
 
+`seed_demo` hace un preflight de todas las cuentas existentes antes de agregar una nueva; si faltan claves locales, no deja altas parciales. La primera carga incorpora 12 prestadores históricos identificados como `demo` y dos carpetas de ejemplo; reintentos no restauran asignaciones, publicación ni membresías modificadas por Admin. Cumbre queda sin oferta inferida. Los datos proceden de páginas públicas revisadas el 15-10-2026 y requieren confirmación antes de uso real. Para obtener un QR demo, iniciá sesión con la cuenta colaborador indicada en `docs/cuentas-prueba.local.md` y consultá `GET /api/v1/collaborator/qr/` con su bearer; nunca se guarda un token QR fijo en el repositorio.
+
+Las imágenes de prestadores y ofertas se guardan en el volumen `private_media_data`, fuera de `MEDIA_ROOT`. No configures un alias HTTP directo a `/app/private_media`; las rutas autorizadas entregan los archivos. El frontend futuro debe borrar el fragmento QR de la URL antes de cargar recursos externos y usar `Referrer-Policy: no-referrer`.
+
 Si el backend no inicia, revisá que Docker esté activo y que la base figure healthy con `docker compose ps`. Si cambiaste credenciales en `.env` después de inicializar el volumen, PostgreSQL conserva las credenciales anteriores; recreá el entorno solo si podés descartar sus datos. Si las fuentes web de Google no están disponibles, la interfaz conserva tipografía de respaldo del sistema.
 
-Configuración de producción exige `DJANGO_SECRET_KEY` de al menos 50 caracteres y `DJANGO_ALLOWED_HOSTS`; nunca uses las credenciales locales. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local; no hay proveedor de correo externo configurado. Mercado Pago y tareas asíncronas están pendientes para etapas posteriores.
+El bootstrap añade `JWT_SIGNING_KEY`, `QR_SIGNING_KEY` y `REDIS_URL` a un `.env` E1 existente sin cambiar claves previas. Configuración de producción exige tres claves independientes de al menos 50 caracteres y `DJANGO_ALLOWED_HOSTS`; nunca uses las credenciales locales. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local; no hay proveedor de correo externo configurado. Si SMTP falla al registrar, la cuenta queda creada y el usuario puede pedir reenvío. Mercado Pago y tareas asíncronas están pendientes para etapas posteriores.

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -8,10 +9,11 @@ ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").spl
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "drf_spectacular", "accounts",
+    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
+    "config.security_headers.PrivateAPIHeadersMiddleware",
     "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -40,7 +42,46 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+PRIVATE_MEDIA_ROOT = BASE_DIR / "private_media"
 DEMO_CREDENTIALS_PATH = Path(os.environ.get("DEMO_CREDENTIALS_PATH", BASE_DIR.parent / "docs" / "cuentas-prueba.local.md"))
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.SessionJWTAuthentication"],
+}
 SPECTACULAR_SETTINGS = {"TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0"}
+JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", "")
+QR_SIGNING_KEY = os.environ.get("QR_SIGNING_KEY", "")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "http://localhost:5173").rstrip("/")
+TRUSTED_PROXY_HOST = os.environ.get("TRUSTED_PROXY_HOST", "")
+
+
+def positive_env(name: str, default: int) -> int:
+    value = int(os.environ.get(name, str(default)))
+    if value < 1:
+        raise RuntimeError(f"{name} debe ser mayor que cero")
+    return value
+
+
+RATE_LIMITS = {
+    "login": (positive_env("RATE_LOGIN_MAX", 10), positive_env("RATE_LOGIN_WINDOW", 300)),
+    "reset": (positive_env("RATE_RESET_MAX", 5), positive_env("RATE_RESET_WINDOW", 3600)),
+    "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),
+    "redeem": (positive_env("RATE_REDEEM_MAX", 20), positive_env("RATE_REDEEM_WINDOW", 300)),
+}
+RATE_LIMITS["reset_submit"] = RATE_LIMITS["reset"]
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ALGORITHM": "HS256", "SIGNING_KEY": JWT_SIGNING_KEY,
+    "AUDIENCE": "llave-extra-api", "ISSUER": "llave-extra",
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@llaveextra.local")
+EMAIL_HOST = os.environ.get("MAILPIT_HOST", "mailpit")
+EMAIL_PORT = int(os.environ.get("MAILPIT_PORT", "1025"))
+REFRESH_COOKIE_NAME = "llave_refresh"
+REFRESH_COOKIE_SECURE = not DEBUG
+REFRESH_COOKIE_SAMESITE = "Lax"
