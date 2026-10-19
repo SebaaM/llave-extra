@@ -20,6 +20,9 @@ class AdminRoleOnlyMixin:
     def has_change_permission(self, request, obj=None):
         return self._is_program_admin(request) and super().has_change_permission(request, obj)
 
+    def has_delete_permission(self, request, obj=None):
+        return self._is_program_admin(request) and super().has_delete_permission(request, obj)
+
 
 @admin.register(User)
 class LlaveUserAdmin(AdminRoleOnlyMixin, UserAdmin):

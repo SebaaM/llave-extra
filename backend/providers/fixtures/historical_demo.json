@@ -1,0 +1,149 @@
+{
+  "checked_at": "2026-10-15",
+  "merchants": [
+    {
+      "legacy_public_id": "TIG001",
+      "name": "Tiger Rent a Car",
+      "category": "Alquiler de autos",
+      "address": null,
+      "hours": null,
+      "contact": "+54 9 2901 512319",
+      "website": "https://www.tigerentacarushuaia.com.ar/",
+      "map_url": null,
+      "benefit_text": "Código promocional público LLAVE2026; porcentaje no indicado en el texto consultado.",
+      "provenance": "https://www.llaveextra.com/tiger-rentacar/"
+    },
+    {
+      "legacy_public_id": "CUM001",
+      "name": "Cumbre Rental",
+      "category": "Outdoor / alquiler",
+      "address": null,
+      "hours": null,
+      "contact": null,
+      "website": null,
+      "map_url": null,
+      "benefit_text": "No se confirmó una oferta específica de Cumbre en la información textual pública.",
+      "provenance": "https://www.llaveextra.com/cumbre-rental/"
+    },
+    {
+      "legacy_public_id": "CHO001",
+      "name": "Chocolatería Tamara Vasak",
+      "category": "Chocolaterías",
+      "address": "Referencia publicada: EL CONFÍN; sin dirección postal textual.",
+      "hours": null,
+      "contact": "2901449408",
+      "website": null,
+      "map_url": "https://maps.app.goo.gl/xHPAobAm7DatoHEe7",
+      "benefit_text": "Obsequio de Llave Extra con la compra.",
+      "provenance": "https://www.llaveextra.com/chocolaterias/"
+    },
+    {
+      "legacy_public_id": "KUA001",
+      "name": "Kuar Resto & Bar",
+      "category": "Restaurantes",
+      "address": "Perito Moreno 2232, Ushuaia.",
+      "hours": null,
+      "contact": "+54 9 2901 476807",
+      "website": "https://kuar.com.ar/bar/",
+      "map_url": "https://maps.app.goo.gl/1mtHiyJ6sHkDrjbT7",
+      "benefit_text": "10% de descuento en reserva.",
+      "provenance": "https://www.llaveextra.com/restaurantes/"
+    },
+    {
+      "legacy_public_id": "RDS002",
+      "name": "Regalería del Sur",
+      "category": "Tiendas / souvenirs",
+      "address": null,
+      "hours": "Todos los días de 11:00 a 21:00.",
+      "contact": null,
+      "website": null,
+      "map_url": "https://maps.app.goo.gl/HTsLvyrFsYKpiTPB9",
+      "benefit_text": "10% de descuento en compra.",
+      "provenance": "https://www.llaveextra.com/tiendas/"
+    },
+    {
+      "legacy_public_id": "ALK003",
+      "name": "Alakush - Centro de Visitantes",
+      "category": "Restaurantes / servicios del parque",
+      "address": "Parque Nacional Tierra del Fuego, Ushuaia.",
+      "hours": "Todos los días de 10:00 a 17:30.",
+      "contact": "+54 9 2901 307891",
+      "website": null,
+      "map_url": "https://maps.app.goo.gl/T2acaWoY1xBevbhdA",
+      "benefit_text": "10% de descuento en reserva.",
+      "provenance": "https://www.llaveextra.com/restaurantes/"
+    },
+    {
+      "legacy_public_id": "ANT007",
+      "name": "Antarctica Hostel",
+      "category": "Hospedajes",
+      "address": "Antártida Argentina 270.",
+      "hours": null,
+      "contact": null,
+      "website": null,
+      "map_url": "https://maps.app.goo.gl/wkJyZufRo2gso2nEA",
+      "benefit_text": "Desayuno incluido con la reserva.",
+      "provenance": "https://www.llaveextra.com/hospedajes/"
+    },
+    {
+      "legacy_public_id": "GLA001",
+      "name": "Glaciares Fueguinos",
+      "category": "Excursiones / trekking",
+      "address": null,
+      "hours": null,
+      "contact": "+54 9 2901 551494",
+      "website": null,
+      "map_url": null,
+      "benefit_text": "30% de descuento para la comunidad Llave Extra.",
+      "provenance": "https://www.llaveextra.com/excursiones/"
+    },
+    {
+      "legacy_public_id": "KREN",
+      "name": "KREN Ushuaia",
+      "category": "Excursiones",
+      "address": null,
+      "hours": "Se anuncia actividad los 365 días del año; sin franja horaria.",
+      "contact": null,
+      "website": null,
+      "map_url": null,
+      "benefit_text": "10% de descuento.",
+      "provenance": "https://www.llaveextra.com/excursiones/"
+    },
+    {
+      "legacy_public_id": "DUL006",
+      "name": "Dulces Pau",
+      "category": "Cafeterías / pastelería",
+      "address": "Gobernador Deloqui 823.",
+      "hours": "Lunes a viernes 09:00-20:00; sábados 09:00-15:00.",
+      "contact": null,
+      "website": null,
+      "map_url": "https://maps.app.goo.gl/wD7CE4NTPpmC2nuW9",
+      "benefit_text": "La ficha anuncia dos cafés gratis y 10% en próximas visitas. La red condiciona los dos cafés a elegir dos productos de pastelería.",
+      "provenance": "https://www.llaveextra.com/cafeterias/"
+    },
+    {
+      "legacy_public_id": "CAF001",
+      "name": "Laguna. Café de Barrio",
+      "category": "Cafeterías",
+      "address": "Costa de Laguna 1420, Barrio Andino, Ushuaia.",
+      "hours": "Lunes a viernes 12:00-20:00; sábados y domingos 16:00-20:00.",
+      "contact": null,
+      "website": null,
+      "map_url": "https://www.google.com/maps/search/?api=1&query=Laguna+Caf%C3%A9+de+Barrio%2C+Costa+de+Laguna+1420%2C+Ushuaia",
+      "benefit_text": "2x1 en café.",
+      "provenance": "https://www.llaveextra.com/cafeterias/"
+    },
+    {
+      "legacy_public_id": "KSAR001",
+      "name": "Velero KSAR",
+      "category": "Excursiones / navegación",
+      "address": null,
+      "hours": null,
+      "contact": null,
+      "website": "https://veleroksar.com/",
+      "map_url": "https://maps.app.goo.gl/Jsvpus97MYdDhZmj9",
+      "benefit_text": "10% de descuento mencionando Llave Extra.",
+      "provenance": "https://www.llaveextra.com/excursiones/"
+    }
+  ]
+}
