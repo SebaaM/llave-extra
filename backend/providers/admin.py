@@ -2,7 +2,19 @@ from django.contrib import admin
 
 from accounts.admin import AdminRoleOnlyMixin
 
-from .models import Benefit, FolderProvider, Provider, ProviderMembership
+from .models import Benefit, CatalogConfig, FolderProvider, Provider, ProviderMembership
+
+
+@admin.register(CatalogConfig)
+class CatalogConfigAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("singleton", "enabled")
+    fields = ("enabled",)
+
+    def has_add_permission(self, request):
+        return super().has_add_permission(request) and not CatalogConfig.objects.filter(singleton=1).exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Provider)

@@ -34,4 +34,4 @@ E0: documentación inicial. E1: base reproducible entregada. E2: autenticación,
 
 Toolchain aprobada: Python 3.13.16 con uv 0.11.3 en `backend/pyproject.toml` y `backend/uv.lock`; Node 24.19.0 con pnpm 11.22.0 en `frontend/package.json` y `frontend/pnpm-lock.yaml`. Docker Compose sigue siendo el arranque predeterminado; uv nativo es opcional para el IDE y las herramientas locales.
 
-Corrección Task 1: el acceso local a `/admin/` y `/static/admin/` se enruta de Vite a Django; el backoffice conserva su sesión y CSRF independientes del JWT de la API. El catálogo público, el consumo directo y el retiro de prototipos siguen en tareas posteriores del plan 07.
+Corrección Task 1: el acceso local a `/admin/` y `/static/admin/` se enruta de Vite a Django; el backoffice conserva su sesión y CSRF independientes del JWT de la API. Task 2 incorpora catálogo general público de beneficios publicados y vigentes, con interruptor singleton en Admin y medios revalidados por solicitud; carpetas QR siguen privadas. El consumo directo y el retiro de prototipos siguen en tareas posteriores del plan 07.

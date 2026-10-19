@@ -17,3 +17,5 @@
 `providers.Benefit`: UUID, prestador, título, descripción y condiciones legibles, fechas de vigencia opcionales, imagen privada, estado y procedencia demo. Restricciones PostgreSQL impiden intervalo invertido y publicación con título o condiciones vacíos. La vista turística también comprueba fechas actuales. El prestador crea borradores; editar una oferta publicada la devuelve a borrador.
 
 `providers.DemoSeedState`: marca persistente de carga inicial del inventario saneado. Repetir `seed_demo` no repone asignaciones ni sobrescribe decisiones administrativas, incluidas las eliminaciones.
+
+`providers.CatalogConfig`: singleton `singleton=1` con restricción PostgreSQL; `enabled=true` por defecto y fila creada por migración. Solo el Admin superusuario activo puede cambiarlo en Django Admin; no permite borrado desde el modelo ni el backoffice. Controla únicamente la superficie pública del catálogo, nunca las referencias privadas o consumos.

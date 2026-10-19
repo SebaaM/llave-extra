@@ -1,4 +1,4 @@
-# Contrato de API E3
+# Contrato de API E3–E4 y catálogo público
 
 Fuente ejecutable: `backend/config/urls.py` y los `@extend_schema` de `backend/accounts/views.py`, `backend/referrals/views.py` y `backend/providers/views.py`. Generar y validar con `docker compose exec -T backend python manage.py spectacular --file /tmp/llave-extra-openapi.yaml --validate`; el esquema interactivo está en `/api/docs/` y JSON/YAML en `/api/schema/`. Cambios incompatibles requieren una nueva versión de ruta `/api/vN/`; campos nuevos opcionales no cambian versión. Cliente es el nombre de producto del rol técnico `TOURIST`; hay cuatro roles en total.
 
@@ -17,7 +17,21 @@ Todas las rutas de dominio usan `/api/v1/`. `GET /auth/csrf/` entrega token CSRF
 
 ### Prestadores y carpetas (E3)
 
-Todas estas rutas requieren autenticación. `folder_id`, `provider_id` y `benefit_id` son UUID. Para turistas, la autorización se comprueba en **cada** listado, detalle y medio mediante `active_folder_access` (rol y grant de versión QR vigente), asignación `FolderProvider` y publicación. Un ID cruzado o revocado responde 404. Parámetros de búsqueda desconocidos no amplían la consulta. No hay catálogo global público ni roster de carpetas.
+Todas estas rutas requieren autenticación. `folder_id`, `provider_id` y `benefit_id` son UUID. Para turistas, la autorización se comprueba en **cada** listado, detalle y medio mediante `active_folder_access` (rol y grant de versión QR vigente), asignación `FolderProvider` y publicación. Un ID cruzado o revocado responde 404. Parámetros de búsqueda desconocidos no amplían la consulta. No hay roster público de carpetas.
+
+### Catálogo general público
+
+Las rutas siguientes son anónimas, de solo lectura y siempre responden `Cache-Control: no-store`. El interruptor `providers.CatalogConfig` se edita únicamente desde Django Admin por un superusuario activo con rol `ADMIN`; arranca habilitado. Al deshabilitarlo, `config/` responde `200 {"enabled": false}` y todas las demás rutas públicas del catálogo responden 404, incluso por URL directa. Esto no modifica las rutas de carpeta ni la elegibilidad de consumo.
+
+| Ruta relativa a `/api/v1/` | Resultado |
+| --- | --- |
+| `GET /catalog/config/` | `{enabled: boolean}` |
+| `GET /catalog/benefits/?page=1&page_size=24&search=...&category=...` | `{count, next, previous, results}`; 24 por página, máximo 48; búsqueda en título, descripción y nombre de prestador, categoría exacta sin distinguir mayúsculas |
+| `GET /catalog/benefits/{benefit_id}/` | DTO público de un beneficio vigente |
+| `GET /catalog/benefits/{benefit_id}/media/` | Imagen del beneficio, revalidando interruptor, publicación y vigencia |
+| `GET /catalog/providers/{provider_id}/media/` | Imagen del prestador cuando tiene al menos un beneficio público vigente; revalida la misma política |
+
+El beneficio expone solo `id`, `title`, `description`, `conditions`, `valid_from`, `valid_until`, `demo`, `image_url` y `provider`. El prestador anidado expone solo `id`, `slug`, `name`, `category`, `description`, `address`, `hours`, `contact`, `map_url`, `website`, `demo` e `image_url`. `demo=true` marca muestras sin acuerdo comercial confirmado. Solo aparecen beneficios `PUBLISHED` de prestadores `PUBLISHED` con `valid_from <= fecha local <= valid_until` cuando cada límite existe; los límites son inclusivos. No se entregan relaciones con carpetas, QR, PIN, membresías ni procedencia. Los archivos permanecen en almacenamiento privado y los `image_url` apuntan a vistas que aplican la política en cada solicitud.
 
 | Ruta relativa a `/api/v1/` | Rol | Resultado |
 | --- | --- | --- |

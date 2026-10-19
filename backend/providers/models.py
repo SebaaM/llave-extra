@@ -146,3 +146,16 @@ class Benefit(models.Model):
 class DemoSeedState(models.Model):
     key = models.CharField(max_length=80, primary_key=True)
     loaded_at = models.DateTimeField(auto_now_add=True)
+
+
+class CatalogConfig(models.Model):
+    singleton = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Configuración del catálogo público"
+        verbose_name_plural = "Configuración del catálogo público"
+        constraints = [models.CheckConstraint(condition=Q(singleton=1), name="catalog_config_singleton")]
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("No se puede eliminar la configuración del catálogo")

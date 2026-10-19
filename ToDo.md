@@ -2,6 +2,7 @@
 
 - [ ] Corrección 19/10/2026: GitFlow, ingreso admin, catálogo público configurable y portada con beneficios activos; retirar prototipos y permitir consumos sin colaborador. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md).
 - [x] Corrección Task 1: enrutar backoffice Django por Vite y documentar GitFlow; QA de login real realizado en desarrollo.
+- [x] Corrección Task 2: catálogo general público configurable, DTO y medios seguros; ver `docs/api.md` e informe de tarea.
 
 - [x] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL (ver [entrega](docs/plans/01-base-proyecto.md)).
 - [x] E2: autenticación y referencias privadas mediante QR de colaborador (implementación local; ver [detalle](docs/plans/02-autenticacion-api.md)).
