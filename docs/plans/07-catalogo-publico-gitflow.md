@@ -64,13 +64,28 @@
 
 ## Task 4: Portada y catálogo del producto definitivo
 
+**Ampliación confirmada:** implementar primero Task 5 (contrato de red) y luego esta tarea, incluyendo la red visual definida en la especificación. El primer intento de Task4 se interrumpió por cuota de herramienta antes de modificar código; no existe entrega frontend que recuperar.
+
 **Files:** `frontend/src/App.tsx`, retirar `frontend/src/prototypes/` y pruebas exclusivas; `frontend/src/product/{ProductApp,PublicPages,types,api-client,...}`; crear módulos de catálogo separados; estilos y pruebas de producto. `frontend/package.json`, docs de frontend/arranque/ToDo y planes futuros.
 
 **Interfaces:** consumir Task 2 sin JWT para datos públicos y Task 3 con sesión para consumo. `/beneficios` catálogo público; `/recomendaciones` carpetas privadas QR; detalle público por beneficio. Mantener `/referencia`, `/consumo`, Mi viaje y flujo QR antes de login. Consume form permite modo directo sin carpeta y referido explícito.
 
 - [ ] Escribir pruebas de portada con ofertas API, carga/vacío/error/deshabilitado, catálogo completo paginado/buscable, detalle/condiciones/demo y referencias privadas separadas.
 - [ ] Implementar hero centrado en beneficios activos y CTA claro; mantener fuentes, colores y pasaporte. No hardcodear descuentos ficticios.
+- [ ] Incorporar red configurable general/QR con fondo fijo, slots estables, nodos de prestadores únicos y avance automático con pausa, controles, foco/hover/visibility y movimiento reducido. Usar APIs Task5 y fotografías reales documentadas; añadir mapa de Ushuaia y mensaje de programa activo en la ciudad.
 - [ ] Retirar prototipos y scripts/pruebas exclusivos, conservar marca/estilos compartidos; ruta antigua no muestra simulación. Actualizar documentación histórica como retirada.
-- [ ] Adaptar tipos/UI al colaborador opcional; cliente puede consumir sin QR colaborador. Mantener aislamiento de sesiones, medios privados y respuestas tardías de F2.
+- [ ] Adaptar tipos/UI al colaborador opcional; cliente puede consumir sin QR colaborador. Mantener aislamiento de sesiones, medios privados y respuestas tardías de F2. Las rutas públicas también son navegables con rol ADMIN; la redirección al backoffice se limita al ingreso/área administrativa, sin expulsar al administrador que visita portada o catálogo.
 - [ ] Verificar pnpm tests/lint/types/build, backend suite final, QA navegador real admin+anónimo+cliente+toggle y móvil 320px; documentar evidencia y commit en español.
 - [ ] Revisión final independiente de rama, push GitFlow/PR contra develop y CI remoto; detenerse sin implementar E5/E6/F3.
+
+## Task 5: Configuración y contrato seguro de la red visual (antes de Task4)
+
+**Files:** `backend/providers/models.py`, `backend/referrals/models.py`, sus migraciones/admin, nuevo módulo de red en providers y tests dedicados, URLs/contrato/contexto. Valores y DTO exactos en ampliación de la spec.
+
+**Interfaces:** dos endpoints de red definidos en spec, paginados por Provider único con al menos un beneficio vigente. `presentation` selecciona únicamente presets; no expone identificadores o datos del colaborador en el público. La red privada usa perfil/autorización actual en cada página, incluidos medios. Configuración por instancia en CatalogConfig y CollaboratorProfile; administrador controla los seis campos y el tamaño/intervalo tienen restricciones PostgreSQL.
+
+- [x] Escribir regresiones: páginas sin duplicados con varias ofertas por negocio, configuración general/colaborador diferente, rechazo de rangos, permisos de edición y privacidad/revocación/toggle en cada página.
+- [x] Agregar campos `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds` con defaults y rangos de spec. No modificar flags, QR ni reglas existentes al migrar.
+- [x] Implementar DTO y endpoints con orden estable por nombre/UUID, página limitada por configuración (sin override del cliente), elegir beneficio vigente estable por título/UUID y reusar los serializers de medios apropiados. Catálogo off no afecta red privada autorizada.
+- [x] Verificar PostgreSQL/Redis, Ruff, migraciones y OpenAPI sin warnings; actualizar docs y contrato.
+- [ ] Registrar commit Conventional en español y revisión independiente antes de Task4.

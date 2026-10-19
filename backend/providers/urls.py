@@ -7,6 +7,7 @@ from .catalog_views import (
     CatalogConfigView,
     CatalogProviderMediaView,
 )
+from .network import FolderNetworkView, NetworkView
 from .views import (
                     CollaboratorFolderView,
                     CollaboratorProviderMediaView,
@@ -27,12 +28,14 @@ from .views import (
 
 urlpatterns = [
     path("catalog/config/", CatalogConfigView.as_view(), name="catalog-config"),
+    path("catalog/network/", NetworkView.as_view(), name="catalog-network"),
     path("catalog/benefits/", CatalogBenefitsView.as_view(), name="catalog-benefits"),
     path("catalog/benefits/<uuid:benefit_id>/", CatalogBenefitView.as_view(), name="catalog-benefit"),
     path("catalog/benefits/<uuid:benefit_id>/media/", CatalogBenefitMediaView.as_view(), name="catalog-benefit-media"),
     path("catalog/providers/<uuid:provider_id>/media/", CatalogProviderMediaView.as_view(), name="catalog-provider-media"),
     path("admin/private-media/<path:name>", admin_private_media, name="admin-private-media"),
     path("folders/<uuid:folder_id>/providers/", FolderProvidersView.as_view()),
+    path("folders/<uuid:folder_id>/network/", FolderNetworkView.as_view(), name="folder-network"),
     path("folders/<uuid:folder_id>/providers/<uuid:provider_id>/", FolderProviderView.as_view()),
     path("folders/<uuid:folder_id>/providers/<uuid:provider_id>/media/", FolderProviderMediaView.as_view(), name="folder-provider-media"),
     path("folders/<uuid:folder_id>/providers/<uuid:provider_id>/benefits/", FolderBenefitsView.as_view()),

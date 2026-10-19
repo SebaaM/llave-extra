@@ -7,8 +7,8 @@ from .models import Benefit, CatalogConfig, FolderProvider, Provider, ProviderMe
 
 @admin.register(CatalogConfig)
 class CatalogConfigAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
-    list_display = ("singleton", "enabled")
-    fields = ("enabled",)
+    list_display = ("singleton", "enabled", "network_title", "network_layout", "network_theme", "network_background")
+    fields = ("enabled", "network_title", "network_layout", "network_theme", "network_background", "network_page_size", "network_interval_seconds")
 
     def has_add_permission(self, request):
         return super().has_add_permission(request) and not CatalogConfig.objects.filter(singleton=1).exists()

@@ -14,3 +14,13 @@ Solicitud del usuario del 19/10/2026. Prevalece sobre las restricciones históri
 - Stack y herramientas existentes sin cambios: Django/DRF, PostgreSQL, Redis, React/TypeScript/Tailwind, Docker, uv y pnpm con locks. No validar dominio con SQLite. No publicar credenciales.
 
 Fuera de alcance: tienda/pagos E5, analítica E6 y paneles completos F3. Al terminar esta corrección, detenerse.
+
+## Ampliación de frontend solicitada por el usuario
+
+Referencia: captura adjunta y https://www.llaveextra.com/red-llaveextra/. Incorporar una red de prestadores con conexiones, centro de marca y fondo fijo de Ushuaia/cartografía. Durante la paginación solo cambian los nodos, sin desplazar ni sustituir el fondo. La red general y cada carpeta autorizada usan configuraciones independientes, editables solo por administrador: título, distribución RADIAL/ORBIT, tema SAND/OCEAN, fondo HARBOR/BEAGLE, tamaño de página 12 por defecto (10–15) e intervalo 10 segundos (8–60). No aceptar CSS, HTML ni URL arbitrarios como configuración.
+
+La paginación se hace por prestadores únicos con beneficios publicados/vigentes, no por cantidad de ofertas. Incluye avance automático, anterior/siguiente, indicador de página y pausa; se pausa con foco/hover, pestaña oculta o petición pendiente y respeta movimiento reducido. Al cambiar de página se conservan el fondo y las posiciones de los slots, incluso en la última página incompleta. En móvil mantener legibilidad y acceso táctil a cada nodo.
+
+Usar fotografías reales y de buena calidad de Ushuaia, recursos oficiales de los prestadores y un mapa de la ciudad con atribución. No presentar ubicaciones conceptuales de la red como coordenadas reales de negocios ni usar imágenes generadas como fotografías auténticas. Documentar procedencia/licencias de archivos e identificar datos demo. Mostrar que el programa está activo en Ushuaia. Mantener las imágenes comerciales detrás de los medios autorizados de la API; las fotografías públicas de ciudad y la marca no contienen relaciones privadas.
+
+API adicional: `GET /api/v1/catalog/network/?page=1` público, cerrado por el interruptor general; `GET /api/v1/folders/<folder_id>/network/?page=1` privado, con `active_folder_access`, perfil vigente y pertenencia. Respuesta `{count,next,previous,presentation,results}`, donde presentation tiene `title,layout,theme,background,page_size,interval_seconds,city` y cada resultado `{provider,benefit_id,benefit_title}`. Provider usa DTO público en red general y medios de carpeta en la privada. Nunca divulgar configuración ni asignaciones de otra carpeta. No cambiar las reglas de acreditación aprobadas.

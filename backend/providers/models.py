@@ -149,13 +149,38 @@ class DemoSeedState(models.Model):
 
 
 class CatalogConfig(models.Model):
+    class NetworkLayout(models.TextChoices):
+        RADIAL = "RADIAL", "Radial"
+        ORBIT = "ORBIT", "Órbita"
+
+    class NetworkTheme(models.TextChoices):
+        SAND = "SAND", "Arena"
+        OCEAN = "OCEAN", "Océano"
+
+    class NetworkBackground(models.TextChoices):
+        HARBOR = "HARBOR", "Puerto"
+        BEAGLE = "BEAGLE", "Canal Beagle"
+
     singleton = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     enabled = models.BooleanField(default=True)
+    network_title = models.CharField(max_length=100, default="Red Llave Extra")
+    network_layout = models.CharField(max_length=8, choices=NetworkLayout.choices, default=NetworkLayout.RADIAL)
+    network_theme = models.CharField(max_length=5, choices=NetworkTheme.choices, default=NetworkTheme.SAND)
+    network_background = models.CharField(max_length=6, choices=NetworkBackground.choices, default=NetworkBackground.HARBOR)
+    network_page_size = models.PositiveSmallIntegerField(default=12)
+    network_interval_seconds = models.PositiveSmallIntegerField(default=10)
 
     class Meta:
         verbose_name = "Configuración del catálogo público"
         verbose_name_plural = "Configuración del catálogo público"
-        constraints = [models.CheckConstraint(condition=Q(singleton=1), name="catalog_config_singleton")]
+        constraints = [
+            models.CheckConstraint(condition=Q(singleton=1), name="catalog_config_singleton"),
+            models.CheckConstraint(condition=Q(network_page_size__gte=10, network_page_size__lte=15), name="catalog_network_page_size_range"),
+            models.CheckConstraint(condition=Q(network_interval_seconds__gte=8, network_interval_seconds__lte=60), name="catalog_network_interval_range"),
+            models.CheckConstraint(condition=Q(network_layout__in=("RADIAL", "ORBIT")), name="catalog_network_layout_choice"),
+            models.CheckConstraint(condition=Q(network_theme__in=("SAND", "OCEAN")), name="catalog_network_theme_choice"),
+            models.CheckConstraint(condition=Q(network_background__in=("HARBOR", "BEAGLE")), name="catalog_network_background_choice"),
+        ]
 
     def delete(self, *args, **kwargs):
         raise ValidationError("No se puede eliminar la configuración del catálogo")

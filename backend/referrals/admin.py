@@ -7,7 +7,7 @@ from .models import CollaboratorProfile, FolderAccess
 
 @admin.register(CollaboratorProfile)
 class CollaboratorProfileAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
-    list_display = ("user", "enabled", "qr_version")
+    list_display = ("user", "enabled", "qr_version", "network_title", "network_layout", "network_theme")
     search_fields = ("user__email",)
     readonly_fields = ("id", "enabled", "qr_version")
     actions = ("enable", "disable", "rotate")
