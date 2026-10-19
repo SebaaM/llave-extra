@@ -2,7 +2,7 @@
 
 > Corrección vigente del 19/10/2026: catálogo general público con interruptor administrativo, recomendaciones QR privadas y consumos directos sin colaborador. GitFlow obligatorio. [Especificación](07-catalogo-publico-spec.md) y [plan de corrección](07-catalogo-publico-gitflow.md) prevalecen sobre las descripciones históricas siguientes. E5/E6/F3 continúan pendientes; completar esta corrección y detenerse.
 
-Objetivo: reconstruir Llave Extra en etapas verificables, con PRs independientes y cuatro roles corregidos. El Cliente es el usuario principal; conserva el identificador técnico `TOURIST` por compatibilidad y no constituye un quinto rol. Colaborador (`COLLABORATOR`), Prestador (`PROVIDER`) y Administrador (`ADMIN`) tienen funciones distintas. La aplicación no publica las carpetas de colaboradores ni sus prestadores sin acceso a través de un QR autorizado.
+Objetivo: reconstruir Llave Extra en etapas verificables, con PRs independientes y cuatro roles corregidos. El Cliente es el usuario principal; conserva el identificador técnico `TOURIST` por compatibilidad y no constituye un quinto rol. Colaborador (`COLLABORATOR`), Prestador (`PROVIDER`) y Administrador (`ADMIN`) tienen funciones distintas. El catálogo general muestra beneficios públicos configurables; las carpetas y asignaciones de colaboradores requieren acceso mediante un QR autorizado.
 
 ## Restricciones globales
 
@@ -22,7 +22,7 @@ Prestadores, beneficios, pertenencia de usuario prestador y carpetas curadas por
 
 ## Task 4: E4 - Consumos y créditos
 
-QR del prestador + PIN fijo hash, email verificado y referencia de carpeta activa. Una acreditación de por vida por turista/prestador, idempotencia, transacciones, regla global/per-prestador y snapshot, libro de movimientos, saldo, progreso y ajustes pendientes con bloqueo de canjes. Archivo: `04-consumos-creditos.md`.
+QR del prestador + PIN fijo hash, email verificado y referencia de carpeta activa cuando se aporta. El consumo directo permite colaborador nulo. Una acreditación de por vida por turista/prestador, idempotencia, transacciones, regla global/per-prestador y snapshot, libro de movimientos, saldo, progreso y ajustes pendientes con bloqueo de canjes. Archivo: `04-consumos-creditos.md`.
 
 ## Task 5: E5 - Tienda
 
@@ -34,7 +34,7 @@ Métricas por rol, referencias atribuidas, consumo/crédito/venta derivados del 
 
 ## Task 7: F1 - Prototipos de frontend
 
-Tres opciones React/Tailwind navegables (guía/pasaporte/beneficios), misma identidad y datos mock, landing pública y carpeta privada tras simulación de acceso por QR. Registro/login/ficha/progreso. La experiencia del Cliente es principal; las áreas de Colaborador, Prestador y Administrador usan permisos y accesos propios. Los tres prototipos están integrados como demostración. La elección posterior del usuario es Beneficios como portada y Pasaporte en Mi viaje; la conexión a la API pertenece a F2. Archivo: `frontend.md`.
+Etapa histórica: tres opciones React/Tailwind navegables (guía/pasaporte/beneficios), misma identidad y datos mock, usadas para elegir Beneficios como portada y Pasaporte en Mi viaje. La conexión a la API se entregó en F2. El código y las rutas de los prototipos se retiraron en el plan 07; las áreas de Colaborador, Prestador y Administrador conservan permisos propios. Archivo: `frontend.md`.
 
 ## Task 8: Herramientas - uv y pnpm
 
@@ -48,11 +48,11 @@ Elección confirmada por el usuario: Beneficios como dirección principal y Pasa
 
 Completar tienda ARS o créditos y pedidos propios sobre servicios transaccionales, panel Prestador de propuestas/ofertas propias, panel Colaborador de recomendaciones/QR/métricas y acceso administrativo al backoffice existente. El servidor sigue siendo autoridad de permisos, stock, pagos y créditos. Verificar límites por rol, reintentos/errores y flujo real de canje demo; declarar sandbox externo pendiente si faltan credenciales. PR propio después de F2. Detalle en plan frontend.
 
-## Orden de integración y Git
+## Orden de integración y GitFlow
 
-E1 -> E2 -> E3 -> E4 -> F2 -> E5 -> E6 -> F3. F1 comparte base y contratos; se entrega aparte sin depender de elección para avanzar backend. Un primer commit documental en main; cada etapa posterior tiene rama y PR. Los PRs se apilan contra la rama previa para mantener diffs acotados. Pruebas y revisión antes de publicar cada PR.
+E1 -> E2 -> E3 -> E4 -> F2 -> E5 -> E6 -> F3. F1 compartió base y contratos y permitió avanzar backend mientras se elegía el diseño. Hubo un primer commit documental en main y PRs históricos apilados. Desde la corrección del 19/10/2026 se usa GitFlow obligatorio: `main` estable, `develop` de integración y ramas `feature/*`, `release/*`, `hotfix/*`. El PR de esta corrección se dirige a `develop`, inicializado en la base revisada `415f235`; se conservan los PRs históricos. Pruebas y revisión antes de publicar cada PR; no fusionar desde este trabajo. Ver [flujo vigente](../gitflow.md).
 
-Antes de E4, integrar la rama separada de F1 y migrar herramientas en un cambio propio a uv 0.11.3 para backend y pnpm 11.22.0 para frontend, según la preferencia confirmada. F2 usa la elección Beneficios + Pasaporte inmediatamente después de E4 revisado; E5 y E6 siguen, y F3 viene después de F2 y E6. Esto no cambia los cuatro roles persistidos.
+La integración histórica de F1 y la migración de herramientas a uv 0.11.3 y pnpm 11.22.0 precedieron a E4. F2 usó la elección Beneficios + Pasaporte después de E4 revisado; E5 y E6 siguen pendientes, y F3 viene después de F2 y E6. Esto no cambia los cuatro roles persistidos.
 
 ## Cierre de etapa
 

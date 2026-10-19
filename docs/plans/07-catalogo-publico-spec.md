@@ -15,6 +15,10 @@ Solicitud del usuario del 19/10/2026. Prevalece sobre las restricciones históri
 
 Fuera de alcance: tienda/pagos E5, analítica E6 y paneles completos F3. Al terminar esta corrección, detenerse.
 
+## Administrador en español
+
+Ampliación confirmada por el usuario durante el cierre: traducir a español los nombres visibles del backoffice, aplicaciones, modelos, campos, columnas, filtros, opciones y acciones del dominio. Django puede derivar etiquetas de los identificadores cuando no se declaran explícitamente; definir etiquetas de presentación, sin renombrar campos, tablas, rutas, roles técnicos, permisos ni códigos de API. Mantener `LANGUAGE_CODE` en español. El rol técnico `TOURIST` se presenta como Cliente. Usar `verbose_name`/`verbose_name_plural` y descripciones de admin; las migraciones necesarias solo cambian metadatos de presentación. Conservar permisos, operaciones financieras y credenciales. Comprobar la navegación administrativa real y generar/validar OpenAPI después de los cambios de metadatos.
+
 ## Ampliación de frontend solicitada por el usuario
 
 Referencia: captura adjunta y https://www.llaveextra.com/red-llaveextra/. Incorporar una red de prestadores con conexiones, centro de marca y fondo fijo de Ushuaia/cartografía. Durante la paginación solo cambian los nodos, sin desplazar ni sustituir el fondo. La red general y cada carpeta autorizada usan configuraciones independientes, editables solo por administrador: título, distribución RADIAL/ORBIT, tema SAND/OCEAN, fondo HARBOR/BEAGLE, tamaño de página 12 por defecto (10–15) e intervalo 10 segundos (8–60). No aceptar CSS, HTML ni URL arbitrarios como configuración.

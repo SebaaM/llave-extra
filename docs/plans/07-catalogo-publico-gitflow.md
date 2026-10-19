@@ -33,11 +33,11 @@
 
 **Interfaces:** conservar `/api/*`; `/admin/*`, `/static/admin/*` y medios del backoffice deben ser servidos por Django en el mismo origen de desarrollo. Mantener JWT API separado de sesión Django.
 
-- [ ] Reproducir el bucle y registrar causa con evidencia de SPA fallback; crear regresión de rutas proxy y saneamiento.
-- [ ] Enrutar backoffice/assets correctamente y evitar redirección autorreferente de React.
-- [ ] Documentar GitFlow y bootstrap de develop desde 415f235; verificar que CI cubra feature/develop y PRs.
-- [ ] Ejecutar pruebas proxy, frontend lint/tipos/build y confirmar login Django real con cuenta sintética local.
-- [ ] Registrar evidencia y commit `fix: corregir acceso al backoffice y adoptar GitFlow`.
+- [x] Reproducir el bucle y registrar causa con evidencia de SPA fallback; crear regresión de rutas proxy y saneamiento.
+- [x] Enrutar backoffice/assets correctamente y evitar redirección autorreferente de React.
+- [x] Documentar GitFlow y bootstrap de develop desde 415f235; verificar que CI cubra feature/develop y PRs.
+- [x] Ejecutar pruebas proxy, frontend lint/tipos/build y confirmar login Django real con cuenta sintética local.
+- [x] Registrar evidencia y commit `fix: corregir acceso al backoffice y adoptar GitFlow`.
 
 ## Task 2: Catálogo público configurable
 
@@ -45,10 +45,10 @@
 
 **Interfaces:** `GET /api/v1/catalog/config/` -> `{enabled: boolean}`; `GET /api/v1/catalog/benefits/?page=1&search=...&category=...` -> `{count,next,previous,results}` (página 24, máximo 48). DTO beneficio: id, title, description, conditions, valid_from/until, demo, image_url y provider con id, slug, name, category, description, address, hours, contact, map_url, website, demo, image_url. Detalle `GET /api/v1/catalog/benefits/<uuid>/`. Medios independientes con política pública idéntica. No incluir procedencia privada, colaboradores, membresías, QR ni PIN. Catálogo deshabilitado: config 200 false y listados/detalles/medios 404, no-store. Config singleton habilitado por defecto, solo editable por ADMIN superusuario en Django.
 
-- [ ] Escribir y ejecutar regresiones: anónimo ve solo vigentes/publicados; ninguna relación privada; filtros/paginación y métodos de escritura prohibidos; límites inclusivos; toggle cierra todas las URLs; roles no admin no modifican configuración.
-- [ ] Implementar política compartida `catalog_benefits()` y switch singleton con restricción DB; medios revalidan en cada petición y no exponen storage directo. No reutilizar serializers con privilegios.
-- [ ] Verificar PostgreSQL, Ruff, migraciones y generación OpenAPI sin warnings nuevos; actualizar documentos y datos demo existentes sin regenerar credenciales.
-- [ ] Registrar comandos/resultados y commit `feat: publicar catálogo configurable de beneficios vigentes`.
+- [x] Escribir y ejecutar regresiones: anónimo ve solo vigentes/publicados; ninguna relación privada; filtros/paginación y métodos de escritura prohibidos; límites inclusivos; toggle cierra todas las URLs; roles no admin no modifican configuración.
+- [x] Implementar política compartida `catalog_benefits()` y switch singleton con restricción DB; medios revalidan en cada petición y no exponen storage directo. No reutilizar serializers con privilegios.
+- [x] Verificar PostgreSQL, Ruff, migraciones y generación OpenAPI sin warnings nuevos; actualizar documentos y datos demo existentes sin regenerar credenciales.
+- [x] Registrar comandos/resultados y commit `feat: publicar catálogo configurable de beneficios vigentes`.
 
 ## Task 3: Acreditación sin colaborador
 
@@ -56,11 +56,11 @@
 
 **Interfaces:** consumo recibe `folder_id?: UUID|null`; respuesta e historial tienen `collaborator_id: UUID|null`. Mantener payload previo e idempotencia para referencias existentes. Directo: sin atribución. Referido: `locked_folder_access` dentro de transacción, sin fallback si falla.
 
-- [ ] Escribir pruebas directas, PIN/QR inválido, cliente no verificado, estados/fechas inválidos, catálogo apagado pero QR/PIN válido, referencia inválida no degradable, replay y conflicto de clave entre modos.
-- [ ] Probar carrera directa vs referida: una sola Consumption, movimiento y recompensa; no romper carreras/anulaciones previas.
-- [ ] Hacer colaborador nullable con migración compatible y conservar triggers de inmutabilidad (comparaciones NULL seguras); no modificar registros históricos ni reglas financieras.
-- [ ] Ejecutar suite PostgreSQL/Redis, migraciones/Ruff y regenerar OpenAPI; actualizar reglas y contratos.
-- [ ] Registrar evidencia y commit `feat: acreditar consumos sin referencia de colaborador`.
+- [x] Escribir pruebas directas, PIN/QR inválido, cliente no verificado, estados/fechas inválidos, catálogo apagado pero QR/PIN válido, referencia inválida no degradable, replay y conflicto de clave entre modos.
+- [x] Probar carrera directa vs referida: una sola Consumption, movimiento y recompensa; no romper carreras/anulaciones previas.
+- [x] Hacer colaborador nullable con migración compatible y conservar triggers de inmutabilidad (comparaciones NULL seguras); no modificar registros históricos ni reglas financieras.
+- [x] Ejecutar suite PostgreSQL/Redis, migraciones/Ruff y regenerar OpenAPI; actualizar reglas y contratos.
+- [x] Registrar evidencia y commit `feat: acreditar consumos sin referencia de colaborador`.
 
 ## Task 4: Portada y catálogo del producto definitivo
 
@@ -77,8 +77,9 @@
 - [x] Incorporar red configurable general/QR con fondo fijo, slots estables, nodos de prestadores únicos y avance automático con pausa, controles, foco/hover/visibility y movimiento reducido. Usar APIs Task5 y fotografías reales documentadas; añadir mapa de Ushuaia y mensaje de programa activo en la ciudad.
 - [x] Retirar prototipos y scripts/pruebas exclusivos, conservar marca/estilos compartidos; ruta antigua no muestra simulación. Actualizar documentación histórica como retirada.
 - [x] Adaptar tipos/UI al colaborador opcional; cliente puede consumir sin QR colaborador. Mantener aislamiento de sesiones, medios privados y respuestas tardías de F2. Las rutas públicas también son navegables con rol ADMIN; la redirección al backoffice se limita al ingreso/área administrativa, sin expulsar al administrador que visita portada o catálogo.
-- [ ] Verificar pnpm tests/lint/types/build, backend suite final, QA navegador real admin+anónimo+cliente+toggle y móvil 320px; documentar evidencia y commit en español.
-- [ ] Revisión final independiente de rama, push GitFlow/PR contra develop y CI remoto; detenerse sin implementar E5/E6/F3.
+- [x] Verificar pnpm tests/lint/types/build, backend suite final, QA navegador real admin+anónimo+cliente+toggle y móvil 320px; documentar evidencia y commit en español. Evidencia durable en [verificación](../verification/07-catalogo-publico.md).
+- [x] Revisión final independiente de rama y push GitFlow/[PR #9](https://github.com/SebaaM/llave-extra/pull/9) contra develop, sin fusionar. La corrección de pausa foco/hover quedó aprobada en `2dd1c7e`.
+- [x] Confirmar CI remoto del PR y detenerse sin implementar E5/E6/F3. Backend/frontend aprobados sobre `2dd1c7e`; el commit documental posterior se comprueba contra su propio HEAD en el PR.
 
 ## Task 5: Configuración y contrato seguro de la red visual (antes de Task4)
 
@@ -90,4 +91,12 @@
 - [x] Agregar campos `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds` con defaults y rangos de spec. No modificar flags, QR ni reglas existentes al migrar.
 - [x] Implementar DTO y endpoints con orden estable por nombre/UUID, página limitada por configuración (sin override del cliente), elegir beneficio vigente estable por título/UUID y reusar los serializers de medios apropiados. Catálogo off no afecta red privada autorizada.
 - [x] Verificar PostgreSQL/Redis, Ruff, migraciones y OpenAPI sin warnings; actualizar docs y contrato.
-- [x] Registrar commit Conventional en español y revisión independiente antes de Task4. Implementación Task 5 en `0494139`; informe y revisión en `.superpowers/sdd/07-catalogo-publico-gitflow/` (archivos locales ignorados).
+- [x] Registrar commit Conventional en español y revisión independiente antes de Task4. Implementación Task 5 en `0494139`; resultados conservados en [verificación](../verification/07-catalogo-publico.md).
+
+## Task 6: Presentación administrativa en español (ampliación de cierre)
+
+No es E6 de analítica. Traducir etiquetas visibles de las cuatro apps y sus modelos registrados en Django Admin, manteniendo identificadores de código/API/DB y reglas de permisos/finanzas. Definir nombres singulares/plurales y campos con `verbose_name`, columnas/acciones calculadas con descripciones de admin y representaciones legibles de objetos. El código `TOURIST` conserva su valor y muestra Cliente. Generar migraciones de metadatos cuando corresponda; no renombrar ni recrear tablas o columnas.
+
+- [x] Aplicar nombres españoles a aplicaciones, modelos, campos y columnas/acciones del dominio administrativo; conservar i18n nativo de Django.
+- [x] Verificar permisos/contratos preservados sobre PostgreSQL, Ruff, migraciones y OpenAPI; el frontend permanece igual.
+- [x] QA real de índice, listado y formulario de Prestador; revisión final independiente y commit Conventional en español (`d21554b`).

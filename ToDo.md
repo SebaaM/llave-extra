@@ -1,9 +1,10 @@
 # Pendientes
 
-- [ ] Corrección 19/10/2026: GitFlow, ingreso admin, catálogo público configurable y portada con beneficios activos; prototipos retirados y consumos directos implementados. Resta QA/revisión integrados y PR. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md).
+- [x] Corrección 19/10/2026: implementación, QA y revisión independiente aprobadas; [PR #9](https://github.com/SebaaM/llave-extra/pull/9) abierto contra develop, sin fusionar. CI de producto `2dd1c7e` aprobado; el estado vigente se consulta en el PR. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md) y [verificación](docs/verification/07-catalogo-publico.md). Detenerse antes de E5/E6/F3.
 - [x] Corrección Task 1: enrutar backoffice Django por Vite y documentar GitFlow; QA de login real realizado en desarrollo.
 - [x] Corrección Task 2: catálogo general público configurable, DTO y medios seguros; ver `docs/api.md` e informe de tarea.
 - [x] Corrección Task 3: acreditar consumos directos sin colaborador, validar estrictamente la referencia aportada y exigir beneficio publicado/vigente; ver `docs/plans/04-consumos-creditos.md`.
+- [x] Corrección Task 4: portada con beneficios activos, catálogo y red visual configurables, fotos reales, mapa de Ushuaia, consumo directo y retiro de prototipos; QA de escritorio/móvil y revisión independiente aprobadas.
 - [x] Corrección Task 6: etiquetas, nombres de modelos y presentación del backoffice Django en español; QA de índice, listado y formulario completada, con identificadores y permisos preservados.
 
 - [x] E1: base reproducible, Docker y comprobaciones sobre PostgreSQL (ver [entrega](docs/plans/01-base-proyecto.md)).
