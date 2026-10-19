@@ -30,7 +30,8 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
   const [page, setPage] = useState(1)
   const [response, setResponse] = useState<{ key: string; data: NetworkPage | null; error: string }>({ key: '', data: null, error: '' })
   const [paused, setPaused] = useState(false)
-  const [interacting, setInteracting] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focusWithin, setFocusWithin] = useState(false)
   const [hidden, setHidden] = useState(document.visibilityState === 'hidden')
   const [reduced, setReduced] = useState(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const [revision, setRevision] = useState(0)
@@ -67,10 +68,10 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
   const presentation: Presentation = response.data?.presentation ?? { title: folderId ? 'Red de recomendaciones' : 'La red Llave Extra', layout: 'RADIAL', theme: 'SAND', background: 'BEAGLE', page_size: 12, interval_seconds: 10, city: 'Ushuaia' }
   const totalPages = data ? Math.max(1, Math.ceil(data.count / presentation.page_size)) : 1
   useEffect(() => {
-    if (!data?.next || paused || interacting || loading || hidden || reduced) return
+    if (!data?.next || paused || hovered || focusWithin || loading || hidden || reduced) return
     const timer = window.setTimeout(() => setPage(value => value + 1), presentation.interval_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [data, paused, interacting, loading, hidden, reduced, presentation.interval_seconds])
+  }, [data, paused, hovered, focusWithin, loading, hidden, reduced, presentation.interval_seconds])
 
   const slotCount = Math.min(presentation.page_size, response.data?.count ?? presentation.page_size)
   const slots = Array.from({ length: slotCount }, (_, index) => {
@@ -79,7 +80,7 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
     return { x: 50 + Math.cos(angle) * radius, y: 50 + Math.sin(angle) * radius }
   })
   const nodes = data?.results ?? []
-  return <section className={`network-section network-${presentation.theme.toLowerCase()}`} aria-label={presentation.title} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false) }}>
+  return <section className={`network-section network-${presentation.theme.toLowerCase()}`} aria-label={presentation.title} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocusWithin(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false) }}>
     <div className="content-width network-heading"><div><p className="eyebrow">{folderId ? 'TU RED PRIVADA' : 'RED ACTIVA EN USHUAIA'}</p><h2>{presentation.title}</h2><p>Prestadores con beneficios vigentes. Cada punto representa un lugar de la red; su posición es visual y no indica una ubicación real.</p></div><span className="network-city">{presentation.city} · Tierra del Fuego</span></div>
     <div className="network-scene" style={{ backgroundImage: `linear-gradient(90deg,rgba(12,50,53,.78),rgba(12,50,53,.3)),url(${backgroundImage[presentation.background]})` }}><div className="network-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" className="network-lines">{slots.map((slot, index) => <line key={index} x1="50" y1="50" x2={slot.x} y2={slot.y} />)}</svg><div className="network-center"><img src="/logo-llave-extra.png" alt="" /><strong>La red que conecta tu viaje</strong></div>{slots.map((slot, index) => {
       const item: NetworkItem | undefined = nodes[index]

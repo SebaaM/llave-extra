@@ -15,7 +15,7 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
   setAccessToken('token-que-no-debe-salir')
 })
-afterEach(() => { cleanup(); setAccessToken(null); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); setAccessToken(null); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('catálogo público', () => {
   it('muestra la condición real en la portada y no envía JWT en las consultas públicas', async () => {
@@ -203,5 +203,45 @@ describe('catálogo público', () => {
     const timer = scheduled.at(-1)!
     act(() => timer())
     await screen.findByText('Local 2')
+  })
+
+  it.each(['hover después del foco', 'foco después del hover'])('mantiene la pausa mientras hover y foco se solapan (%s)', async order => {
+    const originalTimeout = window.setTimeout.bind(window)
+    const originalClear = window.clearTimeout.bind(window)
+    const scheduled: Array<() => void> = []
+    vi.spyOn(window, 'setTimeout').mockImplementation(((handler: TimerHandler, delay?: number, ...args: unknown[]) => {
+      if (delay === 10000) { scheduled.push(handler as () => void); return 654 }
+      return originalTimeout(handler, delay, ...args)
+    }) as typeof window.setTimeout)
+    vi.spyOn(window, 'clearTimeout').mockImplementation((id?: number) => { if (id === 654) return; originalClear(id) })
+    vi.stubGlobal('fetch', vi.fn(async () => json({ count: 24, previous: null, next: 'next', presentation, results: [{ provider, benefit_id: 'b1', benefit_title: 'Beneficio vigente' }] })))
+    const { container } = render(<NetworkCanvas />)
+    await screen.findByText('Kuar')
+    await waitFor(() => expect(scheduled).toHaveLength(1))
+    const section = container.querySelector('.network-section') as HTMLElement
+    const node = screen.getByRole('link', { name: /Kuar: Beneficio vigente/ })
+    if (order === 'hover después del foco') {
+      node.focus()
+      fireEvent.focus(node)
+      fireEvent.mouseEnter(section)
+    } else {
+      fireEvent.mouseEnter(section)
+      node.focus()
+      fireEvent.focus(node)
+    }
+    expect(document.activeElement).toBe(node)
+    expect(scheduled).toHaveLength(1)
+
+    if (order === 'hover después del foco') {
+      fireEvent.mouseLeave(section)
+      expect(document.activeElement).toBe(node)
+      expect(scheduled).toHaveLength(1)
+      fireEvent.blur(node, { relatedTarget: document.body })
+    } else {
+      fireEvent.blur(node, { relatedTarget: document.body })
+      expect(scheduled).toHaveLength(1)
+      fireEvent.mouseLeave(section)
+    }
+    await waitFor(() => expect(scheduled).toHaveLength(2))
   })
 })
