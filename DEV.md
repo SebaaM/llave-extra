@@ -1,6 +1,6 @@
 # Guía de desarrollo
 
-El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. El nombre del directorio puede contener espacios.
+El entorno local predeterminado corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24.19.0, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. Las dependencias se instalan desde los locks con uv 0.11.3 y pnpm 11.22.0; el nombre del directorio puede contener espacios. En Docker, npm se usa solo como bootstrap para instalar globalmente pnpm 11.22.0; las dependencias del proyecto se instalan con `pnpm install --frozen-lockfile`.
 
 ```powershell
 ./scripts/dev.ps1 up
@@ -9,7 +9,20 @@ El entorno local corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vi
 ./scripts/dev.ps1 down
 ```
 
-En macOS/Linux se usa `./scripts/dev.sh` con los mismos subcomandos (`up --demo`, `test`, `down`). `down` conserva los volúmenes. El código frontend se monta para hot reload; al cambiar `package.json` o `package-lock.json`, usar el script `up` para reconstruir la imagen de dependencias. Solo borrar volúmenes manualmente cuando se desee eliminar los datos locales.
+En macOS/Linux se usa `./scripts/dev.sh` con los mismos subcomandos (`up --demo`, `test`, `down`). `down` conserva los volúmenes. El código frontend se monta para hot reload; al cambiar `package.json`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`, ejecutar `./scripts/dev.ps1 up` o `./scripts/dev.sh up` para reconstruir la imagen de dependencias. Solo borrar volúmenes manualmente cuando se desee eliminar los datos locales.
+
+## uv nativo opcional
+
+Docker Compose es la forma recomendada de ejecutar y probar la aplicación; no requiere Python ni Node en el host. Para que un IDE use el entorno Python local, ejecutá desde PowerShell:
+
+```powershell
+Set-Location backend
+uv sync --locked
+uv run --locked ruff check .
+uv run --locked python -c "import django, rest_framework, redis, qrcode; print(django.get_version())"
+```
+
+Esto crea `backend/.venv`, ignorado por Git. Las pruebas nativas de dominio requieren PostgreSQL y Redis alcanzables desde el host, junto con `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST=127.0.0.1`, `POSTGRES_PORT`, `REDIS_URL=redis://127.0.0.1:<puerto>/1` y `DJANGO_SETTINGS_MODULE=config.settings.test`; después se ejecutan con `uv run --locked pytest -q`. La configuración de aplicación local también requiere `DJANGO_SECRET_KEY`, `JWT_SIGNING_KEY`, `QR_SIGNING_KEY`, `DJANGO_ALLOWED_HOSTS`, `PUBLIC_APP_URL` y SMTP local en `MAILPIT_HOST=127.0.0.1`/`MAILPIT_PORT`. Configurá esos valores en el entorno local y vinculá únicamente servicios locales accesibles. Fuera de Docker, `db`, `redis` y `mailpit` no son hostnames válidos; no abras puertos de servicios en todas las interfaces.
 
 El endpoint de salud es `/api/v1/health/` y verifica la base de datos, sin devolver detalles internos si falla. Esquema OpenAPI en `/api/schema/`; UI en `/api/docs/`. Administración en `/admin/` una vez creada una cuenta administrativa.
 

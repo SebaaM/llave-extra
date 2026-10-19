@@ -12,7 +12,7 @@ Cada etapa se entrega en un pull request independiente. Los PR dependientes se a
 
 Requisitos: Git y Docker con Compose. Desde PowerShell, ejecutá `./scripts/dev.ps1 up -Demo`; desde macOS/Linux, `./scripts/dev.sh up --demo`. El primer arranque crea `.env` con secretos locales y valores de desarrollo, construye los contenedores y aplica migraciones. El archivo `.env` está ignorado por Git.
 
-Aplicación: <http://localhost:5173>. API y OpenAPI: <http://localhost:8000/api/v1/health/> y <http://localhost:8000/api/schema/>. Documentación interactiva: <http://localhost:8000/api/docs/>. Mailpit: <http://localhost:8025>. [Contrato de API](docs/api.md), [modelo](docs/data-model.md) y [reglas](docs/business-rules.md).
+Aplicación demo: <http://localhost:5173>. API y OpenAPI: <http://localhost:8000/api/v1/health/> y <http://localhost:8000/api/schema/>. Documentación interactiva: <http://localhost:8000/api/docs/>. Mailpit: <http://localhost:8025>. [Contrato de API](docs/api.md), [modelo](docs/data-model.md) y [reglas](docs/business-rules.md).
 
 Las contraseñas generadas de las seis cuentas demo se guardan en `docs/cuentas-prueba.local.md`, un archivo local ignorado por Git. El seed es idempotente y conserva contraseñas y datos de usuarios existentes. Para parar sin borrar datos: `./scripts/dev.ps1 down` o `./scripts/dev.sh down`. Para pruebas: `./scripts/dev.ps1 test` o `./scripts/dev.sh test`.
 
@@ -23,4 +23,6 @@ Las contraseñas generadas de las seis cuentas demo se guardan en `docs/cuentas-
 - `COLLABORATOR`: refiere turistas a prestadores de su carpeta asignada.
 - `TOURIST`: consulta beneficios tras obtener acceso por QR autorizado.
 
-E2 agrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. Los enlaces de verificación/reset aparecen en Mailpit y se prueban enviando su fragmento `token` al endpoint API correspondiente; la interfaz funcional queda pendiente de la elección del prototipo F1. El administrador habilita perfiles y rota QR en `/admin/`; el seed demo crea el perfil del colaborador de ejemplo habilitado. Los prestadores y carpetas reales llegan en E3; créditos, consumos y tienda siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
+E2 entrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. E3 agrega prestadores, beneficios y carpetas con filtros de servidor. F1 contiene demostraciones aisladas sin conexión a esas API. La dirección futura del Cliente ya está elegida: Beneficios como portada y Pasaporte en Mi viaje, a implementar en F2 después de E6. El administrador habilita perfiles y rota QR en `/admin/`; el seed demo crea el perfil del colaborador de ejemplo habilitado. Consumos/créditos y tienda siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
+
+La herramienta de backend es uv 0.11.3 (Python 3.13.16) y la del frontend pnpm 11.22.0 (Node 24.19.0). Docker Compose sigue siendo el arranque predeterminado y no necesita uv, Python ni Node instalados en el host. La opción de uv para IDE y ejecución nativa, con sus requisitos de PostgreSQL/Redis/SMTP, está en [DEV.md](DEV.md).

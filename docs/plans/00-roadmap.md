@@ -32,13 +32,25 @@ Métricas por rol, referencias atribuidas, consumo/crédito/venta derivados del 
 
 ## Task 7: F1 - Prototipos de frontend
 
-Tres opciones React/Tailwind navegables (guía/pasaporte/beneficios), misma identidad y datos mock, landing pública y carpeta privada tras simulación de acceso por QR. Registro/login/ficha/progreso. La experiencia del Cliente es principal; las áreas de Colaborador, Prestador y Administrador usan permisos y accesos propios. Los tres prototipos están completos y revisados en un worktree separado; falta integrar su rama y elegir una variante. No conectar una opción como frontend definitivo hasta que el usuario elija. Archivo previsto: `frontend.md`.
+Tres opciones React/Tailwind navegables (guía/pasaporte/beneficios), misma identidad y datos mock, landing pública y carpeta privada tras simulación de acceso por QR. Registro/login/ficha/progreso. La experiencia del Cliente es principal; las áreas de Colaborador, Prestador y Administrador usan permisos y accesos propios. Los tres prototipos están integrados como demostración. La elección posterior del usuario es Beneficios como portada y Pasaporte en Mi viaje; la conexión a la API pertenece a F2. Archivo: `frontend.md`.
 
-## Dependencias y Git
+## Task 8: Herramientas - uv y pnpm
+
+Preferencia confirmada: uv 0.11.3 para backend (Python 3.13, `pyproject.toml`, `uv.lock`, entorno Docker fuera del bind mount y `.venv` nativo opcional ignorado); pnpm 11.22.0 para frontend (versión fijada, `pnpm-lock.yaml` y scripts de compilación autorizados explícitamente). Docker, CI y guías usan instalaciones bloqueadas; `requirements.txt` y `package-lock.json` se retiran como fuentes duplicadas. Los locks originales de pnpm se conservan en el archivo local fechado. Verificar instalaciones limpias, PostgreSQL real, lint/tipos/tests/build y auditoría. Conservar archivos locales existentes. Informe de resultados en `task-8-report.md`.
+
+## Task 9: F2 - Experiencia principal del Cliente
+
+Elección confirmada por el usuario: Beneficios como dirección principal y Pasaporte en Mi viaje. Crear hero que destaque valor, descuentos/promociones y propósito para turistas; después explicar cómo funciona. Conectar registro/sesión/email, QR privado, beneficios, consumos y progreso con las APIs reales, con JWT en memoria y medios autorizados. No publicar carpetas ni acuerdos no confirmados en la portada. Base modular, accesible y móvil; verificar flujos UI y navegador. Ejecutar después de E6, en PR propio. Detalle en plan frontend.
+
+## Task 10: F3 - Tienda y espacios de la red
+
+Completar tienda ARS o créditos y pedidos propios sobre servicios transaccionales, panel Prestador de propuestas/ofertas propias, panel Colaborador de recomendaciones/QR/métricas y acceso administrativo al backoffice existente. El servidor sigue siendo autoridad de permisos, stock, pagos y créditos. Verificar límites por rol, reintentos/errores y flujo real de canje demo; declarar sandbox externo pendiente si faltan credenciales. PR propio después de F2. Detalle en plan frontend.
+
+## Orden de integración y Git
 
 E1 -> E2 -> E3 -> E4 -> E5 -> E6. F1 comparte base y contratos; se entrega aparte sin depender de elección para avanzar backend. Un primer commit documental en main; cada etapa posterior tiene rama y PR. Los PRs se apilan contra la rama previa para mantener diffs acotados. Pruebas y revisión antes de publicar cada PR.
 
-Antes de E4, integrar la rama separada de F1 y migrar herramientas en un cambio propio a `uv` para backend y `pnpm` para frontend, según la preferencia confirmada. Esto no selecciona una de las tres variantes visuales ni cambia los cuatro roles persistidos.
+Antes de E4, integrar la rama separada de F1 y migrar herramientas en un cambio propio a uv 0.11.3 para backend y pnpm 11.22.0 para frontend, según la preferencia confirmada. F2 usa la elección Beneficios + Pasaporte después de E6; F3 viene después de F2. Esto no cambia los cuatro roles persistidos.
 
 ## Cierre de etapa
 

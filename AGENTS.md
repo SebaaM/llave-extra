@@ -21,6 +21,13 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 
 Ejecutar comprobaciones relevantes antes de cada commit: pruebas de backend sobre PostgreSQL, lint, tipos y build del frontend según el cambio. Documentar el comando y resultado. No afirmar que una integración externa está validada si solo se probó un adaptador simulado.
 
+## Herramientas del repositorio
+
+- Backend: Python 3.13.16 y uv 0.11.3. `backend/pyproject.toml` y `backend/uv.lock` son la fuente única; el entorno nativo vive en `backend/.venv` (ignorado). En Docker uv instala con `--locked` en `/opt/venv`, fuera del montaje `backend:/app`.
+- Frontend: Node 24.19.0 y pnpm 11.22.0. `frontend/package.json` declara `packageManager`, `pnpm-lock.yaml` es la fuente única y `pnpm-workspace.yaml` permite solo los scripts requeridos. Instalar con `pnpm install --frozen-lockfile`.
+- Docker Compose es la opción local predeterminada y no requiere Python, uv ni Node en el host. Una ejecución nativa de Django requiere PostgreSQL, Redis, SMTP local y variables de entorno configuradas para servicios accesibles desde el host; no uses `db`, `redis` ni `mailpit` como hostname fuera de Docker.
+- No montar entornos `.venv` ni `node_modules` del host en contenedores. No usar SQLite para validar el dominio.
+
 ## Delegación
 
 Los implementadores no crean otros subagentes ni sus propios revisores. El orquestador asigna trabajo acotado y revisores independientes. Usar modelos económicos para trabajo mecánico y un modelo de juicio adecuado para seguridad y concurrencia. Reportar dudas y hallazgos en archivos, sin duplicar historiales extensos.
