@@ -33,11 +33,11 @@
 
 **Interfaces:** modelo `FolderBenefit`, unicidad de ProviderMembership.user, APIs y DTO exactos de la spec. Frontend sigue consumiendo los contratos privados existentes por carpeta, con selección concreta en servidor. No cambiar respuesta de lista de negocios propios (array de cero o uno).
 
-- [ ] Escribir/ejecutar regresiones de selección concreta, aislamiento, revocación, catálogo privado apagado, duplicados/carreras, migración sin ofertas futuras y negocio único.
-- [ ] Implementar migración conservadora y recomendaciones como única autoridad de beneficios privados; cambiar todas las rutas, medios, red, elegibilidad referida y semillas. Conservar FolderProvider histórico sin capacidad de otorgar acceso; Admin lo consulta, gestiona FolderBenefit nuevo.
-- [ ] Implementar APIs propias del Colaborador y PNG de QR propio del Prestador, validación de borrado protegido con conflicto y herencia demo en altas de ofertas. No introducir métricas ni privilegios de publicación.
-- [ ] Ejecutar suite PostgreSQL/Redis, Ruff, makemigrations --check y OpenAPI --validate; documentar resultados y actualizar contrato/reglas/contexto.
-- [ ] Commit Conventional español y revisión independiente aprobada antes de Task 2. No aplicar migraciones en la base principal desde el worker.
+- [x] Escribir/ejecutar regresiones de selección concreta, aislamiento, revocación, catálogo privado apagado, duplicados/carreras, migración sin ofertas futuras y negocio único.
+- [x] Implementar migración conservadora y recomendaciones como única autoridad de beneficios privados; cambiar todas las rutas, medios, red, elegibilidad referida y semillas. Conservar FolderProvider histórico sin capacidad de otorgar acceso; Admin lo consulta, gestiona FolderBenefit nuevo.
+- [x] Implementar APIs propias del Colaborador y PNG de QR propio del Prestador, validación de borrado protegido con conflicto y herencia demo en altas de ofertas. No introducir métricas ni privilegios de publicación.
+- [x] Ejecutar suite PostgreSQL/Redis, Ruff, makemigrations --check y OpenAPI --validate; documentar resultados y actualizar contrato/reglas/contexto.
+- [x] Commit Conventional español y revisión independiente aprobada antes de Task 2. No aplicar migraciones en la base principal desde el worker.
 
 ## Task 2: Shell y paneles React por rol
 
@@ -45,8 +45,8 @@
 
 **Interfaces:** rutas, secciones y DTO de la spec y Task 1; mantener cliente API seguro existente. Un único negocio sin selector; Colaborador agrega/quita beneficios concretos. Imágenes y PNG como Blob privado y enlaces externos sanitizados.
 
-- [ ] Regresiones de login/restauración/rutas por rol, acciones CRUD permitidas, validaciones, alta/repetición/quita de recomendación, estados vacíos/deshabilitados, permisos y respuestas tardías de cambio de cuenta.
-- [ ] Implementar shell lateral responsive y vistas de la spec, feedback de formularios y estados reales; acceso al panel en header y `/espacio` compatible. No reutilizar placeholder ni crear botones sin acción o gráficos ficticios.
-- [ ] Integrar multipart sin romper JSON, refresh/reintento/cancelación; QR protegido sin servicios externos, storage ni query strings. Formularios PIN solo escritura.
-- [ ] Ejecutar pnpm test/lint/typecheck/build secuencialmente para evitar contención; comandos bloqueados y auditoría en CI. Actualizar documentación de la nueva etapa y cuentas demo sin publicar secretos.
-- [ ] Commit Conventional español; revisión Task 2 e integración completa, QA real de ambos roles y móvil 320 px por orquestador; PR contra develop y CI del HEAD final. Detenerse antes de E5/E6.
+- [x] Regresiones de login/restauración/rutas por rol, acciones CRUD permitidas, validaciones, alta/repetición/quita de recomendación, estados vacíos/deshabilitados, permisos y respuestas tardías de cambio de cuenta.
+- [x] Implementar shell lateral responsive y vistas de la spec, feedback de formularios y estados reales; acceso al panel en header y `/espacio` compatible. No reutilizar placeholder ni crear botones sin acción o gráficos ficticios.
+- [x] Integrar multipart sin romper JSON, refresh/reintento/cancelación; QR protegido sin servicios externos, storage ni query strings. Formularios PIN solo escritura.
+- [x] Ejecutar pnpm test/lint/typecheck/build secuencialmente para evitar contención; comandos bloqueados y auditoría en CI. Actualizar documentación de la nueva etapa y cuentas demo sin publicar secretos.
+- [ ] Revisión Task 2/integración y QA aprobados en `2405cae`; publicar PR contra develop y verificar CI del HEAD final. Detenerse antes de E5/E6.
