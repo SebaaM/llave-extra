@@ -1,6 +1,6 @@
 # Verificación del backoffice operativo de la red
 
-Estado: implementación, QA y revisión independiente aprobados sobre `2405cae`; publicación del PR y CI pendientes. Spec y plan: `docs/plans/08-backoffice-red-spec.md` y `docs/plans/08-backoffice-red.md`. Base revisada `95b9953`, plan inicial `1c3a612`, rama `feature/backoffice-red`. El PR propio tendrá base develop y dependencia del PR #9, sin merges desde este trabajo.
+Estado: implementación, QA y revisión independiente aprobados sobre `2405cae`; entregado en [PR #10](https://github.com/SebaaM/llave-extra/pull/10), contra develop y sin fusionar. CI de producto/documentación `bc36bc0` aprobado; el estado del HEAD vigente se consulta en el PR. Spec y plan: `docs/plans/08-backoffice-red-spec.md` y `docs/plans/08-backoffice-red.md`. Base revisada `95b9953`, plan inicial `1c3a612`, rama `feature/backoffice-red`, dependiente del PR #9 todavía abierto. No hubo merges ni force push desde este trabajo.
 
 ## Alcance confirmado
 
@@ -24,7 +24,7 @@ El preflight de PostgreSQL principal encontró cero usuarios con múltiples nego
 - [x] Backend y revisión independiente; corrección de concurrencia aprobada.
 - [x] Frontend, pruebas/lint/tipos/build y revisión integrada, incluidos los ajustes de denegación y tacto.
 - [x] Migración local después del gate backend; QA real de ambos roles y viewport320, con los límites manuales descritos abajo.
-- [ ] PR y CI del HEAD final. No hay pagos, analíticas ni despliegue productivo en este alcance.
+- [x] PR #10 adjunto al chat y CI de producto/documentación `bc36bc0` aprobado; comprobar el HEAD vigente en el PR. No hay pagos, analíticas ni despliegue productivo en este alcance.
 
 ## Backend — evidencia de Task 1
 
@@ -82,3 +82,9 @@ El selector de archivos del controlador se prolongó y la actualización del fro
 - Después de la corrección, `/referencia` con sesión ADMIN muestra «Ingresá como Cliente» y no presenta campo de token ni botón de vinculación. Los otros roles y el uso anónimo/Cliente se verifican además en regresiones UI.
 - Consulta final de solo lectura en PostgreSQL: diez asociaciones históricas, ocho selecciones (igual que tras migrar), once beneficios públicos demo, un borrador QA demo y cero resultados públicos para ese borrador.
 - Verificación real de M2 después del ajuste: a 320 px, «Editar información →» mide 44 px de alto y 176,34 px de ancho; ancho útil y scroll documental de 305 px, sin overflow. Se restableció el viewport y se conservó el panel Prestador abierto. Captura de resumen Colaborador guardada y revisada sin códigos privados: `work/backoffice-colaborador-final.jpg`.
+
+## CI y publicación
+
+[CI del PR sobre bc36bc0](https://github.com/SebaaM/llave-extra/actions/runs/39361199134): jobs backend y frontend completados con success. Logs inspeccionados por el orquestador: `97 passed in 10.22s` sobre PostgreSQL/Redis, Ruff aprobado y migraciones sin cambios; `78 passed` de Vitest en siete archivos, proxy 1/1, instalación frozen, lint, tipos, build y `pnpm audit --audit-level moderate` con «No known vulnerabilities found». Es una comprobación de dependencias, no una validación de pagos u otros servicios externos.
+
+PR #10 `feature/backoffice-red` → `develop`, sin conflictos de fusión detectados por GitHub al abrirlo; el estado puede cambiar si se modifica la base. Integra primero el PR #9, que permanecía abierto en la consulta de cierre. El último commit documental no cambia producto; sus comprobaciones actuales se consultan en el PR y el orquestador las espera antes de finalizar la entrega. Se conserva el checkout para revisión; se elimina únicamente el workspace SDD temporal de esta etapa después de guardar la evidencia y las decisiones.

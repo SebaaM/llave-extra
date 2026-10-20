@@ -4,7 +4,7 @@
 
 > Pedido posterior aprobado: adelantar únicamente los dashboards operativos Prestador/Colaborador de F3. Colaborador elige beneficios concretos del catálogo; usuario Prestador maneja un solo negocio. Admin continúa en Django. [Plan 08](08-backoffice-red.md) y [spec](08-backoffice-red-spec.md) prevalecen en este alcance; tienda y analíticas siguen pendientes.
 
-Estado del plan 08: producto implementado y revisión independiente aprobada en `2405cae`, QA real de ambos roles y móvil completada con límites documentados. Pendientes publicación del PR y CI final; evidencia en [verificación](../verification/08-backoffice-red.md). Detenerse al cerrar esta etapa, antes de tienda y analíticas.
+Estado del plan 08: producto implementado y revisión independiente aprobada en `2405cae`, QA real de ambos roles y móvil completada con límites documentados. [PR #10](https://github.com/SebaaM/llave-extra/pull/10) abierto contra develop, dependiente del #9, sin fusiones. CI de producto `bc36bc0` aprobado (97 backend, 78 UI y 1 proxy); CI del HEAD vigente en el PR. Evidencia en [verificación](../verification/08-backoffice-red.md). Etapa cerrada; detenerse antes de tienda y analíticas.
 
 Objetivo: reconstruir Llave Extra en etapas verificables, con PRs independientes y cuatro roles corregidos. El Cliente es el usuario principal; conserva el identificador técnico `TOURIST` por compatibilidad y no constituye un quinto rol. Colaborador (`COLLABORATOR`), Prestador (`PROVIDER`) y Administrador (`ADMIN`) tienen funciones distintas. El catálogo general muestra beneficios públicos configurables; las carpetas y asignaciones de colaboradores requieren acceso mediante un QR autorizado.
 

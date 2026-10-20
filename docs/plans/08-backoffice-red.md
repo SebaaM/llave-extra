@@ -49,4 +49,4 @@
 - [x] Implementar shell lateral responsive y vistas de la spec, feedback de formularios y estados reales; acceso al panel en header y `/espacio` compatible. No reutilizar placeholder ni crear botones sin acción o gráficos ficticios.
 - [x] Integrar multipart sin romper JSON, refresh/reintento/cancelación; QR protegido sin servicios externos, storage ni query strings. Formularios PIN solo escritura.
 - [x] Ejecutar pnpm test/lint/typecheck/build secuencialmente para evitar contención; comandos bloqueados y auditoría en CI. Actualizar documentación de la nueva etapa y cuentas demo sin publicar secretos.
-- [ ] Revisión Task 2/integración y QA aprobados en `2405cae`; publicar PR contra develop y verificar CI del HEAD final. Detenerse antes de E5/E6.
+- [x] Revisión Task 2/integración y QA aprobados en `2405cae`; [PR #10](https://github.com/SebaaM/llave-extra/pull/10) publicado contra develop sin fusionar, dependiente del #9. CI `bc36bc0` aprobado; estado vigente en el PR. Detenerse antes de E5/E6.

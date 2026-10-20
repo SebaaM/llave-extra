@@ -1,8 +1,8 @@
 # Pendientes
 
-- [ ] F3 operativo adelantado: dashboards Prestador y Colaborador, barra lateral, un negocio por Prestador y selección concreta de beneficios por Colaborador. Admin en Django; sin tienda ni analíticas. Ver [plan 08](docs/plans/08-backoffice-red.md).
+- [x] F3 operativo adelantado: dashboards Prestador y Colaborador, barra lateral, un negocio por usuario Prestador y selección concreta de beneficios. Admin en Django; sin tienda ni analíticas. [PR #10](https://github.com/SebaaM/llave-extra/pull/10) contra develop, sin fusionar y dependiente del #9. Producto revisado, QA real y CI `bc36bc0` aprobados; CI vigente en el PR. Ver [plan 08](docs/plans/08-backoffice-red.md) y [evidencia](docs/verification/08-backoffice-red.md). Detenerse al completar esta etapa.
 - [x] Plan 08 Task 1: backend de selección concreta, APIs propias y unicidad de negocio revisados en `26458f2`; migración principal aplicada por el orquestador con preflight sin usuarios multinegocio.
-- [x] Plan 08 Task 2 producto: paneles React Prestador/Colaborador, multipart, rutas por rol y QR privado; QA real y revisión independiente aprobadas en `2405cae`, incluidos denegación de medios/credenciales y controles táctiles de 44 px. Pendientes PR/CI y cierre documental de etapa.
+- [x] Plan 08 Task 2: paneles React Prestador/Colaborador, multipart, rutas por rol y QR privado; QA real y revisión independiente aprobadas en `2405cae`, incluidos denegación de medios/credenciales y controles táctiles de 44 px. Entregado en PR #10 con CI de producto aprobado.
 
 - [x] Corrección 19/10/2026: implementación, QA y revisión independiente aprobadas; [PR #9](https://github.com/SebaaM/llave-extra/pull/9) abierto contra develop, sin fusionar. CI de producto `2dd1c7e` aprobado; el estado vigente se consulta en el PR. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md) y [verificación](docs/verification/07-catalogo-publico.md). Detenerse antes de E5/E6/F3.
 - [x] Corrección Task 1: enrutar backoffice Django por Vite y documentar GitFlow; QA de login real realizado en desarrollo.
