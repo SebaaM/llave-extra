@@ -7,11 +7,17 @@ import { Feedback } from './UI'
 
 type Credential = { configured?: boolean; qr_url?: string; url?: string }
 export function WorkspaceQR({ kind, credentialPath }: { kind: 'provider' | 'collaborator'; credentialPath: string }) {
-  const load = useCallback((signal: AbortSignal) => api<Credential>(credentialPath, { signal }), [credentialPath])
-  const resource = useResource(load)
   const [notice, setNotice] = useState('')
   const [denied, setDenied] = useState(false)
   const deny = useCallback(() => setDenied(true), [])
+  const load = useCallback((signal: AbortSignal) => {
+    const version = currentSessionVersion()
+    return api<Credential>(credentialPath, { signal }).catch(failure => {
+      if (!signal.aborted && version === currentSessionVersion() && failure instanceof ApiError && (failure.status === 401 || failure.status === 403)) deny()
+      throw failure
+    })
+  }, [credentialPath, deny])
+  const resource = useResource(load)
   const current = useCurrent()
   const url = safeExternal(resource.data?.qr_url || resource.data?.url)
   const configured = resource.data && resource.data.configured !== false && url

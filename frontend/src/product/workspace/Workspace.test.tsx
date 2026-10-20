@@ -55,6 +55,9 @@ describe('paneles operativos por rol', () => {
     const { calls } = mount('PROVIDER', '/espacio')
     await screen.findByRole('heading', { name: provider.name })
     expect(window.location.pathname).toBe('/prestador')
+    const editLink = screen.getByRole('link', { name: /Editar información/ })
+    expect(editLink.classList.contains('button')).toBe(true)
+    expect(editLink.classList.contains('button-dark')).toBe(true)
     expect(screen.getByRole('link', { name: /Mis beneficios/ }).getAttribute('href')).toBe('/prestador/beneficios')
     expect(calls.some(call => /wallet|progress|consumptions|collaborator/.test(call.path))).toBe(false)
     expect(screen.queryByRole('combobox')).toBeNull()
@@ -270,6 +273,40 @@ describe('paneles operativos por rol', () => {
     await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
   })
 
+  it.each([401, 403])('cierra recomendaciones si el medio privado responde %i', async status => {
+    let refreshes = 0
+    mount('COLLABORATOR', '/colaborador/recomendaciones', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 || status === 403 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/collaborator/recommendations/') return json({ recommendations: [{ benefit_id: benefit.id, available: true, benefit: { ...catalogBenefit, image_url: '/api/v1/private/benefit-image/' } }] })
+      if (path === '/api/v1/private/benefit-image/') return json({ detail: 'Acceso revocado' }, status)
+    })
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: benefit.title })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Quitar recomendación' })).toBeNull()
+  })
+
+  it('mantiene recomendaciones y usa imagen ausente si el medio responde 404', async () => {
+    const { calls, container } = mount('COLLABORATOR', '/colaborador/recomendaciones', path => {
+      if (path === '/api/v1/collaborator/recommendations/') return json({ recommendations: [{ benefit_id: benefit.id, available: true, benefit: { ...catalogBenefit, image_url: '/api/v1/private/benefit-image/' } }] })
+      if (path === '/api/v1/private/benefit-image/') return json({ detail: 'No encontrada' }, 404)
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    await waitFor(() => expect(calls.some(call => call.path === '/api/v1/private/benefit-image/')).toBe(true))
+    expect(screen.queryByRole('heading', { name: 'Tu espacio no está disponible' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Quitar recomendación' })).toBeTruthy()
+    expect(container.querySelector('.product-provider-image span')).not.toBeNull()
+    expect(screen.queryByRole('img', { name: benefit.title })).toBeNull()
+  })
+
+  it('propaga una denegación de medio privado al panel del Prestador', async () => {
+    mount('PROVIDER', '/prestador', path => {
+      if (path === '/api/v1/provider/providers/') return json([{ ...provider, image_url: '/api/v1/private/provider-image/' }])
+      if (path === '/api/v1/private/provider-image/') return json({ detail: 'Acceso revocado' }, 403)
+    })
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: provider.name })).toBeNull()
+  })
+
   it('cierra el menú móvil al navegar y conserva aria-controls', async () => {
     mount('PROVIDER', '/prestador')
     fireEvent.click(await screen.findByRole('button', { name: /Menú/ }))
@@ -425,5 +462,21 @@ describe('QR privado y PIN', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar PIN' }))
     await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
     expect(screen.queryByLabelText('Nuevo PIN')).toBeNull()
+  })
+
+  it.each([401, 403])('desmonta y limpia el formulario PIN si la credencial JSON responde %i', async status => {
+    let finishCredential!: (response: Response) => void
+    let refreshes = 0
+    mount('PROVIDER', '/prestador/qr', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 || status === 403 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/') return new Promise<Response>(resolve => { finishCredential = resolve })
+    })
+    const input = await screen.findByLabelText('Nuevo PIN') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '123456' } })
+    expect(input.value).toBe('123456')
+    await act(async () => finishCredential(json({ detail: 'Sesión vencida' }, status)))
+    await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
+    expect(screen.queryByLabelText('Nuevo PIN')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Guardar PIN' })).toBeNull()
   })
 })

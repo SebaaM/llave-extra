@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { privateImage } from './api'
+import { ApiError, currentSessionVersion, privateImage } from './api'
 
-export function PrivatePhoto({ path, alt }: { path: string | null; alt: string }) {
+export function PrivatePhoto({ path, alt, onDenied }: { path: string | null; alt: string; onDenied?: () => void }) {
   const [image, setImage] = useState<{ path: string | null; url: string } | null>(null)
 
   useEffect(() => {
     let alive = true
     let created: string | null = null
+    const version = currentSessionVersion()
     privateImage(path).then(value => {
       if (!value) return
       if (!alive) {
@@ -15,15 +16,18 @@ export function PrivatePhoto({ path, alt }: { path: string | null; alt: string }
       }
       created = value
       setImage({ path, url: value })
-    }).catch(() => {
-      if (alive) setImage(null)
+    }).catch(failure => {
+      if (alive && version === currentSessionVersion()) {
+        setImage(null)
+        if (failure instanceof ApiError && (failure.status === 401 || failure.status === 403)) onDenied?.()
+      }
     })
 
     return () => {
       alive = false
       if (created) URL.revokeObjectURL(created)
     }
-  }, [path])
+  }, [path, onDenied])
 
   const url = image?.path === path ? image.url : null
   return <div className="product-provider-image">
