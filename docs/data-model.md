@@ -10,9 +10,11 @@
 
 `referrals.FolderAccess`: FK protegidas a Cliente (`TOURIST`) y perfil, versión QR redimida, fecha de creación, unicidad `(tourist, collaborator, qr_version)`. La fila histórica permanece tras rotación o baja. La autorización de la carpeta usa estado y roles vigentes, nunca la existencia de la fila sola. El consumo directo no necesita `FolderAccess`.
 
-`providers.Provider`: UUID, ID público legado opcional único, slug, ficha y contacto opcional, imagen privada, estado `DRAFT/PUBLISHED/INACTIVE`, marca `demo` y URL pública de procedencia. La publicación la decide Admin. `providers.ProviderMembership`: relación única `(user, provider)` para un usuario de rol PROVIDER; no se autoasigna.
+`providers.Provider`: UUID, ID público legado opcional único, slug, ficha y contacto opcional, imagen privada, estado `DRAFT/PUBLISHED/INACTIVE`, marca `demo` y URL pública de procedencia. La publicación la decide Admin. `providers.ProviderMembership`: FK conservadas y unicidad PostgreSQL de `user` además de `(user, provider)`: cada cuenta PROVIDER tiene cero o un negocio, asignado por Admin; un negocio puede tener varios usuarios. La migración falla sin modificar membresías si detecta un usuario con varios negocios.
 
-`providers.FolderProvider`: relación única `(collaborator, provider)` que define la carpeta curada. Solo Admin la cambia. Insertar/borrar bloquea primero perfil y luego prestador. Grant y pertenencia deben ser actuales para E4.
+`providers.FolderProvider`: asociación histórica conservada, de solo lectura en Admin. Ya no autoriza ninguna consulta o consumo referido.
+
+`providers.FolderBenefit`: FK protegidas a perfil y beneficio, `created_at` y unicidad PostgreSQL `(collaborator, benefit)`. Es la única pertenencia canónica de recomendaciones privadas. Prestador se deriva del beneficio; no se heredan ofertas nuevas. La migración 0006 toma una instantánea de los beneficios publicados/vigentes de negocios publicados en cada asociación histórica. Las selecciones no disponibles permanecen, con contenido nulo en la API propia. Agregar/quitar desde API, métodos de dominio y Admin bloquea perfil → prestador → beneficio, coordinando con E4. Las relaciones de una selección existente son inmutables; no usar bulk writes para eludir esos bloqueos.
 
 `providers.Benefit`: UUID, prestador, título, descripción y condiciones legibles, fechas de vigencia opcionales, imagen privada, estado y procedencia demo. Restricciones PostgreSQL impiden intervalo invertido y publicación con título o condiciones vacíos. La vista turística también comprueba fechas actuales. El prestador crea borradores; editar una oferta publicada la devuelve a borrador.
 

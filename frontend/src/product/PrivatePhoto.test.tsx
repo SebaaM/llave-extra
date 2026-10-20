@@ -1,4 +1,4 @@
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { privateImage } = vi.hoisted(() => ({ privateImage: vi.fn() }))
@@ -9,6 +9,7 @@ vi.mock('./api', async importOriginal => {
 })
 
 import { PrivatePhoto } from './BenefitsPages'
+import { ApiError, invalidatePrivateState } from './api'
 
 afterEach(() => {
   cleanup()
@@ -27,5 +28,16 @@ describe('imagen autorizada', () => {
     await act(async () => { finish('blob:private-late') })
 
     expect(revoke).toHaveBeenCalledWith('blob:private-late')
+  })
+
+  it('ignora una denegación de medio tardía de una sesión anterior', async () => {
+    let reject!: (error: Error) => void
+    const onDenied = vi.fn()
+    privateImage.mockReturnValue(new Promise((_, fail) => { reject = fail }))
+    render(<PrivatePhoto path="/api/v1/private/photo/" alt="Foto privada" onDenied={onDenied} />)
+    await waitFor(() => expect(reject).toBeTypeOf('function'))
+    invalidatePrivateState()
+    await act(async () => { reject(new ApiError(401, 'Sesión anterior')) })
+    expect(onDenied).not.toHaveBeenCalled()
   })
 })

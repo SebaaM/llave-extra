@@ -17,10 +17,12 @@ from credits.services import (
     set_provider_pin,
     sign_provider_qr,
 )
+from providers.access import selected_providers
+from providers.catalog import catalog_benefits
 from providers.models import (
     Benefit,
     DemoSeedState,
-    FolderProvider,
+    FolderBenefit,
     Provider,
     ProviderMembership,
     Publication,
@@ -121,7 +123,8 @@ class Command(BaseCommand):
                     if users[email].role == User.Role.COLLABORATOR:
                         profile, _ = CollaboratorProfile.objects.get_or_create(user=users[email], defaults={"enabled": True})
                         for legacy in sorted(assigned):
-                            FolderProvider.assign(profile.pk, providers[legacy].pk)
+                            for benefit in catalog_benefits().filter(provider=providers[legacy]):
+                                FolderBenefit.assign(profile.pk, benefit.pk)
 
             # E4 adds a separate, one-time scenario. Never restore changed publication,
             # folder assignments or PINs on later seed runs.
@@ -129,8 +132,8 @@ class Command(BaseCommand):
             generated_pins = {}
             if not credit_state:
                 profile = CollaboratorProfile.objects.filter(user=users["colaborador@llaveextra.test"], enabled=True).first()
-                eligible = list(Provider.objects.filter(
-                    status=Publication.PUBLISHED, demo=True, folder_assignments__collaborator=profile,
+                eligible = list(selected_providers(profile.pk).filter(
+                    demo=True,
                     consumption_credential__isnull=True, credit_rule__isnull=True,
                 ).order_by("legacy_public_id")[:3]) if profile else []
                 policy, _ = CreditPolicy.objects.get_or_create(singleton=1)
