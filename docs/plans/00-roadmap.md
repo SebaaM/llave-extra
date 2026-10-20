@@ -61,3 +61,8 @@ La integración histórica de F1 y la migración de herramientas a uv 0.11.3 y p
 ## Cierre de etapa
 
 Requisitos implementados y comprobados, registro de pruebas, revisión independiente, contexto/ToDo actualizados y PR adjunto al chat. Cualquier limitación externa queda declarada en el PR. Docker real es requisito para declarar pruebas PostgreSQL completas.
+
+## Inicio autorizado E5 — 20/10/2026
+
+El pedido actual revoca la pausa al cerrar plan 08 y autoriza E5 backend/API/Admin, según [especificación](05-tienda-pagos-spec.md) y [plan](05-tienda-pagos.md). Rama feature/tienda-pagos desde PR #10 revisado; PR a develop dependiente de #10 mientras siga abierto, sin fusiones. E6 y frontend de tienda siguen pendientes.
+

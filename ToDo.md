@@ -26,3 +26,6 @@
 - [ ] Incorporar vencimiento de créditos mediante una regla prospectiva en una etapa posterior.
 
 - [x] Corrección Task 5: contrato de red visual con configuración administrativa general y privada por carpeta; ver `docs/api.md` e informe Task 5.
+
+- [ ] E5 en curso por pedido del 20/10: dominio/canjes, pagos recuperables y Admin; plan docs/plans/05-tienda-pagos.md. UI de tienda y E6 quedan después.
+
