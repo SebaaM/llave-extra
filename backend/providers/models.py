@@ -64,7 +64,10 @@ class ProviderMembership(models.Model):
     class Meta:
         verbose_name = "Usuario de prestador"
         verbose_name_plural = "Usuarios de prestadores"
-        constraints = [models.UniqueConstraint(fields=["user", "provider"], name="unique_provider_membership")]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "provider"], name="unique_provider_membership"),
+            models.UniqueConstraint(fields=["user"], name="unique_provider_membership_user"),
+        ]
 
     def __str__(self):
         return f"{self.user} — {self.provider}"
@@ -160,6 +163,61 @@ class Benefit(models.Model):
             benefit.status = status
             benefit.full_clean()
             benefit.save(update_fields=["status"])
+
+
+class FolderBenefit(models.Model):
+    collaborator = models.ForeignKey(CollaboratorProfile, verbose_name="Colaborador", on_delete=models.PROTECT, related_name="folder_benefits")
+    benefit = models.ForeignKey(Benefit, verbose_name="Beneficio recomendado", on_delete=models.PROTECT, related_name="folder_selections")
+    created_at = models.DateTimeField("Fecha de selección", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Beneficio recomendado"
+        verbose_name_plural = "Beneficios recomendados"
+        constraints = [models.UniqueConstraint(fields=["collaborator", "benefit"], name="unique_folder_benefit")]
+
+    def __str__(self):
+        return f"{self.benefit} — carpeta de {self.collaborator}"
+
+    @staticmethod
+    def lock_target(profile_id, benefit_id):
+        """Caller holds a transaction: profile -> provider -> benefit, as in E4.
+
+        The first benefit read only locates its immutable provider. No joined
+        User locks are acquired after the profile (PostgreSQL OF self).
+        """
+        CollaboratorProfile.objects.select_for_update(of=("self",)).get(pk=profile_id)
+        provider_id = Benefit.objects.values_list("provider_id", flat=True).get(pk=benefit_id)
+        Provider.objects.select_for_update().get(pk=provider_id)
+        return Benefit.objects.select_for_update().get(pk=benefit_id, provider_id=provider_id)
+
+    def clean(self):
+        if self.pk:
+            original = type(self).objects.filter(pk=self.pk).values("collaborator_id", "benefit_id").first()
+            if original and (original["collaborator_id"] != self.collaborator_id or original["benefit_id"] != self.benefit_id):
+                raise ValidationError("No se puede reasignar una selección existente; quitá y agregá la selección")
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            self.lock_target(self.collaborator_id, self.benefit_id)
+            self.clean()
+            return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            self.lock_target(self.collaborator_id, self.benefit_id)
+            return super().delete(*args, **kwargs)
+
+    @classmethod
+    def assign(cls, profile_id, benefit_id):
+        with transaction.atomic():
+            cls.lock_target(profile_id, benefit_id)
+            return cls.objects.get_or_create(collaborator_id=profile_id, benefit_id=benefit_id)
+
+    @classmethod
+    def remove(cls, profile_id, benefit_id):
+        with transaction.atomic():
+            cls.lock_target(profile_id, benefit_id)
+            cls.objects.filter(collaborator_id=profile_id, benefit_id=benefit_id).delete()
 
 
 class DemoSeedState(models.Model):

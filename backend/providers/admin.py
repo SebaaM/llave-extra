@@ -1,9 +1,18 @@
 from django import forms
 from django.contrib import admin
+from django.db import transaction
 
 from accounts.admin import AdminRoleOnlyMixin
+from referrals.models import CollaboratorProfile
 
-from .models import Benefit, CatalogConfig, FolderProvider, Provider, ProviderMembership
+from .models import (
+    Benefit,
+    CatalogConfig,
+    FolderBenefit,
+    FolderProvider,
+    Provider,
+    ProviderMembership,
+)
 
 NETWORK_LABELS = {
     "network_title": "Título de la red",
@@ -62,16 +71,40 @@ class ProviderMembershipAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 @admin.register(FolderProvider)
 class FolderProviderAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     list_display = ("collaborator", "provider")
+    readonly_fields = ("collaborator", "provider")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(FolderBenefit)
+class FolderBenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("collaborator", "benefit", "created_at")
+    readonly_fields = ("created_at",)
 
     def get_readonly_fields(self, request, obj=None):
-        return ("collaborator", "provider") if obj else ()
+        return (*self.readonly_fields, "collaborator", "benefit") if obj else self.readonly_fields
 
     def delete_model(self, request, obj):
-        FolderProvider.remove(obj.collaborator_id, obj.provider_id)
+        FolderBenefit.remove(obj.collaborator_id, obj.benefit_id)
 
     def delete_queryset(self, request, queryset):
-        for profile_id, provider_id in queryset.values_list("collaborator_id", "provider_id"):
-            FolderProvider.remove(profile_id, provider_id)
+        # A bulk admin action must take *all* profile locks before any provider:
+        # interleaving profile/provider pairs could deadlock with a single PUT.
+        with transaction.atomic():
+            profile_ids = list(queryset.values_list("collaborator_id", flat=True))
+            list(CollaboratorProfile.objects.select_for_update(of=("self",)).filter(pk__in=profile_ids).order_by("pk"))
+            selections = list(queryset.values_list("collaborator_id", "benefit_id", "benefit__provider_id"))
+            list(Provider.objects.select_for_update().filter(pk__in=[row[2] for row in selections]).order_by("pk"))
+            list(Benefit.objects.select_for_update().filter(pk__in=[row[1] for row in selections]).order_by("pk"))
+            for profile_id, benefit_id, _ in selections:
+                FolderBenefit.remove(profile_id, benefit_id)
 
 
 @admin.register(Benefit)

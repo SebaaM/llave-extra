@@ -1,6 +1,7 @@
 # Pendientes
 
 - [ ] F3 operativo adelantado: dashboards Prestador y Colaborador, barra lateral, un negocio por Prestador y selección concreta de beneficios por Colaborador. Admin en Django; sin tienda ni analíticas. Ver [plan 08](docs/plans/08-backoffice-red.md).
+- [ ] Plan 08 Task 1: backend de selección concreta, APIs propias y unicidad de negocio implementados; completar revisión independiente antes de aplicar migración en la base principal y avanzar a los dashboards React.
 
 - [x] Corrección 19/10/2026: implementación, QA y revisión independiente aprobadas; [PR #9](https://github.com/SebaaM/llave-extra/pull/9) abierto contra develop, sin fusionar. CI de producto `2dd1c7e` aprobado; el estado vigente se consulta en el PR. Ver [plan](docs/plans/07-catalogo-publico-gitflow.md) y [verificación](docs/verification/07-catalogo-publico.md). Detenerse antes de E5/E6/F3.
 - [x] Corrección Task 1: enrutar backoffice Django por Vite y documentar GitFlow; QA de login real realizado en desarrollo.

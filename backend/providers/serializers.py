@@ -17,6 +17,8 @@ class ImageURLMixin:
                 name = "folder-provider-media" if folder_id else "owned-provider-media"
                 kwargs = {"folder_id": folder_id, "provider_id": obj.pk} if folder_id else {"provider_id": obj.pk}
         else:
+            if self.context.get("collaborator"):
+                return reverse("collaborator-recommendation-media", kwargs={"benefit_id": obj.pk})
             name = "folder-benefit-media" if folder_id else "owned-benefit-media"
             kwargs = {"folder_id": folder_id, "provider_id": obj.provider_id, "benefit_id": obj.pk} if folder_id else {"provider_id": obj.provider_id, "benefit_id": obj.pk}
         return reverse(name, kwargs=kwargs)
