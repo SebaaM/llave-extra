@@ -14,8 +14,10 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 - Consumos, créditos y stock requieren transacciones, restricciones de base de datos e idempotencia.
 - No versionar credenciales, `.env`, códigos privados ni cuentas reales. `.env-example` contiene valores vacíos.
 - Mantener `ToDo.md`, contexto, instrucciones y contrato OpenAPI alineados con cada funcionalidad.
-- Desde E2, E3 usa `referrals.access.active_folder_access(user, profile)` para visibilidad; E4 usa `referrals.access.locked_folder_access(user, profile_id)` dentro de la transacción de acreditación. Ninguna etapa infiere acceso solo por existencia histórica de `FolderAccess`.
-- Commits Conventional Commits con descripción en español. Trabajar fuera de main después del commit inicial. No fusionar PRs.
+- Catálogo general público de beneficios publicados/vigentes, configurable por administrador; carpetas y referencias siguen privadas. Ver `docs/plans/07-catalogo-publico-spec.md`, que prevalece sobre reglas históricas de catálogo privado.
+- E3 usa `referrals.access.active_folder_access(user, profile)` para recomendaciones privadas; E4 usa `referrals.access.locked_folder_access(user, profile_id)` si se aporta una referencia dentro de la transacción. El consumo directo permite colaborador nulo; una referencia inválida nunca degrada a directo. Ambos consumos exigen Prestador publicado con beneficio publicado/vigente, QR/PIN válido y Cliente activo con email verificado; el interruptor del catálogo solo afecta visibilidad pública. Ninguna etapa infiere acceso por existencia histórica de `FolderAccess`.
+- GitFlow obligatorio: main estable, develop integración, feature/*, release/* y hotfix/*. Commits Conventional Commits con descripción en español. No fusionar PRs. Ver `docs/gitflow.md`.
+- Backoffice en español: definir nombres de aplicaciones/modelos/campos con `verbose_name`/`verbose_name_plural` y descripciones de columnas/acciones administrativas. Mantener identificadores de código, roles técnicos, tablas, campos y contratos API; las etiquetas de presentación no deben renombrarlos. El rol `TOURIST` se muestra como Cliente.
 
 ## Verificación
 

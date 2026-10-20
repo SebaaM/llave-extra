@@ -8,6 +8,8 @@ El QR de colaborador contiene una capacidad firmada con identificador aleatorio 
 
 El administrador controla miembros de carpeta y habilitación. Rotación del QR y deshabilitación invalidan accesos anteriores. Una relación de turista con una carpeta nunca otorga pertenencia de prestador o permisos administrativos. Las referencias no son autenticación de consumo; este usa otro QR de prestador y un PIN privado.
 
+El catálogo general público es una superficie separada: lista únicamente beneficios publicados y vigentes de prestadores publicados, con DTO explícito sin relaciones de carpeta. Un interruptor singleton de Admin cierra listado, detalle y medios públicos por URL directa. Las vistas privadas por QR conservan su propia autorización y no consultan ese interruptor.
+
 ## Autoridad y consistencia
 
 El backend calcula importes, créditos, progreso y permisos. Créditos y stock usan transacciones PostgreSQL y bloqueos de fila. Referencias históricas no se eliminan por bajas lógicas. API y logs no exponen PIN, tokens o contraseñas. Recursos subidos requieren validación.

@@ -195,6 +195,8 @@ def test_e4_eligibility_holds_provider_lock_and_rechecks_folder():
     collaborator = User.objects.create_user("e4-collab@example.test", "Secret-123", role=User.Role.COLLABORATOR)
     profile = CollaboratorProfile.objects.create(user=collaborator, enabled=True)
     provider = Provider.objects.create(slug="e4-provider", name="E4 provider", status=Publication.PUBLISHED)
+    Benefit.objects.create(provider=provider, title="Oferta vigente", conditions="Con reserva",
+                           status=Publication.PUBLISHED)
     FolderProvider.assign(profile.pk, provider.pk)
     FolderAccess.objects.create(tourist=tourist, collaborator=profile, qr_version=profile.qr_version)
 

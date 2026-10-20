@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiError, api, privateImage } from './api'
 import type { Benefit, Folder, Provider } from './api'
 import { messageOf } from './shared'
+import { NetworkCanvas } from './NetworkCanvas'
+import { safeExternal } from './catalog'
 
 type FolderPageProps = {
   folders: Folder[]
@@ -9,9 +11,10 @@ type FolderPageProps = {
   select: (value: string) => void
   providers: Provider[]
   onOpen: (id: string) => void
+  onAccessRevoked?: () => void
 }
 
-export function FolderPage({ folders, selected, select, providers, onOpen }: FolderPageProps) {
+export function FolderPage({ folders, selected, select, providers, onOpen, onAccessRevoked }: FolderPageProps) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const categories = [...new Set(providers.map(provider => provider.category).filter(Boolean))].sort()
@@ -25,13 +28,14 @@ export function FolderPage({ folders, selected, select, providers, onOpen }: Fol
     <div className="content-width">
       <p className="eyebrow">BENEFICIOS PARA VOS</p>
       <h1>Recomendaciones locales.</h1>
-      <p className="private-lead">Explorá la selección disponible en tus carpetas y revisá las condiciones de cada beneficio.</p>
+      <p className="private-lead">Explorá la selección disponible en tus carpetas y revisá las condiciones de cada beneficio. El acceso depende de la referencia QR activa.</p>
       {folders.length > 1 && <label className="folder-picker">
         Carpeta
         <select value={selected} onChange={event => select(event.target.value)}>
           {folders.map(folder => <option key={folder.collaborator_id} value={folder.collaborator_id}>Carpeta · {folder.collaborator_id.slice(0, 8)}</option>)}
         </select>
       </label>}
+      {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={onAccessRevoked} />}
       <div className="search-row">
         <label htmlFor="provider-search">Buscar recomendaciones</label>
         <input id="provider-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nombre, categoría o descripción" />
@@ -129,7 +133,7 @@ export function ProviderDetail({ folderId, provider, onAccessRevoked }: Provider
 
   return <main id="contenido" className="private-benefits">
     <div className="content-width">
-      <a className="back-link" href="/beneficios">← Volver a recomendaciones</a>
+      <a className="back-link" href="/recomendaciones">← Volver a recomendaciones</a>
       <div className="provider-detail">
         <PrivatePhoto path={provider.image_url} alt={`Imagen de ${provider.name}`} />
         <div>
@@ -139,7 +143,7 @@ export function ProviderDetail({ folderId, provider, onAccessRevoked }: Provider
           {provider.address && <p><strong>Dirección:</strong> {provider.address}</p>}
           {provider.hours && <p><strong>Horarios:</strong> {provider.hours}</p>}
           {provider.contact && <p><strong>Contacto:</strong> {provider.contact}</p>}
-          {provider.website && <p><a href={provider.website} rel="noreferrer">Sitio web del prestador</a></p>}
+          {safeExternal(provider.website) && <p><a href={safeExternal(provider.website)!} target="_blank" rel="noopener noreferrer">Sitio web del prestador</a></p>}
           <div className="benefit-cards">
             <h2>Beneficios y condiciones</h2>
             {loading && <p role="status">Cargando beneficios…</p>}

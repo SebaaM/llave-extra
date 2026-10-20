@@ -150,7 +150,7 @@ def refund_wallet(tourist_id, amount: int, reference: str, *, debit_reference: s
 
 
 def _fingerprint(folder_id, token: str, pin: str) -> str:
-    payload = json.dumps([str(folder_id), token, pin], separators=(",", ":"))
+    payload = json.dumps([str(folder_id) if folder_id is not None else None, token, pin], separators=(",", ":"))
     return hmac.new(settings.SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
 
@@ -196,7 +196,7 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
                 credit_wallet(actor.pk, award, f"consumption:{consumption.pk}:earn")
             wallet = _wallet_locked(actor.pk)
             response = {"id": str(consumption.pk), "provider_id": str(provider.pk),
-                        "collaborator_id": str(profile.pk), "award": award,
+                        "collaborator_id": str(profile.pk) if profile is not None else None, "award": award,
                         "balance": wallet.balance, "state": consumption.state,
                         "created_at": consumption.created_at.isoformat()}
             ConsumptionIdempotency.objects.create(actor=actor, operation="consume", key=key,

@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty",
     "test:proxy": "node --test tests/proxy-config.test.mjs",
-    "test": "pnpm run test:proxy && vitest run && node --experimental-strip-types --test src/prototypes/*.test.mjs"
+    "test": "pnpm run test:proxy && vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.2.0",

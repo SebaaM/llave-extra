@@ -2,7 +2,7 @@ export type User = { id: number; email: string; role: 'TOURIST' | 'COLLABORATOR'
 export type Folder = { collaborator_id: string; granted_at: string }
 export type Provider = { id: string; slug: string; name: string; category: string; description: string; address: string; hours: string; contact: string; map_url: string; website: string; image_url: string | null; status: string; demo: boolean }
 export type Benefit = { id: string; title: string; description: string; conditions: string; valid_from: string | null; valid_until: string | null; image_url: string | null; status: string; demo: boolean }
-export type Consumption = { id: string; provider_id: string; collaborator_id: string; award: number; state: string; created_at: string }
+export type Consumption = { id: string; provider_id: string; collaborator_id: string | null; award: number; state: string; created_at: string }
 export type Wallet = { balance: number; redemptions_frozen: boolean }
 export type Progress = { total: number; target: number; completed: boolean }
 
@@ -129,7 +129,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (isPrivate && accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
     if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && url.pathname.startsWith('/api/v1/auth/')) headers.set('X-CSRFToken', await ensureCsrf())
-    const response = await fetch(url, { method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal })
+    const response = await fetch(url, { method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal ?? options.signal })
     if (isPrivate && version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     if (response.status === 401 && isPrivate && options.retryAuth !== false && retry) {
       if (accessToken && headers.get('Authorization') === `Bearer ${accessToken}`) accessToken = null

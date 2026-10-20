@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 
 class ConsumptionRequestSerializer(serializers.Serializer):
-    folder_id = serializers.UUIDField()
+    folder_id = serializers.UUIDField(required=False, allow_null=True)
     qr_token = serializers.CharField(max_length=1000, trim_whitespace=False)
     pin = serializers.RegexField(r"^[0-9]{6,12}$", write_only=True)
 
@@ -14,7 +14,7 @@ class PinSerializer(serializers.Serializer):
 class ConsumptionResponseSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     provider_id = serializers.UUIDField()
-    collaborator_id = serializers.UUIDField()
+    collaborator_id = serializers.UUIDField(allow_null=True)
     award = serializers.IntegerField()
     balance = serializers.IntegerField()
     state = serializers.CharField()
@@ -24,7 +24,7 @@ class ConsumptionResponseSerializer(serializers.Serializer):
 class ConsumptionHistorySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     provider_id = serializers.UUIDField()
-    collaborator_id = serializers.UUIDField()
+    collaborator_id = serializers.UUIDField(allow_null=True)
     award = serializers.IntegerField()
     state = serializers.CharField()
     created_at = serializers.DateTimeField()

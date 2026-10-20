@@ -4,7 +4,10 @@ import type { Consumption, Folder, Progress, Provider, User, Wallet } from './ap
 import { messageOf } from './shared'
 import { consumptionToken, referralToken, setReferralToken, verifyToken, setVerifyToken } from './qr-intent'
 import { ProductShell, ButtonLink } from './Layout'
-import { Auth, Landing } from './PublicPages'
+import { Auth } from './PublicPages'
+import { HomePage } from './HomePage'
+import { BenefitDetail, CatalogPage } from './CatalogPages'
+import { CreditsPage } from './CreditsPage'
 import { FolderPage, ProviderDetail } from './BenefitsPages'
 import { QrPage } from './ReferencePage'
 import { Trip } from './JourneyPage'
@@ -152,7 +155,7 @@ export default function ProductApp() {
   }, [loadFolders, loadTrip])
 
   useEffect(() => {
-    if (user?.role !== 'TOURIST' || !selectedFolder || path !== '/beneficios') return
+    if (user?.role !== 'TOURIST' || !selectedFolder || path !== '/recomendaciones') return
     const folderId = selectedFolder
     window.queueMicrotask(() => {
       void loadProviders(folderId).catch(error => {
@@ -208,13 +211,13 @@ export default function ProductApp() {
     if (!verifyToken) return
     verifyEmailToken(verifyToken).then(() => {
       setVerifyToken(null)
-      setNotice('Email verificado. Ya podés acreditar consumos cuando estés dentro de una carpeta autorizada.')
+      setNotice('Email verificado. Ya podés acreditar consumos elegibles.')
     }).catch(error => setPageError(messageOf(error)))
   }, [])
 
   useEffect(() => {
-    if (authReady && user?.role === 'ADMIN') window.location.replace('/admin/')
-  }, [authReady, user])
+    if (authReady && user?.role === 'ADMIN' && (path === '/espacio' || path === '/admin')) window.location.replace('/admin/')
+  }, [authReady, user, path])
 
   const openProvider = async (providerId: string) => {
     const folderId = selectedFolderRef.current
@@ -272,7 +275,7 @@ export default function ProductApp() {
 
   const retry = () => {
     setPageError('')
-    if (path === '/beneficios') {
+    if (path === '/recomendaciones') {
       void loadFolders().then(() => selectedFolderRef.current ? loadProviders(selectedFolderRef.current) : undefined)
         .catch(error => setPageError(messageOf(error)))
     } else {
@@ -281,7 +284,10 @@ export default function ProductApp() {
   }
 
   const renderContent = () => {
-    if (isProductPublic) return <Landing />
+    if (isProductPublic) return <HomePage />
+    if (path === '/beneficios') return <CatalogPage />
+    if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
+    if (path === '/creditos-imagenes') return <CreditsPage />
     if (!authReady) return <main id="contenido" className="product-loading" role="status">Preparando tu viaje…</main>
     if (path === '/espacio' || (user && user.role !== 'TOURIST')) {
       return <main id="contenido" className="product-empty content-width"><h1>Tu espacio de trabajo</h1><p>La gestión de Colaborador y Prestador forma parte de la siguiente etapa de Llave Extra.</p><a className="button button-orange" href="/">Volver a beneficios</a></main>
@@ -314,9 +320,9 @@ export default function ProductApp() {
     if (pageError) {
       return <main id="contenido" className="product-gate content-width"><h1>No pudimos cargar esta información.</h1><p role="alert">{pageError}</p><button className="button button-orange" onClick={retry}>Volver a intentar</button></main>
     }
-    if (path === '/beneficios') {
+    if (path === '/recomendaciones') {
       if (selectedProvider) return <ProviderDetail folderId={selectedFolder} provider={selectedProvider} onAccessRevoked={() => void revokeProviderView()} />
-      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} />
+      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} />
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Tu primera carpeta empieza con un QR.</h1><p>Pedile a un colaborador el QR de referencia para abrir sus recomendaciones privadas. Ese código da acceso a una carpeta y no acredita una visita.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />

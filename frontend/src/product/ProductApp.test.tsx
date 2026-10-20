@@ -5,6 +5,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 const json = (body: unknown, status = 200) => new Response(body === null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const setUrl = (path: string, hash = '') => window.history.replaceState({}, '', `${path}${hash}`)
 const tourist = { id: 804, email: 'viajera@example.test', role: 'TOURIST', email_verified: true }
+const emptyNetwork = { count: 0, next: null, previous: null, presentation: { title: 'Red local', layout: 'RADIAL', theme: 'SAND', background: 'BEAGLE', page_size: 12, interval_seconds: 10, city: 'Ushuaia' }, results: [] }
 const nativeLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
 
 beforeEach(() => {
@@ -60,6 +61,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: accountB ? 22 : 777, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: accountB ? 0 : 2, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(emptyNetwork))
       if (url.endsWith('/folders/folder-a-private/providers/')) return Promise.resolve(json([{
         id: 'provider-a', slug: 'provider-a', name: 'Prestador privado de A', category: 'Café', description: 'Solo A',
         address: 'Dirección A', hours: '', contact: '', map_url: '', website: '', image_url: null, status: 'ACTIVE', demo: false,
@@ -68,7 +70,7 @@ describe('recorridos F2 del Cliente', () => {
       return Promise.resolve(json({}, 404))
     }))
 
-    const ProductApp = await prepareApp('/beneficios')
+    const ProductApp = await prepareApp('/recomendaciones')
     render(<ProductApp />)
     await screen.findByRole('heading', { name: 'Prestador privado de A' })
 
@@ -84,7 +86,7 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.queryByText('a@example.test')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Prestador privado de A' })).toBeNull()
     finishLogin(json({ access: 'access-b' }))
-    await screen.findByText('Validá el QR de un colaborador antes de registrar un consumo.')
+    await screen.findByLabelText('Lo descubrí por mi cuenta')
     expect(screen.queryByText('Carpeta · folder-a')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Prestador privado de A' })).toBeNull()
 
@@ -170,7 +172,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/consumptions/')) return json([])
       return json({ detail: 'No encontrado' }, 404)
     }))
-    const ProductApp = await prepareApp('/beneficios')
+    const ProductApp = await prepareApp('/recomendaciones')
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     render(<ProductApp />)
     await screen.findByRole('heading', { name: 'Tu primera carpeta empieza con un QR.' })
@@ -206,6 +208,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 0, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 0, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(emptyNetwork))
       if (url.endsWith('/folders/folder-a/providers/')) return new Promise<Response>(resolve => { finishFolderA = resolve })
       if (url.endsWith('/folders/folder-b/providers/')) return Promise.resolve(json([providerB]))
       if (url.endsWith('/folders/folder-b/providers/provider-b/')) return Promise.resolve(json(providerB))
@@ -213,7 +216,7 @@ describe('recorridos F2 del Cliente', () => {
       return Promise.resolve(json({}, 404))
     }))
 
-    const ProductApp = await prepareApp('/beneficios')
+    const ProductApp = await prepareApp('/recomendaciones')
     render(<ProductApp />)
     await waitFor(() => expect(calls.some(url => url.endsWith('/folders/folder-a/providers/'))).toBe(true))
     fireEvent.change(screen.getByLabelText('Carpeta'), { target: { value: 'folder-b' } })
@@ -248,6 +251,7 @@ describe('recorridos F2 del Cliente', () => {
     const ProductApp = await prepareApp('/consumo', '#token=qr-consumo-prueba')
     render(<ProductApp />)
     await screen.findByLabelText('PIN del prestador')
+    fireEvent.click(screen.getByLabelText('Por una recomendación privada'))
     fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '123456' } })
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await screen.findByRole('alert')
@@ -265,5 +269,32 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.getByText('450')).toBeTruthy()
     expect(screen.getByText((_content, element) => element?.tagName === 'SMALL' && element.textContent?.includes('/ 6') === true)).toBeTruthy()
     expect(screen.getByText('Visita verificada')).toBeTruthy()
+  })
+
+  it('acredita en modo directo sin carpeta y muestra historial con colaborador nulo', async () => {
+    let body: Record<string, unknown> | null = null
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
+      if (url.endsWith('/auth/me/')) return json(tourist)
+      if (url.endsWith('/me/folders/')) return json({ folders: [] })
+      if (url.endsWith('/me/wallet/')) return json({ balance: 450, redemptions_frozen: false })
+      if (url.endsWith('/me/progress/')) return json({ total: 1, target: 6, completed: false })
+      if (url.endsWith('/me/consumptions/')) return json([{ id: 'visit-direct', provider_id: 'provider-1', collaborator_id: null, award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }])
+      if (url.endsWith('/consumptions/')) { body = JSON.parse(String(init?.body)); return json({ id: 'visit-direct', provider_id: 'provider-1', collaborator_id: null, award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201) }
+      return json({ detail: 'No encontrado' }, 404)
+    }))
+    const ProductApp = await prepareApp('/consumo', '#token=qr-directo-prueba')
+    render(<ProductApp />)
+    await screen.findByLabelText('PIN del prestador')
+    expect(screen.getByLabelText('Lo descubrí por mi cuenta')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
+    await screen.findByText('Visita enviada para validación.')
+    expect(body).toEqual({ qr_token: 'qr-directo-prueba', pin: '123456' })
+    setUrl('/mi-viaje')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    await screen.findByText('Visita verificada')
   })
 })

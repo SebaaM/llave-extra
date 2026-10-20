@@ -121,7 +121,16 @@ def test_admin_cannot_reassign_collaborator_profile_and_historical_grants():
     admin_client.force_login(admin_user)
     response = admin_client.post(
         f"/admin/referrals/collaboratorprofile/{profile.pk}/change/",
-        {"user": str(replacement.pk), "_save": "Guardar"},
+        {
+            "user": str(replacement.pk),
+            "network_title": profile.network_title,
+            "network_layout": profile.network_layout,
+            "network_theme": profile.network_theme,
+            "network_background": profile.network_background,
+            "network_page_size": profile.network_page_size,
+            "network_interval_seconds": profile.network_interval_seconds,
+            "_save": "Guardar",
+        },
     )
     assert response.status_code == 302
     profile.refresh_from_db()
