@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from io import BytesIO
 from queue import Queue
+from threading import Event
 from time import monotonic, sleep
 from types import SimpleNamespace
 
@@ -396,6 +397,51 @@ def test_admin_bulk_removal_locks_all_profiles_before_any_provider(selection_dom
             Benefit.objects.select_for_update(nowait=True).get(pk=d.a.pk)
         result.result(timeout=5)
     assert FolderBenefit.objects.count() == 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_admin_select_across_keeps_target_snapshot_when_another_profile_adds_selection(selection_domain):
+    d = selection_domain
+    FolderBenefit.remove(d.other_profile.pk, d.b.pk)
+    original, _ = FolderBenefit.assign(d.profile.pk, d.a.pk)
+    snapshot_taken, addition_committed = Event(), Event()
+    provider_locked, other_profile_locked = Event(), Event()
+
+    def add_and_mutate_other_folder():
+        try:
+            assert snapshot_taken.wait(5)
+            added, _ = FolderBenefit.assign(d.other_profile.pk, d.b.pk)
+            addition_committed.set()
+            assert provider_locked.wait(5)
+            with transaction.atomic():
+                CollaboratorProfile.objects.select_for_update().get(pk=d.other_profile.pk)
+                other_profile_locked.set()
+                # Same order as a PUT. Admin must not discover this profile
+                # after locking the shared provider from its initial snapshot.
+                Provider.objects.select_for_update().get(pk=d.provider.pk)
+            return added.pk
+        finally:
+            connections.close_all()
+
+    def interleave(execute, sql, params, many, context):
+        result = execute(sql, params, many, context)
+        if 'FROM "providers_folderbenefit"' in sql and not snapshot_taken.is_set():
+            snapshot_taken.set()
+            assert addition_committed.wait(5)
+        if 'FROM "providers_provider"' in sql and "FOR UPDATE" in sql and not provider_locked.is_set():
+            provider_locked.set()
+            assert other_profile_locked.wait(5)
+        return result
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        competitor = pool.submit(add_and_mutate_other_folder)
+        with connection.execute_wrapper(interleave):
+            FolderBenefitAdmin(FolderBenefit, AdminSite()).delete_queryset(
+                RequestFactory().post("/", {"select_across": "1"}), FolderBenefit.objects.all(),
+            )
+        added_pk = competitor.result(timeout=5)
+    assert not FolderBenefit.objects.filter(pk=original.pk).exists()
+    assert FolderBenefit.objects.filter(pk=added_pk, collaborator=d.other_profile, benefit=d.b).exists()
 
 
 @pytest.mark.django_db(transaction=True)

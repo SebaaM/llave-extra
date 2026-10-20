@@ -98,13 +98,15 @@ class FolderBenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
         # A bulk admin action must take *all* profile locks before any provider:
         # interleaving profile/provider pairs could deadlock with a single PUT.
         with transaction.atomic():
-            profile_ids = list(queryset.values_list("collaborator_id", flat=True))
-            list(CollaboratorProfile.objects.select_for_update(of=("self",)).filter(pk__in=profile_ids).order_by("pk"))
-            selections = list(queryset.values_list("collaborator_id", "benefit_id", "benefit__provider_id"))
-            list(Provider.objects.select_for_update().filter(pk__in=[row[2] for row in selections]).order_by("pk"))
-            list(Benefit.objects.select_for_update().filter(pk__in=[row[1] for row in selections]).order_by("pk"))
-            for profile_id, benefit_id, _ in selections:
-                FolderBenefit.remove(profile_id, benefit_id)
+            # Freeze select_across targets once: a concurrent insertion must
+            # neither add a profile after its lock phase nor enter the deletion.
+            selections = list(queryset.values_list("pk", "collaborator_id", "benefit_id", "benefit__provider_id"))
+            list(CollaboratorProfile.objects.select_for_update(of=("self",)).filter(pk__in=[row[1] for row in selections]).order_by("pk"))
+            list(Provider.objects.select_for_update().filter(pk__in=[row[3] for row in selections]).order_by("pk"))
+            list(Benefit.objects.select_for_update().filter(pk__in=[row[2] for row in selections]).order_by("pk"))
+            # All domain locks are held. Delete exact original PKs, preserving
+            # replacements if an original selection was removed and recreated.
+            FolderBenefit.objects.filter(pk__in=[row[0] for row in selections]).delete()
 
 
 @admin.register(Benefit)
