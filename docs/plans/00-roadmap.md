@@ -40,7 +40,7 @@ Preferencia confirmada: uv 0.11.3 para backend (Python 3.13, `pyproject.toml`, `
 
 ## Task 9: F2 - Experiencia principal del Cliente
 
-Elección confirmada por el usuario: Beneficios como dirección principal y Pasaporte en Mi viaje. Crear hero que destaque valor, descuentos/promociones y propósito para turistas; después explicar cómo funciona. Conectar registro/sesión/email, QR privado, beneficios, consumos y progreso con las APIs reales, con JWT en memoria y medios autorizados. No publicar carpetas ni acuerdos no confirmados en la portada. Base modular, accesible y móvil; verificar flujos UI y navegador. Ejecutar después de E4, en PR propio; F2 depende de E2–E4 y no de la tienda ni de la analítica. Detalle en plan frontend.
+Elección confirmada por el usuario: Beneficios como dirección principal y Pasaporte en Mi viaje. Implementado en la rama F2: hero de valor/propósito, explicación del recorrido turístico, registro/sesión/email, QR privado, beneficios, consumo e historial/progreso conectados a APIs E2–E4, JWT en memoria, medios autorizados y módulos de producto acotados. No publica carpetas ni acuerdos no confirmados. Suite UI/API cliente aprobada localmente; revisión visual de escritorio por controlador pasó y revisión móvil/flujo real queda asentada en el informe de etapa. F2 depende de E2–E4 y no de la tienda ni de la analítica; E5 y E6 siguen antes de F3. Detalle en [plan frontend](frontend.md) e [informe Task 9](../../.superpowers/sdd/00-roadmap/task-9-report.md).
 
 ## Task 10: F3 - Tienda y espacios de la red
 

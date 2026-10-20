@@ -13,6 +13,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: { environment: 'jsdom', include: ['src/**/*.test.tsx'] },
   server: {
+    // Windows Docker bind mounts do not reliably emit filesystem events to
+    // Vite's watcher; polling keeps local preview changes and fixes live.
+    watch: { usePolling: true, interval: 1000 },
     proxy: {
       '/api': {
         target: 'http://backend:8000',

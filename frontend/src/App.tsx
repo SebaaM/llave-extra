@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { BeneficiosHome, GuiaHome, PasaporteHome, PrivateBeneficios, PrivateGuia, PrivatePasaporte } from './prototypes/variants'
 import { demoCodes, isPrivatePath, providers, validateDemoQr, variants } from './prototypes/model'
 import type { Provider, Variant } from './prototypes/model'
+import ProductApp from './product/ProductApp'
 
 const KEY = 'llave-extra-prototipo-v1'
 type DemoState = { user: boolean; verified: boolean; grant: boolean; consumed: string[] }
@@ -70,7 +71,7 @@ function Profile({ variant, go, state, onVerify, onLogout }: { variant: Variant;
 function Shop({ variant, go, state }: { variant: Variant; go: (path: string) => void; state: DemoState }) {
   return <main id="contenido" className="shop-page page-container"><Link to={route(variant, 'perfil')} go={go} className="back-link">← Volver a Mi viaje</Link><DemoTag /><p className="eyebrow">TIENDA / VISTA PREVIA</p><h1>Recuerdos para llevar.</h1><p>Ejemplos ilustrativos de futura regalería 3D. No hay catálogo real ni compras habilitadas.</p><div className="shop-grid"><article><div className="shop-object">✳</div><h2>Imán Fin del Mundo</h2><p>Producto ilustrativo</p><strong>$ 8.000 ARS <span>o 2.000 créditos</span></strong></article><article><div className="shop-object object-two">✦</div><h2>Mini faro austral</h2><p>Producto ilustrativo</p><strong>$ 15.000 ARS <span>o 4.000 créditos</span></strong></article></div><div className="selector-note"><span className="note-icon">i</span><p>En la tienda final cada pedido se pagará en ARS o con créditos, sin mezclar medios. El retiro será en un punto configurable. Esta vista no inicia pagos ni reserva stock. Tu saldo demo: <strong>{state.consumed.length * 1000} créditos</strong>.</p></div></main>
 }
-export default function App() {
+function PrototypeApp() {
   const { path, go, navigation } = useLocation(), [state, setState] = useState<DemoState>(readDemo)
   const update = (next: DemoState) => { setState(next); sessionStorage.setItem(KEY, JSON.stringify(next)) }
   const parts = path.split('/').filter(Boolean), variant = variants.find(item => item.id === parts[1])?.id, section = parts[2] || ''
@@ -96,4 +97,8 @@ export default function App() {
     if (navigation > 0) main?.focus()
   }, [path, navigation])
   return <Shell variant={variant} state={state} go={go}>{content}</Shell>
+}
+
+export default function App() {
+  return window.location.pathname.startsWith('/prototipos') ? <PrototypeApp /> : <ProductApp />
 }
