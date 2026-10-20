@@ -13,6 +13,9 @@ import { QrPage } from './ReferencePage'
 import { Trip } from './JourneyPage'
 import { ConsumePage } from './ConsumptionPage'
 import { ProductLink } from './navigation'
+import { Workspace } from './workspace/Workspace'
+import { workspaceHome } from './workspace/data'
+import { openAdmin } from './workspace/documentNavigation'
 
 const logoutNotice = 'La sesión se quitó de este dispositivo, pero no pudimos confirmar su revocación en el servidor. Iniciá sesión de nuevo solo si querés continuar.'
 
@@ -216,7 +219,13 @@ export default function ProductApp() {
   }, [])
 
   useEffect(() => {
-    if (authReady && user?.role === 'ADMIN' && (path === '/espacio' || path === '/admin')) window.location.replace('/admin/')
+    if (!authReady || !user) return
+    if (user.role === 'ADMIN' && (path === '/espacio' || path === '/admin')) openAdmin(true)
+    else if (path === '/espacio') {
+      const target = workspaceHome(user)
+      window.history.replaceState({}, '', target)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }
   }, [authReady, user, path])
 
   const openProvider = async (providerId: string) => {
@@ -268,7 +277,8 @@ export default function ProductApp() {
     }
     const target = current.role === 'TOURIST'
       ? consumptionToken ? '/consumo' : referralToken ? '/referencia' : '/mi-viaje'
-      : current.role === 'ADMIN' ? '/admin/' : '/espacio'
+      : workspaceHome(current)
+    if (current.role === 'ADMIN') { openAdmin(); return }
     window.history.pushState({}, '', target)
     setPath(target)
   }
@@ -289,9 +299,6 @@ export default function ProductApp() {
     if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
     if (path === '/creditos-imagenes') return <CreditsPage />
     if (!authReady) return <main id="contenido" className="product-loading" role="status">Preparando tu viaje…</main>
-    if (path === '/espacio' || (user && user.role !== 'TOURIST')) {
-      return <main id="contenido" className="product-empty content-width"><h1>Tu espacio de trabajo</h1><p>La gestión de Colaborador y Prestador forma parte de la siguiente etapa de Llave Extra.</p><a className="button button-orange" href="/">Volver a beneficios</a></main>
-    }
     if (path === '/verificar-email') {
       return <main id="contenido" className="product-empty content-width"><h1>Verificá tu email</h1><p>{pageError || notice || 'Usá el enlace que enviamos a tu correo para confirmar tu cuenta.'}</p><ProductLink href="/ingresar">Ir a ingresar</ProductLink></main>
     }
@@ -316,7 +323,7 @@ export default function ProductApp() {
     if (!user) {
       return <main id="contenido" className="product-gate content-width"><h1>Ingresá para continuar</h1><p>Así podemos mostrarte solo las recomendaciones autorizadas para tu cuenta.</p><div className="product-hero-actions"><ButtonLink href="/ingresar">Ingresar</ButtonLink><ButtonLink href="/registro" tone="dark">Crear mi cuenta</ButtonLink></div></main>
     }
-    if (redirectToRole) return <main id="contenido" className="product-loading" role="status">Abriendo tu espacio…</main>
+    if (redirectToRole || path.startsWith('/prestador') || path.startsWith('/colaborador')) return <main id="contenido" className="product-gate content-width"><h1>Esta sección no corresponde a tu rol.</h1><ProductLink href={workspaceHome(user)} className="button button-dark">Ir a mi espacio</ProductLink></main>
     if (pageError) {
       return <main id="contenido" className="product-gate content-width"><h1>No pudimos cargar esta información.</h1><p role="alert">{pageError}</p><button className="button button-orange" onClick={retry}>Volver a intentar</button></main>
     }
@@ -333,5 +340,7 @@ export default function ProductApp() {
     return <main id="contenido" className="product-gate content-width"><h1>Esta sección no está disponible.</h1><a href="/">Volver a inicio</a></main>
   }
 
+  const inWorkspace = user && authReady && ((user.role === 'PROVIDER' && (path === '/prestador' || path.startsWith('/prestador/'))) || (user.role === 'COLLABORATOR' && (path === '/colaborador' || path.startsWith('/colaborador/'))))
+  if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} />
   return <ProductShell user={shellUser}>{notice && path !== '/verificar' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
 }
