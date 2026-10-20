@@ -7,8 +7,8 @@ Captar registros de turistas y verificar consumos en la red para otorgar benefic
 ## Cuatro roles y prioridad de producto
 
 - **Cliente (`TOURIST`):** usuario principal; se registra, accede por QR a recomendaciones privadas, consulta y consume beneficios, y administra su progreso, créditos, compras y canjes propios. `TOURIST` es el identificador técnico existente, no un quinto rol.
-- **Colaborador (`COLLABORATOR`):** refiere clientes mediante su QR único a los prestadores de su carpeta. El administrador controla su habilitación y carpeta; no modifica ofertas.
-- **Prestador (`PROVIDER`):** negocio amigo que otorga beneficios y gestiona solo su propuesta, imágenes y ofertas asignadas mediante revisión de publicación.
+- **Colaborador (`COLLABORATOR`):** refiere clientes mediante su QR único. Corrección más reciente: puede agregar/quitar en su propia carpeta beneficios concretos del catálogo; solo se muestra el elegido, no otras ofertas del mismo negocio. El administrador controla habilitación, QR y configuración. No modifica ofertas.
+- **Prestador (`PROVIDER`):** usuario que administra un único negocio amigo, su propuesta, imágenes y ofertas mediante las reglas de revisión de publicación existentes. El administrador asigna ese negocio.
 - **Administrador (`ADMIN`):** gestiona usuarios, habilitaciones, prestadores, carpetas, QR, reglas, pedidos y auditoría.
 
 Un cliente puede acceder a más de una carpeta después de escanear sus respectivos QR. Un consumo referido conserva el colaborador que originó esa referencia; un consumo directo permite colaborador nulo, confirmado por el usuario el 19/10/2026. Deshabilitar o rotar el QR revoca esa referencia, sin eliminar el historial transaccional. El registro público crea solo `TOURIST` y no permite autoasignar privilegios.
@@ -29,6 +29,8 @@ Un cliente puede acceder a más de una carpeta después de escanear sus respecti
 Monorepo: `backend/`, `frontend/`, `scripts/`, `docs/`. Django 5.2 LTS/Python 3.13 y PostgreSQL 17. API versionada y OpenAPI. React/TypeScript/Tailwind. Docker Compose local con Mailpit y Redis para límites compartidos; no hay worker de correo.
 
 ## Estado
+
+Pedido posterior aprobado: adelantar F3 operativo con dashboards Prestador/Colaborador y barra lateral; analíticas y tienda siguen pendientes, Admin conserva Django Admin. El plan [08](docs/plans/08-backoffice-red.md) y su spec incorporan selección por beneficio y unicidad de negocio por usuario, prevaleciendo sobre descripciones históricas de carpetas por prestador. Implementación en `feature/backoffice-red`, base revisada `95b9953` dependiente del PR #9 todavía sin fusionar.
 
 E0: documentación inicial. E1: base reproducible entregada. E2: autenticación, sesiones revocables y acceso privado por QR, con proxy de desarrollo que sanea cabeceras de cliente. E3: prestadores, ofertas y carpetas implementados y revisados en `f28e9cb`. E4: consumos únicos por Cliente/Prestador, QR+PIN, créditos, progreso y anulaciones con ajustes pendientes; ver `docs/plans/04-consumos-creditos.md`. F2 conecta Beneficios y Pasaporte en Mi viaje con E2–E4. F1 fue una etapa histórica de elección: sus prototipos y rutas se retiraron del producto en el plan 07.
 
