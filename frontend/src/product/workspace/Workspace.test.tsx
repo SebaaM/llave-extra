@@ -159,6 +159,33 @@ describe('paneles operativos por rol', () => {
     expect(screen.getByRole('heading', { name: benefit.title })).toBeTruthy()
   })
 
+  it('cierra la ficha del negocio si el PATCH responde 401 y falla la renovación', async () => {
+    let refreshes = 0
+    mount('PROVIDER', '/prestador/negocio', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/') return json({ detail: 'Sesión vencida' }, 401)
+    })
+    await screen.findByRole('heading', { name: 'Información del negocio' })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar ficha' }))
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: 'Información del negocio' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: provider.name })).toBeNull()
+  })
+
+  it('cierra los borradores si DELETE responde 401 y falla la renovación', async () => {
+    let refreshes = 0
+    mount('PROVIDER', '/prestador/beneficios', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/benefits/') return json([{ ...benefit, status: 'DRAFT' }])
+      if (path === '/api/v1/provider/providers/business-1/benefits/benefit-1/') return json({ detail: 'Sesión vencida' }, 401)
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar borrador' }))
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: benefit.title })).toBeNull()
+  })
+
   it('ignora una escritura de A que termina después del ingreso de B', async () => {
     let accountB = false
     let finishWrite!: (response: Response) => void
@@ -254,6 +281,16 @@ describe('paneles operativos por rol', () => {
   })
 })
 
+describe('ruta pública de referencia', () => {
+  it.each(['PROVIDER', 'COLLABORATOR', 'ADMIN'] as const)('no ofrece canje a la cuenta %s', async role => {
+    const { calls } = mount(role, '/referencia')
+    await screen.findByRole('heading', { name: 'Una referencia abre nuevas puertas.' })
+    expect(screen.queryByLabelText('Código de referencia')).toBeNull()
+    expect(screen.getByText('La vinculación de referencias está disponible para cuentas Cliente.')).toBeTruthy()
+    expect(calls.some(call => call.path === '/api/v1/referrals/redeem/' && call.init?.method === 'POST')).toBe(false)
+  })
+})
+
 describe('QR privado y PIN', () => {
   it('copia el enlace privado solo después de una acción explícita', async () => {
     const copy = vi.fn().mockResolvedValue(undefined)
@@ -320,6 +357,40 @@ describe('QR privado y PIN', () => {
     expect(screen.queryByRole('button', { name: 'Copiar enlace' })).toBeNull()
   })
 
+  it('retira el enlace y QR si el PNG responde 401 y falla la renovación de sesión', async () => {
+    let refreshes = 0
+    mount('COLLABORATOR', '/colaborador/qr', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr.png') return json({ detail: 'Sesión vencida' }, 401)
+    })
+    await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
+    expect(screen.queryByRole('button', { name: 'Copiar enlace' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Descargar QR PNG ↓' })).toBeNull()
+  })
+
+  it('retira la lista privada si quitar una recomendación responde 401 y falla la renovación', async () => {
+    let refreshes = 0
+    mount('COLLABORATOR', '/colaborador/recomendaciones', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/collaborator/recommendations/benefit-1/') return json({ detail: 'Sesión vencida' }, 401)
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar recomendación' }))
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: benefit.title })).toBeNull()
+  })
+
+  it('propaga un 401 del catálogo a la vista privada de recomendaciones', async () => {
+    let refreshes = 0
+    mount('COLLABORATOR', '/colaborador/catalogo', path => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/collaborator/catalog/benefits/') return json({ detail: 'Sesión vencida' }, 401)
+    })
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: 'Encontrá tu próxima recomendación' })).toBeNull()
+  })
+
   it('envía PIN solo por PUT y lo limpia inmediatamente sin devolver el valor', async () => {
     const calls: { body?: BodyInit | null; url: string }[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
@@ -339,5 +410,20 @@ describe('QR privado y PIN', () => {
     expect(calls.some(call => call.body === '{"pin":"123456789"}')).toBe(true)
     expect(calls.every(call => !call.url.includes('123456789'))).toBe(true)
     expect(currentSessionVersion()).toBeGreaterThan(0)
+  })
+
+  it('cierra el QR del prestador si guardar el PIN responde 401 y falla la renovación', async () => {
+    let refreshes = 0
+    mount('PROVIDER', '/prestador/qr', (path, init) => {
+      if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/' && init?.method === 'PUT') return json({ detail: 'Sesión vencida' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/') return json({ configured: true, url: `${window.location.origin}/consumo#token=synthetic-test` })
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
+    })
+    await screen.findByRole('img', { name: 'QR privado de consumo del negocio' })
+    fireEvent.change(screen.getByLabelText('Nuevo PIN'), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar PIN' }))
+    await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
+    expect(screen.queryByLabelText('Nuevo PIN')).toBeNull()
   })
 })

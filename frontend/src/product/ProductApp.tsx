@@ -316,7 +316,7 @@ export default function ProductApp() {
         }}
       />
     }
-    if (path === '/referencia') return <QrPage signedIn={!!user} folders={folders} onRedeemed={() => void loadFolders()} />
+    if (path === '/referencia') return <QrPage signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} onRedeemed={() => void loadFolders()} />
     if (!user && path === '/consumo') {
       return <main id="contenido" className="product-gate content-width"><h1>Ingresá para validar tu visita.</h1><p>El QR del prestador quedó disponible mientras iniciás sesión.</p><ProductLink className="button button-orange" href="/ingresar">Ingresar</ProductLink></main>
     }
