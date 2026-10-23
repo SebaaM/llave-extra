@@ -58,3 +58,7 @@ Verificación final de CI: backend 97 pruebas PostgreSQL/Redis, Ruff y migracion
 
 El pedido vigente autoriza arrancar tienda/pagos y revoca la pausa anterior. Se implementan backend/API/Admin según docs/plans/05-tienda-pagos-spec.md y docs/plans/05-tienda-pagos.md, en feature/tienda-pagos desde 9f8f56d (PR #10 revisado, todavía sin fusionar). Frontend de tienda y E6 esperan su etapa. Sin cobros reales; validación sandbox externa pendiente. Estado y resultados finales se registrarán al cerrar E5.
 
+
+## E5 Task 1 — implementación local del 23/10/2026
+
+Se agregó dominio/API/Admin de tienda: catálogo público independiente, canjes atómicos E4, stock delta auditado, snapshots y claves protegidos en PostgreSQL, pedidos propios y cancelación de créditos. MONEY solo reserva 15 minutos y crea outbox durable sin HTTP; proveedor predeterminado disabled, fake permitido únicamente en desarrollo/pruebas, mercadopago cerrado hasta Task 2. Cancelación monetaria y worker/vencimiento pendientes de Task 2. Retiro requiere configuración administrativa. Contrato en docs/api.md; comprobaciones de esta tarea en docs/verification/05-tienda-pagos-task-1.md. Migraciones ejecutadas solo en BD PostgreSQL de pruebas del proyecto aislado llaveextra-e5; base principal sin modificar. Task 1 queda a revisión independiente; E5 no está terminada ni se validó Mercado Pago real. Frontend sin cambios.

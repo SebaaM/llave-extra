@@ -9,7 +9,7 @@ ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").spl
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits",
+    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits", "shop",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -86,3 +86,6 @@ EMAIL_PORT = int(os.environ.get("MAILPIT_PORT", "1025"))
 REFRESH_COOKIE_NAME = "llave_refresh"
 REFRESH_COOKIE_SECURE = not DEBUG
 REFRESH_COOKIE_SAMESITE = "Lax"
+SHOP_PAYMENT_PROVIDER = os.environ.get("SHOP_PAYMENT_PROVIDER", "disabled") or "disabled"
+if SHOP_PAYMENT_PROVIDER not in {"disabled", "fake", "mercadopago"}:
+    raise RuntimeError("SHOP_PAYMENT_PROVIDER inválido")

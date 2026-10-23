@@ -66,3 +66,5 @@ Requisitos implementados y comprobados, registro de pruebas, revisión independi
 
 El pedido actual revoca la pausa al cerrar plan 08 y autoriza E5 backend/API/Admin, según [especificación](05-tienda-pagos-spec.md) y [plan](05-tienda-pagos.md). Rama feature/tienda-pagos desde PR #10 revisado; PR a develop dependiente de #10 mientras siga abierto, sin fusiones. E6 y frontend de tienda siguen pendientes.
 
+
+E5 Task 1 implementada localmente el 23/10/2026 y pendiente de revisión independiente. Catálogo/API/Admin, canjes y cancelación de créditos, snapshots protegidos y outbox monetario sin HTTP. Ver [evidencia Task 1](../verification/05-tienda-pagos-task-1.md). Task 2 sigue pendiente para pagos, vencimiento y reembolsos monetarios; frontend/E6 permanecen fuera de alcance. Pruebas solo sobre proyecto Docker aislado llaveextra-e5, sin migrar base principal.
