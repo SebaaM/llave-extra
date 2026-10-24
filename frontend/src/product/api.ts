@@ -119,26 +119,34 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (controller) privateControllers.add(controller)
   const abort = () => controller?.abort()
   options.signal?.addEventListener('abort', abort, { once: true })
+  if (options.signal?.aborted) controller?.abort()
   const send = async (retry: boolean): Promise<T> => {
+    if ((isPrivate && version !== sessionVersion) || options.signal?.aborted || controller?.signal.aborted) throw new DOMException('Solicitud cancelada', 'AbortError')
     if (isPrivate && !accessToken && retry) {
       const token = await refreshAccess()
+      if (version !== sessionVersion || controller?.signal.aborted) throw new DOMException('Sesión reemplazada', 'AbortError')
       if (!token) throw new ApiError(401, 'Iniciá sesión para continuar.')
     }
     const headers = new Headers({ Accept: 'application/json' })
-    if (options.body !== undefined) headers.set('Content-Type', 'application/json')
+    const multipart = options.body instanceof FormData
+    if (options.body !== undefined && !multipart) headers.set('Content-Type', 'application/json')
     if (isPrivate && accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
     if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && url.pathname.startsWith('/api/v1/auth/')) headers.set('X-CSRFToken', await ensureCsrf())
-    const response = await fetch(url, { method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal ?? options.signal })
+    if ((isPrivate && version !== sessionVersion) || options.signal?.aborted || controller?.signal.aborted) throw new DOMException('Solicitud cancelada', 'AbortError')
+    const response = await fetch(url, { method, headers, body: multipart ? options.body as FormData : options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal ?? options.signal })
     if (isPrivate && version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     if (response.status === 401 && isPrivate && options.retryAuth !== false && retry) {
       if (accessToken && headers.get('Authorization') === `Bearer ${accessToken}`) accessToken = null
       const token = await refreshAccess()
+      if (version !== sessionVersion || controller?.signal.aborted) throw new DOMException('Sesión reemplazada', 'AbortError')
       if (!token) throw new ApiError(401, 'Tu sesión venció. Volvé a ingresar.')
       return send(false)
     }
     if (response.status === 204) return undefined as T
-    return await jsonOrError(response) as T
+    const result = await jsonOrError(response) as T
+    if (isPrivate && version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
+    return result
   }
   try { return await send(true) }
   finally { if (controller) privateControllers.delete(controller); options.signal?.removeEventListener('abort', abort) }

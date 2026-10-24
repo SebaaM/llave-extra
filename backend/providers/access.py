@@ -8,7 +8,17 @@ from accounts.models import User
 from referrals.access import active_folder_access, locked_folder_access
 from referrals.models import CollaboratorProfile
 
-from .models import Benefit, FolderProvider, Provider, Publication
+from .models import Benefit, Provider, Publication
+
+
+def selected_benefits(profile_id):
+    from .catalog import catalog_benefits
+
+    return catalog_benefits().filter(folder_selections__collaborator_id=profile_id)
+
+
+def selected_providers(profile_id):
+    return Provider.objects.filter(benefits__in=selected_benefits(profile_id)).distinct()
 
 
 def owned_provider(user: User, provider_id) -> Provider:
@@ -24,10 +34,7 @@ def visible_provider(user: User, profile_id, provider_id) -> Provider:
     profile = CollaboratorProfile.objects.filter(pk=profile_id).first()
     if profile is None or not active_folder_access(user, profile):
         raise NotFound()
-    provider = Provider.objects.filter(
-        pk=provider_id, status=Publication.PUBLISHED,
-        folder_assignments__collaborator_id=profile_id,
-    ).first()
+    provider = selected_providers(profile_id).filter(pk=provider_id).first()
     if provider is None:
         raise NotFound()
     return provider
@@ -52,9 +59,8 @@ def locked_provider_eligibility(user: User, profile_id, provider_id):
         return
     with locked_folder_access(user, profile_id) as profile:
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
-        if (provider is None or provider.status != Publication.PUBLISHED or
-                not FolderProvider.objects.filter(collaborator=profile, provider=provider).exists()):
+        if provider is None or provider.status != Publication.PUBLISHED:
             raise PermissionDenied("Prestador no habilitado para la carpeta")
-        if not visible_benefits(provider).select_for_update().exists():
-            raise PermissionDenied("Prestador sin beneficio vigente")
+        if not selected_benefits(profile.pk).filter(provider=provider).select_for_update(of=("self",)).exists():
+            raise PermissionDenied("Prestador no habilitado para la carpeta: sin beneficio seleccionado vigente")
         yield profile, provider

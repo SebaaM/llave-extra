@@ -47,7 +47,7 @@ def locked_folder_access(user: User, profile_id):
         raise PermissionDenied("Acceso a carpeta no autorizado")
     with transaction.atomic():
         User.objects.select_for_update().get(pk=user.pk)
-        profile = CollaboratorProfile.objects.select_for_update().select_related("user").filter(pk=profile_id).first()
+        profile = CollaboratorProfile.objects.select_for_update(of=("self",)).select_related("user").filter(pk=profile_id).first()
         if profile is None or not active_folder_access(user, profile):
             raise PermissionDenied("Acceso a carpeta no autorizado")
         yield profile
@@ -61,7 +61,7 @@ def redeem_qr(user: User, raw: str) -> FolderAccess:
         locked_user = User.objects.select_for_update().get(pk=user.pk)
         if not locked_user.is_active or locked_user.role != User.Role.TOURIST:
             raise PermissionDenied("Solo turistas activos pueden acceder")
-        profile = CollaboratorProfile.objects.select_for_update().select_related("user").filter(pk=profile_id).first()
+        profile = CollaboratorProfile.objects.select_for_update(of=("self",)).select_related("user").filter(pk=profile_id).first()
         if (profile is None or not profile.enabled or not profile.user.is_active
                 or profile.user.role != User.Role.COLLABORATOR or profile.qr_version != version):
             raise ValidationError({"token": "Referencia inválida"})

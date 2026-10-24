@@ -1,12 +1,18 @@
+from io import BytesIO
+
+import qrcode
 from django.conf import settings
+from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import permissions
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.views import APIView
 
 from accounts.models import User
 from accounts.views import client_origin, private_response
 from providers.access import owned_provider
+from referrals.views import private
 
 from .models import Consumption, CreditPolicy, ProviderConsumptionCredential, Wallet
 from .serializers import (
@@ -107,3 +113,20 @@ class ProviderCredentialView(APIView):
         serializer.is_valid(raise_exception=True)
         set_provider_pin(provider_id, serializer.validated_data["pin"])
         return private_response({"configured": True})
+
+
+class ProviderCredentialPNGView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(responses={(200, "image/png"): OpenApiTypes.BINARY, 404: OpenApiResponse(description="Credencial no configurada")})
+    def get(self, request, provider_id):
+        owned_provider(request.user, provider_id)
+        credential = ProviderConsumptionCredential.objects.filter(provider_id=provider_id).first()
+        if credential is None or not credential.pin_hash:
+            raise NotFound("Credencial no configurada")
+        out = BytesIO()
+        qrcode.make(f"{settings.PUBLIC_APP_URL}/consumo#token={sign_provider_qr(credential)}").save(out, format="PNG")
+        response = HttpResponse(out.getvalue(), content_type="image/png")
+        response["Content-Disposition"] = 'attachment; filename="consumo.png"'
+        response["X-Content-Type-Options"] = "nosniff"
+        return private(response)

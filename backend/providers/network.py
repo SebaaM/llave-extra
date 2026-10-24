@@ -82,7 +82,7 @@ def presentation(config):
 def network_providers(config, folder_id=None):
     eligible = catalog_benefits()
     if folder_id:
-        eligible = eligible.filter(provider__folder_assignments__collaborator_id=folder_id)
+        eligible = eligible.filter(folder_selections__collaborator_id=folder_id)
     first_benefit = eligible.filter(provider_id=OuterRef("pk")).order_by("title", "pk")
     return (
         Provider.objects.filter(

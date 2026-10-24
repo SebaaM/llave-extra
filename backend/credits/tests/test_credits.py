@@ -43,7 +43,7 @@ from credits.services import (
 from providers.models import (
     Benefit,
     CatalogConfig,
-    FolderProvider,
+    FolderBenefit,
     Provider,
     ProviderMembership,
     Publication,
@@ -70,8 +70,8 @@ def domain():
     for item in (provider, other):
         Benefit.objects.create(provider=item, title="Oferta vigente", conditions="Con reserva",
                                status=Publication.PUBLISHED)
-    FolderProvider.assign(profile.pk, provider.pk)
-    FolderProvider.assign(profile.pk, other.pk)
+    FolderBenefit.assign(profile.pk, provider.benefits.get().pk)
+    FolderBenefit.assign(profile.pk, other.benefits.get().pk)
     for person in (tourist, second):
         FolderAccess.objects.create(tourist=person, collaborator=profile, qr_version=profile.qr_version)
     set_provider_pin(provider.pk, "123456")
