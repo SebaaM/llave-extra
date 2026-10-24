@@ -16,18 +16,18 @@
 - [x] E3: prestadores, beneficios, carpetas y permisos para el Cliente (`TOURIST` compatible); Colaborador, Prestador y Administrador con responsabilidades separadas (implementación revisada en `f28e9cb`).
 - [x] F1 histórico: tres prototipos se usaron para elegir Beneficios como portada y Pasaporte en Mi viaje. Las rutas y el código demo se retiraron del producto actual; ver [archivo histórico](docs/frontend-prototipos.md).
 - [x] E4: consumos únicos, créditos, anulaciones y ajustes pendientes (ver [detalle](docs/plans/04-consumos-creditos.md)).
-- [ ] E5: tienda, Mercado Pago, stock y retiro.
+- [x] E5 backend/API/Admin: tienda, stock, canjes, retiro y pagos recuperables. [PR #11](https://github.com/SebaaM/llave-extra/pull/11) abierto contra develop, sin fusionar; depende de #10. Producto revisado y CI aprobado; sandbox externo pendiente.
 - [ ] E6: analítica, preparación operativa y seguridad.
 - [x] Task 8: migrar backend a uv 0.11.3 y frontend a pnpm 11.22.0 con locks, Docker y CI bloqueados (ver [informe](.superpowers/sdd/00-roadmap/task-8-report.md)).
 - [x] F2 después de E4: conectar la experiencia Beneficios y Mi viaje estilo Pasaporte a las API E2–E4 (ver [plan frontend](docs/plans/frontend.md) e [informe Task 9](.superpowers/sdd/00-roadmap/task-9-report.md)).
 - [ ] Resto de F3 después de E5/E6: tienda/pedidos y analíticas; espacios operativos Prestador/Colaborador adelantados en plan 08, Administrador usa Django. Ver [plan frontend](docs/plans/frontend.md).
-- [ ] Validar Mercado Pago con credenciales de sandbox reales antes de producción.
+- [ ] Validar Mercado Pago con cuentas de prueba y credenciales de su aplicación antes de habilitar operación.
 - [ ] Confirmar ofertas, recursos gráficos, contacto y punto de retiro reales antes de publicar.
 - [ ] Incorporar vencimiento de créditos mediante una regla prospectiva en una etapa posterior.
 
 - [x] Corrección Task 5: contrato de red visual con configuración administrativa general y privada por carpeta; ver `docs/api.md` e informe Task 5.
 
-- [ ] E5 en curso por pedido del 20/10: dominio/canjes, pagos recuperables y Admin; plan docs/plans/05-tienda-pagos.md. UI de tienda y E6 quedan después.
+- [x] E5 cerrada: dominio/canjes, pagos recuperables y Admin; plan docs/plans/05-tienda-pagos.md y evidencia docs/verification/05-tienda-pagos.md. UI de tienda y E6 quedan después.
 
-- [x] E5 Task 1 a7a6b59 aprobada por revisión independiente sin hallazgos: catálogo/API/Admin, canje E4, cancelación créditos, stock auditado e historia PG protegida; reserva MONEY/outbox sin HTTP. Evidencia en docs/verification/05-tienda-pagos-task-1.md. Task 2 implementada localmente con worker, vencimiento, pasarela y cancelación/refund monetario; pendientes gate independiente, PR/CI y sandbox externo. Guía docs/shop-operations.md y evidencia docs/verification/05-tienda-pagos.md.
-- [ ] E5 fix I1 implementado: liberar reservas nunca pagadas en revisión y conservar stock previamente acreditado mediante migración 0005; pendiente re-review focal del orquestador. Evidencia en docs/verification/05-tienda-pagos.md.
+- [x] E5 Task 1 a7a6b59 aprobada por revisión independiente sin hallazgos: catálogo/API/Admin, canje E4, cancelación créditos, stock auditado e historia PG protegida; reserva MONEY/outbox sin HTTP. Evidencia en docs/verification/05-tienda-pagos-task-1.md. Task 2 entregada en PR #11 con worker, vencimiento, pasarela y cancelación/refund monetario; gate independiente y CI aprobados. Sandbox externo pendiente. Guía docs/shop-operations.md y evidencia docs/verification/05-tienda-pagos.md.
+- [x] E5 fix I1 aprobado en 4c9a402 por re-review focal: reservas impagas en revisión vencen/cancelan y stock previamente acreditado se conserva. Upgrade 0005 y QA HTTP aprobados. Evidencia en docs/verification/05-tienda-pagos.md.

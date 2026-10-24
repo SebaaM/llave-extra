@@ -1,5 +1,7 @@
 # Plan de implementación aprobado
 
+Estado vigente al 24/10/2026: E5 backend/API/Admin completada y revisada en `4c9a402`, entrega [PR #11](https://github.com/SebaaM/llave-extra/pull/11) contra develop, sin fusionar y dependiente de #10. CI de producto aprobado; HEAD vigente en las comprobaciones del PR. Ver [evidencia](../verification/05-tienda-pagos.md). Pausar antes de E6 y UI de tienda F3; sandbox externo pendiente. Las pausas de entregas anteriores que siguen son históricas.
+
 > Corrección vigente del 19/10/2026: catálogo general público con interruptor administrativo, recomendaciones QR privadas y consumos directos sin colaborador. GitFlow obligatorio. [Especificación](07-catalogo-publico-spec.md) y [plan de corrección](07-catalogo-publico-gitflow.md) prevalecen sobre las descripciones históricas siguientes. E5/E6/F3 continúan pendientes; completar esta corrección y detenerse.
 
 > Pedido posterior aprobado: adelantar únicamente los dashboards operativos Prestador/Colaborador de F3. Colaborador elige beneficios concretos del catálogo; usuario Prestador maneja un solo negocio. Admin continúa en Django. [Plan 08](08-backoffice-red.md) y [spec](08-backoffice-red-spec.md) prevalecen en este alcance; tienda y analíticas siguen pendientes.

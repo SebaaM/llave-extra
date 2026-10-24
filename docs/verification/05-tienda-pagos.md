@@ -56,3 +56,32 @@ Comandos con prefijo `docker compose -p llaveextra-e5 run --rm --no-deps -e DJAN
 | `python manage.py spectacular --file /tmp/e5-openapi.yaml --validate --fail-on-warn` | Exit 0, sin warnings |
 
 La primera prueba de upgrade tenía una aserción de fixture Decimal contra string; se corrigió la comparación y las 17 regresiones pasaron. Cobertura nueva: CREATE/GET permanente con/sin remoto → expire/cancel; solicitud anterior al error; replay/stock una vez; recovery y pago tardío después de liberar; PAID/READY → review fuera de plazo conserva stock; refund pendiente sin confirmación no vence; fencing impide que un GET viejo marque pago confirmado. Sin cambios a frontend ni llamadas externas.
+
+## Cierre del orquestador — 24/10/2026
+
+Task 1 aprobada en a7a6b59. Revisión final e32851a detectó I1, confirmado por prueba focal PostgreSQL: CREATE rechazado podía dejar reserva impaga retenida. La única ola de corrección 4c9a402 añadió marca histórica, predicado común y 17 regresiones. Re-review focal: I1 ADDRESSED, cero Critical/Important/Minor nuevos; gate Task 2/rama Approved. Sin observaciones aplazadas. Límites de sandbox, UI F3 y scheduler desplegado conservados según alcance aprobado.
+
+El orquestador aplicó 0005 a la BD QA existente (upgrade desde 0004, exit0) y repitió work/e5_http_qa.py con servidor HTTP real interno, exit0: JWT/CSRF, catálogo, PENDING_PAYMENT → PAID → REFUND_PENDING → REFUNDED, replay200/mismoID, stock retenido hasta confirmar y restituido una vez, sesión Django Admin y stock readonly. El helper inicialmente esperaba refund automático: se corrigió para simular confirmación explícita, sin cambiar producto. Solo escenarios sintéticos de llaveextra-e5, sin credenciales impresas ni pagos externos.
+
+Se guardó pg_dump custom previo de la base local en el contenedor db, /tmp/llaveextra-antes-e5-20261024.dump; pg_restore --list pudo leerlo. Comprueba archivo legible, no restauración completa. Luego se aplicaron shop0001–0005 al entorno local existente sin seed/rotación de cuentas ni QR. Conteos antes/después idénticos:
+
+| Entidad | Antes | Después |
+|---|---:|---:|
+| Usuarios | 17 | 17 |
+| Prestadores | 14 | 14 |
+| Beneficios | 14 | 14 |
+| Asociaciones históricas | 10 | 10 |
+| Beneficios seleccionados | 8 | 8 |
+| Consumos | 6 | 6 |
+| Movimientos de billetera | 7 | 7 |
+
+La tienda principal queda sin productos/pedidos; datos DEMO separados y carga/reproducción en la guía. Se levantaron imágenes locales con dependencias bloqueadas. Salud Django8000 y proxy5173, portada5173 y login Admin vía5173 respondieron HTTP200; esto no es QA visual de navegador.
+
+GitFlow: feature/tienda-pagos → develop. [PR #11](https://github.com/SebaaM/llave-extra/pull/11) depende de #10 todavía abierto; #9 fusionado externamente. No se fusionó PR alguno. CI de producto 4c9a402: [push40123417107](https://github.com/SebaaM/llave-extra/actions/runs/40123417107) exitoso en backend/frontend. Pasaron uv locked/Ruff/migraciones/pytest y pnpm frozen/lint/tipos/tests/build/audit. Comprobaciones del HEAD documental vigente en [PR #11](https://github.com/SebaaM/llave-extra/pull/11/checks).
+
+## Decisiones del orquestador
+- E5 implementa backend/API/Admin; la UI de tienda queda en F3 según el alcance ya aprobado. Coste si es incorrecto: la tienda no podrá usarse desde React hasta esa etapa.
+- Iniciar desde PR #10 revisado y dirigir el nuevo PR a develop sin fusionar dependencias. Coste si es incorrecto: el diff incluye etapas previas y exige integrar #9/#10 en orden.
+- Firmar Orders con data.id y ts literales, admitir epoch segundos/milisegundos y una ventana de diez minutos más 60 segundos de desfase futuro; recuperar entregas tardías con polling. Coste si es incorrecto: alguna notificación legítima podría rechazarse y demorarse hasta reconciliación; sandbox debe comprobar interoperabilidad.
+- Entregar adaptador real explícitamente deshabilitado para operación hasta verificar sandbox; probar núcleo con simulador durable y fixtures sin cobros externos. Coste si es incorrecto: compra monetaria real requiere configuración y verificación externas antes de habilitarse.
+- Ampliar el adapter con búsqueda oficial por external_reference para recuperar CREATE incierto/409 sin remote_id ni webhook; usar sus IDs solo como candidatos para GET validado, rechazando ambigüedad. Coste si es incorrecto: las limitaciones de búsqueda podrían requerir revisión manual y deben validarse en sandbox; no se rotará clave ni se habilitará entrega por un resultado de búsqueda.

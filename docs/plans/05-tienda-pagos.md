@@ -53,7 +53,7 @@
 - [x] Webhook HMAC literal query/ts, bounds/age/dedupe durable/ack rápido; mismo data.id se vuelve a consultar. Tests de firma, payload, replay, paid→refund, errores de vinculación y estados inconsistentes.
 - [x] Acciones Admin auditadas para pago tardío/refund/reintento sin eludir estados; pruebas races de workers, expiry/webhook/cancel, refund fallo→confirmación, crash/lease y pickup bloqueado.
 - [x] Seed productos/pedidos/comprobantes DEMO idempotentes y documentación breve de arranque/cuentas sin secretos. Operación/schedule, tabla de estados, sandbox pendiente y qué se probó realmente. No reseed de la base principal.
-- [ ] Ejecutar suite backend completa PG/Redis, Ruff, migraciones y esquema; revisión de rama independiente (puede ser gate Task 2), una ola consolidada de fixes y re-review focal. CI del HEAD, PR propio → develop, adjuntar sin fusionar. Detenerse antes de E6/F3.
+- [x] Ejecutar suite backend completa PG/Redis, Ruff, migraciones y esquema; revisión de rama independiente (puede ser gate Task 2), una ola consolidada de fixes y re-review focal. CI del HEAD, PR propio → develop, adjuntar sin fusionar. Detenerse antes de E6/F3.
 
 ## Evidencia y decisiones
 
@@ -62,3 +62,7 @@ Preflights de billetera/código y documentación oficial revisados el 20/10/2026
 Task 1 aprobada en `a7a6b59`; Task 2 producto y verificación local implementados el 24/10/2026. Búsqueda por referencia añadida al adapter para recuperar CREATE incierto sin webhook. La casilla final sigue pendiente porque reúne gate independiente, PR y CI a cargo del orquestador. Evidencia exacta en docs/verification/05-tienda-pagos.md; no se validó sandbox externo.
 
 Ola final I1: marca histórica payment_confirmed monotónica y nueva migración 0005; vencimiento/cancelación de revisión impaga con predicado compartido, sin liberar pedidos previamente pagados ni refunds pendientes. Regresiones incluyen migración 0004→0005, recovery tardío y fencing. Re-review focal pendiente, sin afirmar aprobación final.
+
+## Entrega
+
+Producto final 4c9a402: Task 1 aprobada y gate Task 2/rama aprobado tras ola I1 y re-review focal, sin hallazgos pendientes. 213 pruebas PG/Redis; migraciones/Ruff/OpenAPI y QA HTTP post-fix aprobados. PR #11 contra develop, sin fusionar, dependiente de #10. CI de producto aprobado; estado del HEAD vigente en las comprobaciones del PR. Migraciones locales aplicadas sin seed ni cambios en conteos previos; sandbox externo y E6/F3 pendientes. Ver docs/verification/05-tienda-pagos.md.
