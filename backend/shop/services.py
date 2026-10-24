@@ -108,9 +108,13 @@ def checkout(user_id, *, mode, items, idempotency_key):
     provider = settings.SHOP_PAYMENT_PROVIDER if mode == Order.Mode.MONEY else ""
     if mode == Order.Mode.MONEY and provider not in ("fake", "mercadopago"):
         raise Conflict("Los pagos monetarios no están habilitados")
-    # Real checkout remains gated until the provider implementation and sandbox validation exist.
-    if provider == "mercadopago":
-        raise Conflict("Mercado Pago pendiente de habilitación operativa")
+    if provider:
+        from .payments.config import seller_for
+        from .payments.contracts import GatewayError
+        try:
+            seller = seller_for(provider)
+        except GatewayError:
+            raise Conflict("Pasarela pendiente de habilitación operativa") from None
     products = list(Product.objects.select_for_update().filter(pk__in=cart).order_by("pk"))
     if len(products) != len(cart):
         raise ValidationError("Producto inexistente")
@@ -143,12 +147,15 @@ def checkout(user_id, *, mode, items, idempotency_key):
         product.save(update_fields=["stock"])
     CheckoutKey.objects.create(actor=user, key=idempotency_key, fingerprint=fingerprint, order=order)
     if mode == Order.Mode.MONEY:
-        PaymentOperation.objects.create(order=order, kind=PaymentOperation.Kind.CREATE,
+        operation = PaymentOperation.objects.create(order=order, kind=PaymentOperation.Kind.CREATE,
                                         payload={"external_reference": str(order.pk), "currency": "ARS",
                                                  "total_amount": format(total, ".2f"),
                                                  "items": [{"product_id": str(p.pk), "title": p.name,
                                                             "quantity": cart[p.pk], "unit_price": format(p.price_money, ".2f")}
                                                            for p in products]})
+        from .models import PaymentContext
+        from .payments.config import http_payload
+        PaymentContext.objects.create(order=order, seller=seller, request=http_payload(operation.payload))
     OrderAudit.objects.create(order=order, actor=user, action="CHECKOUT", reason="Pedido confirmado localmente")
     return order, True
 
@@ -199,14 +206,16 @@ def resolve_cancellation(actor, request_id, *, approve, reason):
         raise Conflict("La solicitud ya fue resuelta")
     if approve:
         if order.mode == Order.Mode.MONEY:
-            raise Conflict("La cancelación monetaria requiere la pasarela de pagos (Task 2)")
-        if order.state not in (Order.State.PAID, Order.State.READY):
-            raise Conflict("El pedido no admite reintegro")
-        refund_wallet(order.customer_id, order.total_credits, f"shop:{order.pk}:refund",
-                      debit_reference=f"shop:{order.pk}:debit")
-        order.state = Order.State.CANCELED
-        release_stock(order)
-        order.save(update_fields=["state", "stock_released"])
+            from .payments.processing import cancel_money_locked
+            cancel_money_locked(order)
+        else:
+            if order.state not in (Order.State.PAID, Order.State.READY):
+                raise Conflict("El pedido no admite reintegro")
+            refund_wallet(order.customer_id, order.total_credits, f"shop:{order.pk}:refund",
+                          debit_reference=f"shop:{order.pk}:debit")
+            order.state = Order.State.CANCELED
+            release_stock(order)
+            order.save(update_fields=["state", "stock_released"])
     request.state = target
     request.resolved_at = timezone.now()
     request.resolved_by = actor

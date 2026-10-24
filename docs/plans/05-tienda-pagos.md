@@ -37,10 +37,10 @@
 - API `/api/v1/shop/products/` y medios públicos revalidados por producto activo; `/orders/`, `/orders/{uuid}/` y `/orders/{uuid}/cancel/` propios. Solo Cliente activo/verificado en escrituras.
 - Modelos Product, ShopSettings de retiro, Order, OrderLine, CheckoutKey, CancellationRequest, auditoría/ajuste; PaymentOperation durable CREATE/REFUND/RECONCILE con clave/carga/lease. Money checkout reserva 15 minutos y crea outbox atómico; no ejecuta HTTP ni se habilita sin proveedor configurado. Task 2 consume/extiende contratos internos documentados.
 
-- [ ] Tests PG del catálogo sin datos privados, roles/IDOR/tampering, snapshots y constraints; canje exitoso/saldo insuficiente/congelado con rollback; carrito y cantidades acotados.
-- [ ] Implementar checkout con lock/fingerprint/idempotencia, reserva monetaria + outbox y canje E4; sin HTTP. Pruebas conexiones paralelas: misma clave, último stock, créditos y carritos en orden inverso, ajuste administrativo vs checkout.
-- [ ] Implementar cancelación de créditos idempotente, solicitud/rechazo propios y acciones preparar/entregar; bloquear retiro si solicitud abierta. Admin seguro en español: stock readonly+delta, snapshots/historia sin edición/borrado, retiro configurable e imágenes validadas.
-- [ ] Actualizar contrato y ejecutar Ruff, PG tests relevantes, makemigrations --check y schema --validate --fail-on-warn; registrar resultado y commit español. Revisión independiente antes de Task 2.
+- [x] Tests PG del catálogo sin datos privados, roles/IDOR/tampering, snapshots y constraints; canje exitoso/saldo insuficiente/congelado con rollback; carrito y cantidades acotados.
+- [x] Implementar checkout con lock/fingerprint/idempotencia, reserva monetaria + outbox y canje E4; sin HTTP. Pruebas conexiones paralelas: misma clave, último stock, créditos y carritos en orden inverso, ajuste administrativo vs checkout.
+- [x] Implementar cancelación de créditos idempotente, solicitud/rechazo propios y acciones preparar/entregar; bloquear retiro si solicitud abierta. Admin seguro en español: stock readonly+delta, snapshots/historia sin edición/borrado, retiro configurable e imágenes validadas.
+- [x] Actualizar contrato y ejecutar Ruff, PG tests relevantes, makemigrations --check y schema --validate --fail-on-warn; registrar resultado y commit español. Revisión independiente antes de Task 2.
 
 ## Task 2: Pagos, reconciliación y entrega operativa
 
@@ -48,13 +48,15 @@
 
 **Interfaces:** gateway con `create_order(payload, *, idempotency_key)`, `get_order(remote_id)` y `refund_order(remote_id, *, idempotency_key)`; DTO tipado conserva IDs/importe/estado/checkout_url y errores sanitizados. Los servicios de Task 1 son autoridad local. Comandos limitados por batch, leases/fencing y backoff; firmas finales y ejecución en guía operativa.
 
-- [ ] Implementar adapter real según fuentes oficiales de spec, URL fija/TLS/no redirects, timeout/bounds y allowlist checkout; fake persistente DEMO bloqueado en producción. Tests contractuales de request/headers/campos/errores, no llamadas monetarias externas.
-- [ ] Implementar outbox recuperable y observación GET autoritativa con todos los cotejos; HTTP fuera de atomic. Vencimiento y cancelación conservan referencias, stock una vez, late pay → revisión/refund. Refund clave propia estable, GET confirma restitución antes de reponer stock.
-- [ ] Webhook HMAC literal query/ts, bounds/age/dedupe durable/ack rápido; mismo data.id se vuelve a consultar. Tests de firma, payload, replay, paid→refund, errores de vinculación y estados inconsistentes.
-- [ ] Acciones Admin auditadas para pago tardío/refund/reintento sin eludir estados; pruebas races de workers, expiry/webhook/cancel, refund fallo→confirmación, crash/lease y pickup bloqueado.
-- [ ] Seed productos/pedidos/comprobantes DEMO idempotentes y documentación breve de arranque/cuentas sin secretos. Operación/schedule, tabla de estados, sandbox pendiente y qué se probó realmente. No reseed de la base principal.
+- [x] Implementar adapter real según fuentes oficiales de spec, URL fija/TLS/no redirects, timeout/bounds y allowlist checkout; fake persistente DEMO bloqueado en producción. Tests contractuales de request/headers/campos/errores, no llamadas monetarias externas.
+- [x] Implementar outbox recuperable y observación GET autoritativa con todos los cotejos; HTTP fuera de atomic. Vencimiento y cancelación conservan referencias, stock una vez, late pay → revisión/refund. Refund clave propia estable, GET confirma restitución antes de reponer stock.
+- [x] Webhook HMAC literal query/ts, bounds/age/dedupe durable/ack rápido; mismo data.id se vuelve a consultar. Tests de firma, payload, replay, paid→refund, errores de vinculación y estados inconsistentes.
+- [x] Acciones Admin auditadas para pago tardío/refund/reintento sin eludir estados; pruebas races de workers, expiry/webhook/cancel, refund fallo→confirmación, crash/lease y pickup bloqueado.
+- [x] Seed productos/pedidos/comprobantes DEMO idempotentes y documentación breve de arranque/cuentas sin secretos. Operación/schedule, tabla de estados, sandbox pendiente y qué se probó realmente. No reseed de la base principal.
 - [ ] Ejecutar suite backend completa PG/Redis, Ruff, migraciones y esquema; revisión de rama independiente (puede ser gate Task 2), una ola consolidada de fixes y re-review focal. CI del HEAD, PR propio → develop, adjuntar sin fusionar. Detenerse antes de E6/F3.
 
 ## Evidencia y decisiones
 
 Preflights de billetera/código y documentación oficial revisados el 20/10/2026; no se usaron credenciales ni se ejecutaron pagos. El informe final distinguirá adapter probado con fixtures de sandbox real. La verificación de UI de tienda no aplica al alcance backend aprobado.
+
+Task 1 aprobada en `a7a6b59`; Task 2 producto y verificación local implementados el 24/10/2026. Búsqueda por referencia añadida al adapter para recuperar CREATE incierto sin webhook. La casilla final sigue pendiente porque reúne gate independiente, PR y CI a cargo del orquestador. Evidencia exacta en docs/verification/05-tienda-pagos.md; no se validó sandbox externo.

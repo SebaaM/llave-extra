@@ -9,6 +9,7 @@ from .media import product_image_path, product_storage, validate_private_image
 
 
 class Product(models.Model):
+    demo = models.BooleanField("Producto DEMO", default=False, editable=False)
     id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("Nombre", max_length=160)
     description = models.TextField("Descripción", blank=True)
@@ -209,3 +210,43 @@ class PaymentOperation(models.Model):
             models.CheckConstraint(condition=Q(state__in=["PENDING", "RUNNING", "DONE", "BLOCKED"]), name="shop_operation_state_valid"),
             models.CheckConstraint(condition=Q(generation__gte=F("attempts")), name="shop_fencing_generation"),
         ]
+
+
+class PaymentContext(models.Model):
+    order = models.OneToOneField(Order, verbose_name="Pedido", on_delete=models.PROTECT, primary_key=True)
+    seller = models.CharField("Vendedor esperado", max_length=100)
+    request = models.JSONField("Request HTTP congelado")
+    version = models.PositiveBigIntegerField("Versión de observación", default=0)
+
+    class Meta:
+        verbose_name = "Contrato de pago"
+        verbose_name_plural = "Contratos de pago"
+
+
+class PaymentInbox(models.Model):
+    remote_id = models.CharField("Pedido remoto firmado", max_length=100)
+    delivery = models.CharField("Huella de entrega", max_length=64, unique=True)
+    received_at = models.DateTimeField("Recibida", auto_now_add=True)
+    available_at = models.DateTimeField("Disponible desde", default=timezone.now)
+    attempts = models.PositiveIntegerField("Intentos", default=0)
+    lease_token = models.UUIDField("Token de ejecución", null=True)
+    lease_until = models.DateTimeField("Arrendamiento hasta", null=True)
+    done = models.BooleanField("Procesada", default=False)
+    last_code = models.CharField("Resultado sanitizado", max_length=80, blank=True)
+
+    class Meta:
+        verbose_name = "Notificación de pago"
+        verbose_name_plural = "Notificaciones de pago"
+        indexes = [models.Index(fields=["done", "available_at"], name="shop_inbox_due")]
+
+
+class FakeRemoteOrder(models.Model):
+    id = models.CharField("Identificador DEMO", max_length=100, primary_key=True)
+    create_key = models.UUIDField("Clave de creación DEMO", unique=True)
+    request = models.JSONField("Request DEMO")
+    response = models.JSONField("Estado remoto DEMO")
+    refund_key = models.UUIDField("Clave de reintegro DEMO", null=True, unique=True)
+
+    class Meta:
+        verbose_name = "Pago simulado DEMO"
+        verbose_name_plural = "Pagos simulados DEMO"

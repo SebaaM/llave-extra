@@ -1,8 +1,10 @@
 from django.urls import path
 
 from . import views
+from .payments.webhooks import OrderWebhook
 
 urlpatterns = [
+    path("payments/webhook/", OrderWebhook.as_view(), name="shop-payment-webhook"),
     path("admin/media/<path:name>", views.ProductAdminMedia.as_view(), name="shop-admin-media"),
     path("products/", views.ProductList.as_view(), name="shop-products"),
     path("products/<uuid:pk>/", views.ProductDetail.as_view(), name="shop-product"),

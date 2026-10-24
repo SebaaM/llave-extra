@@ -292,16 +292,15 @@ def test_reject_and_deliver_and_authorize_actions(domain):
 
 
 @override_settings(SHOP_PAYMENT_PROVIDER="fake")
-def test_money_cancellation_cannot_release_or_confirm(domain):
+def test_pending_money_cancellation_releases_without_confirming_payment(domain):
     order, _ = buy(domain, mode="MONEY")
     request = request_cancellation(domain.customer.pk, order.pk, reason="Cancelar")
-    with pytest.raises(Conflict):
-        resolve_cancellation(domain.admin, request.pk, approve=True, reason="Aprobado")
+    resolve_cancellation(domain.admin, request.pk, approve=True, reason="Aprobado")
     with pytest.raises(Conflict):
         advance_order(domain.admin, order.pk, target="READY", reason="Preparar")
-    assert Order.objects.get().state == "PENDING_PAYMENT"
-    assert Product.objects.get(pk=domain.product.pk).stock == 9
-    assert CancellationRequest.objects.get().state == "OPEN"
+    assert Order.objects.get().state == "CANCELED"
+    assert Product.objects.get(pk=domain.product.pk).stock == 10
+    assert CancellationRequest.objects.get().state == "APPROVED"
 
 
 def test_pg_history_and_constraints(domain):

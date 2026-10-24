@@ -10,14 +10,18 @@ from credits.admin import ImmutableAdmin
 from .models import (
     CancellationRequest,
     CheckoutKey,
+    FakeRemoteOrder,
     Order,
     OrderAudit,
     OrderLine,
+    PaymentContext,
+    PaymentInbox,
     PaymentOperation,
     Product,
     ShopSettings,
     StockAdjustment,
 )
+from .payments.processing import request_refund, retry_operation
 from .services import adjust_stock, advance_order, resolve_cancellation
 
 
@@ -79,7 +83,11 @@ class ShopSettingsAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(ActionMixin, ImmutableAdmin):
     list_display = ("id", "customer", "mode", "state", "total_money", "total_credits", "created_at")
-    actions = ("prepare_selected", "deliver_selected")
+    actions = ("prepare_selected", "deliver_selected", "refund_selected")
+
+    @admin.action(description="Solicitar reintegro total de pagos en revisión con motivo")
+    def refund_selected(self, request, queryset):
+        self.run_action(request, queryset, lambda obj, reason: request_refund(request.user, obj.pk, reason=reason))
 
     @admin.action(description="Marcar pedidos pagados como preparados")
     def prepare_selected(self, request, queryset):
@@ -97,7 +105,7 @@ class CancellationAdmin(ActionMixin, ImmutableAdmin):
     list_display = ("order", "reason", "state", "created_at", "resolved_at")
     actions = ("approve_selected", "reject_selected")
 
-    @admin.action(description="Aprobar cancelaciones de canjes con motivo")
+    @admin.action(description="Aprobar cancelaciones con motivo")
     def approve_selected(self, request, queryset):
         self.run_action(request, queryset, lambda obj, reason: resolve_cancellation(
             request.user, obj.pk, approve=True, reason=reason))
@@ -108,5 +116,15 @@ class CancellationAdmin(ActionMixin, ImmutableAdmin):
             request.user, obj.pk, approve=False, reason=reason))
 
 
-for model in (OrderLine, CheckoutKey, StockAdjustment, OrderAudit, PaymentOperation):
+@admin.register(PaymentOperation)
+class PaymentOperationAdmin(ActionMixin, ImmutableAdmin):
+    list_display = ("order", "kind", "state", "attempts", "last_code", "available_at")
+    actions = ("retry_selected",)
+
+    @admin.action(description="Reintentar operaciones bloqueadas con la misma clave y motivo")
+    def retry_selected(self, request, queryset):
+        self.run_action(request, queryset, lambda obj, reason: retry_operation(request.user, obj.pk, reason=reason))
+
+
+for model in (OrderLine, CheckoutKey, StockAdjustment, OrderAudit, PaymentContext, PaymentInbox, FakeRemoteOrder):
     admin.site.register(model, ImmutableAdmin)

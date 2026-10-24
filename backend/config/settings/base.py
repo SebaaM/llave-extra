@@ -89,3 +89,7 @@ REFRESH_COOKIE_SAMESITE = "Lax"
 SHOP_PAYMENT_PROVIDER = os.environ.get("SHOP_PAYMENT_PROVIDER", "disabled") or "disabled"
 if SHOP_PAYMENT_PROVIDER not in {"disabled", "fake", "mercadopago"}:
     raise RuntimeError("SHOP_PAYMENT_PROVIDER inválido")
+SHOP_MP_ACCESS_TOKEN = os.environ.get("SHOP_MP_ACCESS_TOKEN", "")
+SHOP_MP_SELLER_ID = os.environ.get("SHOP_MP_SELLER_ID", "")
+SHOP_MP_WEBHOOK_SECRET = os.environ.get("SHOP_MP_WEBHOOK_SECRET", "")
+SHOP_MP_SANDBOX_VERIFIED = os.environ.get("SHOP_MP_SANDBOX_VERIFIED", "") == "true"

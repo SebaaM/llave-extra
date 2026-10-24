@@ -68,3 +68,5 @@ El pedido actual revoca la pausa al cerrar plan 08 y autoriza E5 backend/API/Adm
 
 
 E5 Task 1 implementada localmente el 23/10/2026 y pendiente de revisión independiente. Catálogo/API/Admin, canjes y cancelación de créditos, snapshots protegidos y outbox monetario sin HTTP. Ver [evidencia Task 1](../verification/05-tienda-pagos-task-1.md). Task 2 sigue pendiente para pagos, vencimiento y reembolsos monetarios; frontend/E6 permanecen fuera de alcance. Pruebas solo sobre proyecto Docker aislado llaveextra-e5, sin migrar base principal.
+
+Actualización 24/10/2026: E5 Task 1 `a7a6b59` aprobada por gate independiente sin hallazgos. Task 2 implementada localmente: pasarela Orders/fake durable, inbox/outbox, búsqueda por referencia, expiración/cancelación/refund con GET autoritativo; pendiente gate independiente, PR/CI y sandbox externo. Ver [evidencia E5](../verification/05-tienda-pagos.md) y [operación](../shop-operations.md). Frontend/E6 fuera de alcance. Pruebas solo proyecto aislado llaveextra-e5, sin migrar base principal.
