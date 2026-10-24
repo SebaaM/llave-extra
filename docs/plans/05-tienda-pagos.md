@@ -60,3 +60,5 @@
 Preflights de billetera/código y documentación oficial revisados el 20/10/2026; no se usaron credenciales ni se ejecutaron pagos. El informe final distinguirá adapter probado con fixtures de sandbox real. La verificación de UI de tienda no aplica al alcance backend aprobado.
 
 Task 1 aprobada en `a7a6b59`; Task 2 producto y verificación local implementados el 24/10/2026. Búsqueda por referencia añadida al adapter para recuperar CREATE incierto sin webhook. La casilla final sigue pendiente porque reúne gate independiente, PR y CI a cargo del orquestador. Evidencia exacta en docs/verification/05-tienda-pagos.md; no se validó sandbox externo.
+
+Ola final I1: marca histórica payment_confirmed monotónica y nueva migración 0005; vencimiento/cancelación de revisión impaga con predicado compartido, sin liberar pedidos previamente pagados ni refunds pendientes. Regresiones incluyen migración 0004→0005, recovery tardío y fencing. Re-review focal pendiente, sin afirmar aprobación final.

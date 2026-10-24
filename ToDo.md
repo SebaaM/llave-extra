@@ -30,3 +30,4 @@
 - [ ] E5 en curso por pedido del 20/10: dominio/canjes, pagos recuperables y Admin; plan docs/plans/05-tienda-pagos.md. UI de tienda y E6 quedan después.
 
 - [x] E5 Task 1 a7a6b59 aprobada por revisión independiente sin hallazgos: catálogo/API/Admin, canje E4, cancelación créditos, stock auditado e historia PG protegida; reserva MONEY/outbox sin HTTP. Evidencia en docs/verification/05-tienda-pagos-task-1.md. Task 2 implementada localmente con worker, vencimiento, pasarela y cancelación/refund monetario; pendientes gate independiente, PR/CI y sandbox externo. Guía docs/shop-operations.md y evidencia docs/verification/05-tienda-pagos.md.
+- [ ] E5 fix I1 implementado: liberar reservas nunca pagadas en revisión y conservar stock previamente acreditado mediante migración 0005; pendiente re-review focal del orquestador. Evidencia en docs/verification/05-tienda-pagos.md.

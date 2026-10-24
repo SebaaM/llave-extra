@@ -58,14 +58,16 @@ def enqueue_refund_locked(order):
 
 
 def cancel_money_locked(order):
-    if order.state in ("PAID", "READY", "PAYMENT_REVIEW"):
-        enqueue_refund_locked(order)
-    elif order.state in ("PENDING_PAYMENT", "EXPIRED", "CANCELED"):
+    unpaid_reservation = (not order.payment_confirmed and not
+                          order.payment_operations.filter(kind="REFUND").exists())
+    if order.state in ("PENDING_PAYMENT", "EXPIRED", "CANCELED", "PAYMENT_REVIEW") and unpaid_reservation:
         order.state = "CANCELED"
         release_stock(order)
         order.save(update_fields=["state", "stock_released"])
         if order.remote_id:
             enqueue_reconcile_locked(order)
+    elif order.state in ("PAID", "READY", "PAYMENT_REVIEW"):
+        enqueue_refund_locked(order)
     else:
         raise Conflict("El estado actual no admite cancelación monetaria")
 
@@ -96,10 +98,17 @@ def retry_operation(actor, operation_id, *, reason):
     OrderAudit.objects.create(order=order, actor=actor, action="PAYMENT_RETRY", reason=reason)
 
 
+def expirable_orders():
+    """Shared batch/service predicate. A remote ID alone never proves payment."""
+    return Order.objects.filter(mode="MONEY", payment_confirmed=False, stock_released=False,
+        state__in=["PENDING_PAYMENT", "PAYMENT_REVIEW"], reserved_until__lte=timezone.now()
+    ).exclude(payment_operations__kind="REFUND")
+
+
 @transaction.atomic
 def expire_order(order_id):
     _, order = locked_order(order_id)
-    if order.state == "PENDING_PAYMENT" and order.reserved_until <= timezone.now():
+    if expirable_orders().filter(pk=order.pk).exists():
         order.state = "EXPIRED"
         release_stock(order)
         order.save(update_fields=["state", "stock_released"])
@@ -159,6 +168,9 @@ def bind_locked(order, context, remote):
 
 def apply_observation_locked(order, remote):
     state = financial_state(remote)
+    if state in ("paid", "refunded") and not order.payment_confirmed:
+        order.payment_confirmed = True
+        order.save(update_fields=["payment_confirmed"])
     if order.state == "PICKED_UP":
         if state != "paid":
             review_locked(order, "financial_change_after_pickup")

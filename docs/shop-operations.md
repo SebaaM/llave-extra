@@ -45,6 +45,10 @@ CREATE conserva request/seller esperados congelados en `PaymentContext`, además
 
 Cambiar vendedor configurado bloquea operaciones de contratos antiguos. `disabled` detiene nuevas compras monetarias y llamadas de workers; los pedidos conservan sus claves y snapshots. Los errores permanentes 400/401/404, formatos desconocidos y discrepancias bloquean la operación o entrega. Revisar configuración/contrato y usar la acción «Reintentar operaciones bloqueadas» con motivo; conserva payload y clave. No editar tablas históricas ni marcar pagos manualmente.
 
+Una revisión no extiende una reserva impaga. `Order.payment_confirmed` conserva si alguna vez un GET financiero íntegro confirmó el pago (o refund total) y PostgreSQL impide revertir esa marca. Mientras sea falsa, una reserva `PENDING_PAYMENT` o `PAYMENT_REVIEW` sin operación de refund puede vencer a los 15 minutos o cancelarse, tenga o no ID remoto. Batch y servicio usan la misma elegibilidad bajo locks; liberan una vez y conservan referencias, claves y auditoría de revisión. Si posteriormente se recupera CREATE y aparece un pago, pasa a revisión sin habilitar entrega ni reservar nuevamente. Un pedido antes PAID/READY, o con refund pendiente, conserva stock hasta GET de restitución total.
+
+La migración nueva `shop.0005_payment_confirmation_history` reconstruye la marca con estados monetarios acreditados/reintegrados y auditorías inmutables de pago, incluido pago tardío observado en revisión. Un refund pendiente sin evidencia de pago sigue protegido por su estado/operación, sin inventar una confirmación. No modifica las migraciones 0001–0004, snapshots, claves ni cantidades. Aplicar mediante `manage.py migrate` en el entorno autorizado; la actualización desde 0004 con datos históricos se prueba sobre PostgreSQL. La base principal requiere su autorización operativa independiente.
+
 ## Estados y acciones
 
 | Estado / observación | Acción y stock |
@@ -53,8 +57,8 @@ Cambiar vendedor configurado bloquea operaciones de contratos antiguos. `disable
 | EXPIRED / CANCELED | Stock liberado una vez; referencia preservada y polling activo |
 | Pago tardío o datos inconsistentes | PAYMENT_REVIEW; nunca permite entrega automática |
 | PAID → READY → PICKED_UP | Solo Admin con motivo; solicitud abierta o cualquier operación REFUND bloquea |
-| Cancelación aprobada, pendiente de pago | CANCELED y libera reserva; pago concurrente/tardío pasa a revisión |
-| Cancelación aprobada, pagado / revisión | REFUND_PENDING y outbox con clave propia; retiene stock asignado |
+| Cancelación aprobada, pendiente de pago o revisión nunca acreditada | CANCELED y libera reserva, incluso sin ID remoto; pago concurrente/tardío pasa a revisión |
+| Cancelación aprobada, pagado o revisión de pago confirmado | REFUND_PENDING y outbox con clave propia; retiene stock asignado |
 | Refund falla, timeout o POST 200 | No repone stock; reintento/reconciliación con las mismas claves |
 | GET confirma refund completo | REFUNDED; IDs de refund únicos, pagos relacionados y sumas procesadas deben coincidir con total; stock una vez |
 | Refund/chargeback externo tras PICKED_UP | Conserva entrega y stock; incidencia financiera auditada para Admin |

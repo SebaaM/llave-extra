@@ -38,3 +38,21 @@ Task 1 aporta además stock/créditos concurrentes, idempotencia local, restricc
 Mercado Pago sandbox pendiente: no se cargaron secretos, no hubo cobros, no se probó webhook del proveedor ni redirect remoto. La [guía operativa](../shop-operations.md) describe cuentas de prueba/aplicación, gate de configuración y los casos pendientes. No inferir sandbox por prefijo del token. Los ejemplos oficiales inconsistentes se reemplazaron por fixtures concordantes propias; GET/refund/estados deben confirmarse en sandbox. La expiración remota de 15 minutos y renovación de `ts` en retries tampoco se afirmaron validadas.
 
 No se ejecutaron pruebas frontend porque sus archivos/contratos de uso actuales no cambian. No hay scheduler desplegado, migración de base principal, publicación, push ni merge por el implementador. El gate independiente y QA operativo del orquestador se registran al completarlos.
+
+## Corrección I1 del gate final — 24/10/2026
+
+Hallazgo: un CREATE bloqueado podía convertir una reserva nunca pagada en PAYMENT_REVIEW sin salida por vencimiento/cancelación. Se agregó Order.payment_confirmed monotónica, respaldada por guarda y constraint PostgreSQL. Una revisión impaga sin operación de refund conserva el plazo de reserva, tenga o no ID remoto; una revisión de pago previamente confirmado y REFUND_PENDING retienen stock hasta GET íntegro de restitución. Predicado expirable_orders compartido por servicio/batch; cancelación propia también admite revisión. Claves, referencias, auditoría, late-pay y fencing se preservan.
+
+Migración nueva 0005, sin editar 0001–0004: reconstruye confirmación desde estados y auditorías financieras existentes. Una prueba incremental 0004→0005 con datos históricos verifica estados acreditados, revisión antes/después de pago, pago tardío y refund pendiente sin prueba, conservando importes/stock. Ejecutada en test DB PostgreSQL; aplicación sobre base QA existente por root y re-review focal todavía pendientes al entregar el commit. Base principal sin tocar.
+
+Comandos con prefijo `docker compose -p llaveextra-e5 run --rm --no-deps -e DJANGO_SETTINGS_MODULE=config.settings.test backend`:
+
+| Sufijo | Resultado final |
+| --- | --- |
+| `pytest -q shop/tests/test_reservations.py` | **17 passed in 23.92s** |
+| `pytest -q` | **213 passed in 117.44s** |
+| `ruff check .` | All checks passed |
+| `python manage.py makemigrations --check --dry-run` | No changes detected |
+| `python manage.py spectacular --file /tmp/e5-openapi.yaml --validate --fail-on-warn` | Exit 0, sin warnings |
+
+La primera prueba de upgrade tenía una aserción de fixture Decimal contra string; se corrigió la comparación y las 17 regresiones pasaron. Cobertura nueva: CREATE/GET permanente con/sin remoto → expire/cancel; solicitud anterior al error; replay/stock una vez; recovery y pago tardío después de liberar; PAID/READY → review fuera de plazo conserva stock; refund pendiente sin confirmación no vence; fencing impide que un GET viejo marque pago confirmado. Sin cambios a frontend ni llamadas externas.

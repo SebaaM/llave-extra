@@ -430,7 +430,7 @@ def test_future_prices_and_frozen_refund(domain):
 def test_failed_refund_still_blocks_delivery(domain):
     order, _ = buy(domain, mode="MONEY")
     # Simulates Task 2 authoritative payment application; no API/Admin grants this state.
-    Order.objects.filter(pk=order.pk).update(state="PAID")
+    Order.objects.filter(pk=order.pk).update(state="PAID", payment_confirmed=True)
     PaymentOperation.objects.create(order=order, kind="REFUND", payload={}, state="BLOCKED")
     with pytest.raises(Conflict):
         advance_order(domain.admin, order.pk, target="READY", reason="Preparar")

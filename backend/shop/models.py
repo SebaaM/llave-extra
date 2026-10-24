@@ -75,6 +75,7 @@ class Order(models.Model):
     reserved_until = models.DateTimeField("Reserva hasta", null=True, blank=True)
     stock_released = models.BooleanField("Stock liberado", default=False)
     payment_provider = models.CharField("Proveedor de pago", max_length=20, blank=True)
+    payment_confirmed = models.BooleanField("Pago monetario confirmado alguna vez", default=False, editable=False)
     remote_id = models.CharField("Identificador remoto", max_length=100, blank=True)
     checkout_url = models.URLField("Enlace de pago", max_length=1000, blank=True)
 
@@ -87,6 +88,7 @@ class Order(models.Model):
             models.CheckConstraint(condition=Q(state__in=["PENDING_PAYMENT", "PAID", "READY", "PICKED_UP", "CANCELED", "EXPIRED", "PAYMENT_REVIEW", "REFUND_PENDING", "REFUNDED"]), name="shop_order_state_valid"),
             models.CheckConstraint(condition=Q(stock_released=False) | ~Q(state__in=["PAID", "READY", "PICKED_UP"]), name="shop_released_not_deliverable"),
             models.UniqueConstraint(fields=["payment_provider", "remote_id"], condition=~Q(remote_id=""), name="shop_remote_order_unique"),
+            models.CheckConstraint(condition=~Q(mode="MONEY", state__in=["PAID", "READY", "PICKED_UP", "REFUNDED"]) | Q(payment_confirmed=True), name="shop_money_paid_confirmed"),
         ]
 
     def __str__(self):

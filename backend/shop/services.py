@@ -181,7 +181,7 @@ def request_cancellation(user_id, order_id, *, reason):
     previous = order.cancellations.filter(state=CancellationRequest.State.OPEN).first()
     if previous:
         return previous
-    if order.state not in (Order.State.PAID, Order.State.READY, Order.State.PENDING_PAYMENT):
+    if order.state not in (Order.State.PAID, Order.State.READY, Order.State.PENDING_PAYMENT, Order.State.PAYMENT_REVIEW):
         raise Conflict("Este pedido no admite cancelación")
     result = CancellationRequest.objects.create(order=order, reason=reason)
     OrderAudit.objects.create(order=order, actor=user, action="CANCELLATION_REQUESTED", reason=reason)
