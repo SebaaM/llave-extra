@@ -96,6 +96,15 @@ def test_precondition_detects_external_writes_and_missing_version(admin, group, 
     assert not AdminAudit.objects.exists()
 
 
+@pytest.mark.parametrize("version", ["versión", "é" * 64, "g" * 64, "a" * 63, "a" * 65, 7, [], None])
+def test_malformed_version_returns_conflict_without_persistence(admin, version):
+    response = client(admin).patch("/api/v1/admin/settings/general/",
+                                   {"version": version, "site_name": "Nueva marca"}, format="json")
+    assert response.status_code == 409
+    assert not SiteSettings.objects.exists()
+    assert not AdminAudit.objects.exists()
+
+
 @pytest.mark.parametrize("field,value", [
     ("whatsapp_url", "http://wa.me/123"), ("whatsapp_url", "https://wa.me.evil.test/123"),
     ("whatsapp_url", "https://user@wa.me/123"), ("instagram_url", "https://instagram.com.evil.test/x"),

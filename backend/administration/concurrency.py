@@ -24,5 +24,7 @@ def resource_version(instance, *, fields=None, resource=None):
 
 
 def require_version(instance, version, *, fields=None, resource=None):
-    if not isinstance(version, str) or not hmac.compare_digest(resource_version(instance, fields=fields, resource=resource), version):
+    valid_format = (isinstance(version, str) and len(version) == 64
+                    and all(char in "0123456789abcdef" for char in version))
+    if not valid_format or not hmac.compare_digest(resource_version(instance, fields=fields, resource=resource), version):
         raise Conflict("El registro cambió o falta su versión. Recargá antes de guardar.")
