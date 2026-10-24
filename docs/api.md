@@ -1,4 +1,4 @@
-# Contrato de API E3–E5 y catálogo público
+# Contrato de API E3–E5, catálogo público y administración
 
 Fuente ejecutable: `backend/config/urls.py` y los `@extend_schema` de las aplicaciones, incluidas `backend/providers/recommendations.py`, `backend/credits/views.py` y `backend/shop/views.py`. Generar y validar con `docker compose exec -T backend uv run --locked python manage.py spectacular --file /tmp/llave-extra-openapi.yaml --validate`; el esquema interactivo está en `/api/docs/` y JSON/YAML en `/api/schema/`. Cambios incompatibles requieren una nueva versión de ruta `/api/vN/`; campos nuevos opcionales no cambian versión. Cliente es el nombre de producto del rol técnico `TOURIST`; hay cuatro roles en total.
 
@@ -21,7 +21,7 @@ Todas estas rutas requieren autenticación. `folder_id`, `provider_id` y `benefi
 
 ### Catálogo general público
 
-Las rutas siguientes son anónimas, de solo lectura y siempre responden `Cache-Control: no-store`. El interruptor `providers.CatalogConfig` se edita únicamente desde Django Admin por un superusuario activo con rol `ADMIN`; arranca habilitado. Al deshabilitarlo, `config/` responde `200 {"enabled": false}` y todas las demás rutas públicas del catálogo responden 404, incluso por URL directa. Esto no modifica las rutas de carpeta ni la elegibilidad de consumo.
+Las rutas siguientes son anónimas, de solo lectura y siempre responden `Cache-Control: no-store`. El interruptor `providers.CatalogConfig` se edita desde Django Admin o la API administrativa por un superusuario activo con rol `ADMIN` e `is_staff`; arranca habilitado. Al deshabilitarlo, `config/` responde `200 {"enabled": false}` y todas las demás rutas públicas del catálogo responden 404, incluso por URL directa. Esto no modifica las rutas de carpeta ni la elegibilidad de consumo.
 
 | Ruta relativa a `/api/v1/` | Resultado |
 | --- | --- |
@@ -114,3 +114,26 @@ Errores de tienda: 400 formato/campos/carrito; 401 sesión requerida; 403 rol o 
 `POST /api/v1/shop/payments/webhook/?type=order&data.id={id}` exige HMAC específico Orders y devuelve 200 tras inbox durable o 401 genérico. No usa JWT ni acredita dinero por body. Query firmado único, manifest literal con casing/ts preservados, cuerpo máximo 8 KiB, ventana de 10 minutos y 60 segundos futuros. Dedupe por entrega, nunca por ID remoto permanente. Un body firmado dispara GET y cotejos completos; no prueba importes/estado. Inbox temprano y búsqueda por referencia recuperan CREATE incierto aun sin webhook. HTTP fuera de atomic, request/seller congelados y leases/versiones impiden aplicar respuestas obsoletas. Polling incluye PAID/READY/cancelados/vencidos y estados terminales; refund posterior a entrega genera incidencia financiera sin reponer inventario. Guía: [operación E5](shop-operations.md).
 
 Las solicitudes propias de cancelación también admiten `PAYMENT_REVIEW`. Su aprobación libera una reserva nunca acreditada (con o sin ID remoto) si no tiene refund; si tuvo pago confirmado, encola reintegro y retiene stock. La marca interna monotónica `Order.payment_confirmed` distingue ambos casos y no agrega campos al DTO público. El vencimiento usa el mismo criterio para PENDING_PAYMENT/PAYMENT_REVIEW sin pago confirmado. Un fallo permanente de CREATE no extiende la reserva de 15 minutos; clave/payload/referencias permanecen para recuperar pagos tardíos sin habilitar entrega.
+
+### Configuración del sitio y fundamentos administrativos
+
+Las rutas siguientes son relativas a `/api/v1/`. Todas las rutas `/admin/` requieren bearer de un usuario activo con rol `ADMIN`, `is_staff=true` e `is_superuser=true`. Anónimo recibe 401 y privilegios insuficientes 403 antes de acceder a recursos. Respuestas administrativas (incluidos errores) y configuración pública usan `Cache-Control: no-store` y `Referrer-Policy: no-referrer`. Las sesiones Django Admin y JWT continúan separadas.
+
+| Ruta | DTO / operación |
+| --- | --- |
+| `GET /site-settings/` | Anónimo. Exclusivamente `site_name`, `home_title`, `home_description`, `footer_text`, `contact_email`, `whatsapp_url`, `instagram_url` |
+| `GET/PATCH /admin/settings/general/` | Los siete campos públicos más `version` |
+| `GET/PATCH /admin/settings/catalog/` | `enabled`, `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds`, `version` |
+| `GET/PATCH /admin/settings/credits/` | `base_reward`, `target_visits`, `version` |
+| `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `payment_provider` de solo lectura y `version` |
+| `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`; 20 por defecto, máximo 100; orden fecha descendente e ID descendente como desempate. `actor` es ID numérico positivo de usuario; acción/recurso exactos. Búsqueda en email del actor, acción, recurso y motivo |
+
+El DTO de actividad contiene solo `id`, `actor_email`, `action`, `resource`, `object_id`, `changed_fields`, `reason`, `created_at`. La auditoría registra nombres de campos modificados, sin sus valores. Configuración usa acción `settings.update` y recurso `settings.general`, `settings.catalog`, `settings.credits` o `settings.shop`; guarda efecto y auditoría en la misma transacción. Una modificación sin cambios efectivos no crea actividad.
+
+GET no crea singletons ausentes: devuelve defaults sin escribir. General reproduce el nombre, título/descripción de portada y pie actuales; contactos vacíos. Catálogo, créditos y retiro leen los modelos existentes `CatalogConfig`, `CreditPolicy` y `ShopSettings`, con defaults del dominio. PATCH crea la fila ausente de forma transaccional y exige `version` del GET en el cuerpo. La versión es un HMAC opaco de recurso/PK/estado persistido; detecta cambios externos al panel. Falta de versión o estado obsoleto: 409 sin escritura ni auditoría, incluso al crear el singleton. Un guardado válido devuelve el DTO completo y la versión vigente.
+
+Solo se admiten campos explícitos; campos extra o de solo lectura enviados dan 400. General exige texto plano sin HTML/control, con límites `site_name` 160, `home_title` 200, `home_description` 1000 y `footer_text` 500; contactos opcionales, email válido, URLs hasta 500. WhatsApp admite solo HTTPS en hosts exactos `wa.me`/`api.whatsapp.com`; Instagram `instagram.com`/`www.instagram.com`. Sin userinfo, hosts similares, puertos distintos de 443, espacios ni barras inversas. Catálogo conserva opciones/rangos existentes (10–15 prestadores, 8–60 segundos). Créditos: recompensa 0–1.000.000 y meta 1–1.000. Retiro habilitado exige punto, dirección y horario completos; límites 160/300/300. Errores no exponen valores privados ni detalles internos de validación de modelos.
+
+Cambiar catálogo afecta la red y visibilidad pública existentes; carpetas/consumos conservan su autorización. Créditos futuros leen la política bloqueada por E4 y conservan snapshots anteriores. Retiro cambia la configuración que E5 copia al crear pedidos; pedidos previos conservan `pickup_snapshot`. `payment_provider` refleja `SHOP_PAYMENT_PROVIDER`, sin editar credenciales ni habilitar pagos desde esta API.
+
+Infraestructura para próximos comandos sensibles: `Idempotency-Key` obligatorio de hasta 128 caracteres, único por actor/acción, carga firmada con HMAC y fila dedicada bloqueada antes de entrar al dominio. Replay devuelve el mismo DTO saneado/código sin repetir el efecto; otra carga con la misma clave devuelve 409. El helper transaccional solo persiste resultados exitosos explícitos y rechaza claves de datos privados en respuestas; no guarda payload de entrada ni PIN/QR/token. Los callbacks deben usar servicios de dominio y auditoría atómica y no hacer HTTP/SMTP dentro de la transacción. La consulta de credenciales es una acción separada que obtiene el QR vigente; no se devuelve una credencial histórica desde un replay.
