@@ -1,8 +1,9 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import generics, permissions
+from django.db.models import CharField, F, JSONField, Q, Value
+from django.db.models.functions import Cast
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from rest_framework.views import APIView
 
 from credits.models import CreditPolicy
 from providers.models import CatalogConfig
-from shop.models import ShopSettings
+from shop.models import OrderAudit, ShopSettings
 from shop.services import require_admin
 
 from .commands import record_audit
@@ -100,28 +101,47 @@ class AdminPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class ActivityView(generics.ListAPIView):
+class ActivityView(APIView):
     permission_classes = [IsProgramAdmin]
-    serializer_class = AdminAuditSerializer
-    pagination_class = AdminPagination
 
-    @extend_schema(parameters=[OpenApiParameter(name, str) for name in ("search", "actor", "action", "resource")])
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
-    def get_queryset(self):
-        queryset = AdminAudit.objects.select_related("actor").order_by("-created_at", "-pk")
-        params = self.request.query_params
-        for name in ("actor", "action", "resource"):
-            if value := params.get(name):
-                if name == "actor":
-                    try:
-                        if int(value) < 1:
-                            raise ValueError
-                    except ValueError:
-                        raise ValidationError({"actor": "Identificador inválido."}) from None
-                queryset = queryset.filter(**{name: value})
+    @extend_schema(parameters=[OpenApiParameter(name, str) for name in ("search", "actor", "action", "resource")],
+                   responses=inline_serializer("AdminActivityPage", fields={
+                       "count": serializers.IntegerField(), "next": serializers.URLField(allow_null=True),
+                       "previous": serializers.URLField(allow_null=True),
+                       "results": AdminAuditSerializer(many=True),
+                   }))
+    def get(self, request):
+        params = request.query_params
+        admin_rows = AdminAudit.objects.all()
+        order_rows = OrderAudit.objects.all()
+        if value := params.get("actor"):
+            try:
+                if int(value) < 1:
+                    raise ValueError
+            except ValueError:
+                raise ValidationError({"actor": "Identificador inválido."}) from None
+            admin_rows = admin_rows.filter(actor_id=value)
+            order_rows = order_rows.filter(actor_id=value)
+        if value := params.get("action"):
+            admin_rows = admin_rows.filter(action=value)
+            order_rows = order_rows.filter(action=value)
+        if value := params.get("resource"):
+            admin_rows = admin_rows.filter(resource=value)
+            if value != "orders":
+                order_rows = order_rows.none()
         if search := params.get("search"):
-            queryset = queryset.filter(Q(actor__email__icontains=search) | Q(action__icontains=search)
-                                       | Q(resource__icontains=search) | Q(reason__icontains=search))
-        return queryset
+            admin_rows = admin_rows.filter(Q(actor__email__icontains=search) | Q(action__icontains=search)
+                                           | Q(resource__icontains=search) | Q(reason__icontains=search))
+            order_rows = order_rows.filter(Q(actor__email__icontains=search) | Q(action__icontains=search)
+                                           | Q(reason__icontains=search))
+        fields = ("id", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at")
+        admin_rows = admin_rows.annotate(actor_email=F("actor__email")).values(*fields)
+        order_rows = order_rows.annotate(
+            actor_email=F("actor__email"), resource=Value("orders", output_field=CharField()),
+            object_id=Cast("order_id", output_field=CharField()),
+            changed_fields=Value([], output_field=JSONField()),
+        ).values(*fields)
+        combined = admin_rows.union(order_rows, all=True).order_by("-created_at", "-id")
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(combined, request, view=self)
+        return paginator.get_paginated_response(page)

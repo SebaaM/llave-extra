@@ -49,3 +49,20 @@ class AdminCommand(models.Model):
         verbose_name = "Comando administrativo"
         verbose_name_plural = "Comandos administrativos"
         constraints = [models.UniqueConstraint(fields=["actor", "action", "key"], name="admin_command_actor_action_key")]
+
+
+class InvitationDelivery(models.Model):
+    class State(models.TextChoices):
+        PENDING = "PENDING", "Pendiente"
+        SENT = "SENT", "Enviada"
+        FAILED = "FAILED", "Fallida"
+
+    command = models.OneToOneField(AdminCommand, verbose_name="Comando", on_delete=models.PROTECT,
+                                   related_name="invitation_delivery")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Destinatario", on_delete=models.PROTECT)
+    state = models.CharField("Estado", max_length=8, choices=State.choices, default=State.PENDING)
+    attempted_at = models.DateTimeField("Intentada", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Envío de invitación"
+        verbose_name_plural = "Envíos de invitaciones"
