@@ -4,15 +4,189 @@ from threading import Barrier
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import close_old_connections, connections, transaction
+from django.test import override_settings
+from drf_spectacular.generators import SchemaGenerator
+from rest_framework.exceptions import APIException
 from rest_framework.test import APIClient
 
 from accounts.models import AuthSession, User
-from credits.models import AdjustmentCase, Consumption, ProviderConsumptionCredential, Wallet
-from credits.services import credit_wallet
+from administration.operations import ACTION_INPUT
+from credits.models import (
+    AdjustmentCase,
+    Consumption,
+    ProviderConsumptionCredential,
+    Wallet,
+    WalletEntry,
+)
+from credits.services import award_consumption, credit_wallet, set_provider_pin, sign_provider_qr
 from providers.models import Benefit, FolderBenefit, Provider, ProviderMembership
-from referrals.models import CollaboratorProfile
+from referrals.models import CollaboratorProfile, FolderAccess
 from shop.models import Order, PaymentOperation, Product, ShopSettings, StockAdjustment
 from shop.services import checkout, request_cancellation
+
+
+def parallel_domain_calls(*calls):
+    """Race genuine PostgreSQL transactions, failing quickly on a lock cycle."""
+    barrier = Barrier(len(calls))
+
+    def run(call):
+        close_old_connections()
+        try:
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SET lock_timeout = '8s'")
+                cursor.execute("SET statement_timeout = '15s'")
+            barrier.wait(timeout=10)
+            try:
+                return call()
+            except APIException as exc:
+                return exc.status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=len(calls)) as pool:
+        futures = [pool.submit(run, call) for call in calls]
+        return [future.result(timeout=25) for future in futures]
+
+
+def test_management_openapi_matches_required_inputs_and_real_outputs():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+    paths = schema["paths"]
+    components = schema["components"]["schemas"]
+
+    def component(operation, *, response=False):
+        entry = operation["responses"]["200"] if response else operation["requestBody"]
+        reference = entry["content"]["application/json"]["schema"]["$ref"]
+        return components[reference.rsplit("/", 1)[-1]]
+
+    for resource in ("users", "providers", "benefits", "collaborators", "products", "credit-rules"):
+        operation = paths[f"/api/v1/admin/{resource}/{{id}}/"]["patch"]
+        assert "version" in component(operation)["required"]
+
+    pin = paths["/api/v1/admin/providers/{id}/actions/set-pin/"]["post"]
+    assert {"pin", "version"} <= set(component(pin)["required"])
+    assert {"id", "status"} <= set(component(pin, response=True)["properties"])
+    assert any(row["name"] == "Idempotency-Key" and row["required"] for row in pin["parameters"])
+    for resource, action in ACTION_INPUT:
+        operation = paths[f"/api/v1/admin/{resource}/{{id}}/actions/{action}/"]["post"]
+        assert any(row["name"] == "Idempotency-Key" and row["required"] for row in operation["parameters"])
+        assert "id" in component(operation, response=True)["properties"]
+        request_fields = component(operation)["properties"]
+        assert "version" in request_fields if resource in ("providers", "collaborators", "products", "credit-rules") else "reason" in request_fields
+    stock = paths["/api/v1/admin/products/{id}/actions/adjust-stock/"]["post"]
+    assert {"delta", "reason", "version"} <= set(component(stock)["required"])
+    assert {"stock", "adjustment_id"} <= set(component(stock, response=True)["properties"])
+    invite = paths["/api/v1/admin/users/{id}/invite/"]["post"]
+    assert any(row["name"] == "Idempotency-Key" and row["required"] for row in invite["parameters"])
+    assert {"id", "delivery"} <= set(component(invite, response=True)["properties"])
+    qr = paths["/api/v1/admin/{resource}/{id}/qr/"]["get"]
+    assert "url" in component(qr, response=True)["properties"]
+    recommendations = paths["/api/v1/admin/collaborators/{id}/recommendations/"]["get"]
+    response = component(recommendations, response=True)
+    assert "recommendations" in response["properties"]
+    item = components[response["properties"]["recommendations"]["items"]["$ref"].rsplit("/", 1)[-1]]
+    assert {"benefit_id", "available", "benefit"} <= set(item["properties"])
+
+
+@pytest.mark.django_db(transaction=True)
+@override_settings(RATE_LIMITS={"consumption": (100, 300)})
+def test_remove_selection_races_referred_consumption_without_partial_credit(admin_client):
+    admin, client = admin_client
+    tourist = User.objects.create_user("race-consume@example.test", "password", email_verified=True)
+    collaborator = User.objects.create_user("race-referrer@example.test", "password", role="COLLABORATOR")
+    profile = CollaboratorProfile.objects.create(user=collaborator, enabled=True)
+    provider = Provider.objects.create(slug="race-consume", name="Race Consume", status="PUBLISHED")
+    benefit = Benefit.objects.create(provider=provider, title="Offer", conditions="Valid", status="PUBLISHED")
+    FolderBenefit.assign(profile.pk, benefit.pk)
+    FolderAccess.objects.create(tourist=tourist, collaborator=profile, qr_version=profile.qr_version)
+    set_provider_pin(provider.pk, "123456")
+    token = sign_provider_qr(ProviderConsumptionCredential.objects.get(provider=provider))
+    version = client.get(f"/api/v1/admin/collaborators/{profile.pk}/").data["version"]
+
+    def remove():
+        own = APIClient()
+        own.force_authenticate(admin)
+        return own.post(f"/api/v1/admin/collaborators/{profile.pk}/actions/remove-benefit/",
+                        {"benefit_id": str(benefit.pk), "version": version}, format="json",
+                        HTTP_IDEMPOTENCY_KEY="race-remove-selection").status_code
+
+    def consume():
+        return award_consumption(tourist, profile.pk, token, "123456", "race-referred-consume")[1]
+
+    removal, earning = parallel_domain_calls(remove, consume)
+    assert removal == 200
+    assert earning in (201, 403)
+    assert not FolderBenefit.objects.filter(collaborator=profile).exists()
+    assert Consumption.objects.filter(collaborator=profile, provider=provider).count() == (earning == 201)
+    assert WalletEntry.objects.filter(wallet__tourist=tourist, kind="EARN").count() == (earning == 201)
+    wallet = Wallet.objects.filter(tourist=tourist).first()
+    assert (wallet.balance if wallet else 0) == (1000 if earning == 201 else 0)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_admin_stock_delta_races_checkout_with_one_coherent_winner(admin_client):
+    admin, client = admin_client
+    tourist = User.objects.create_user("race-checkout@example.test", "password", email_verified=True)
+    with transaction.atomic():
+        credit_wallet(tourist.pk, 1000, "fixture:race-checkout")
+    product = Product.objects.create(name="Race Product", active=True, stock=1, price_credits=100)
+    ShopSettings.objects.create(pickup_enabled=True, pickup_name="Punto", pickup_address="Calle", pickup_hours="9-18")
+    version = client.get(f"/api/v1/admin/products/{product.pk}/").data["version"]
+
+    def adjust():
+        own = APIClient()
+        own.force_authenticate(admin)
+        return own.post(f"/api/v1/admin/products/{product.pk}/actions/adjust-stock/",
+                        {"delta": -1, "reason": "Ajuste concurrente", "version": version}, format="json",
+                        HTTP_IDEMPOTENCY_KEY="race-stock-minus").status_code
+
+    def buy():
+        checkout(tourist.pk, mode="CREDITS", items=[{"product_id": str(product.pk), "quantity": 1}],
+                 idempotency_key="race-stock-buy")
+        return 201
+
+    adjusted, bought = parallel_domain_calls(adjust, buy)
+    assert (adjusted == 200) != (bought == 201)
+    assert Product.objects.get(pk=product.pk).stock == 0
+    assert StockAdjustment.objects.filter(product=product).count() == (adjusted == 200)
+    assert Order.objects.filter(customer=tourist).count() == (bought == 201)
+    assert Wallet.objects.get(tourist=tourist).balance == (900 if bought == 201 else 1000)
+    assert WalletEntry.objects.filter(wallet__tourist=tourist, kind="REDEEM").count() == (bought == 201)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_admin_stock_delta_races_cancellation_release_without_lost_stock(admin_client):
+    admin, client = admin_client
+    tourist = User.objects.create_user("race-cancel@example.test", "password", email_verified=True)
+    with transaction.atomic():
+        credit_wallet(tourist.pk, 1000, "fixture:race-cancel")
+    product = Product.objects.create(name="Race Cancel", active=True, stock=1, price_credits=100)
+    ShopSettings.objects.create(pickup_enabled=True, pickup_name="Punto", pickup_address="Calle", pickup_hours="9-18")
+    order, _ = checkout(tourist.pk, mode="CREDITS", items=[{"product_id": str(product.pk), "quantity": 1}],
+                        idempotency_key="race-cancel-buy")
+    cancellation = request_cancellation(tourist.pk, order.pk, reason="Cambio")
+    version = client.get(f"/api/v1/admin/products/{product.pk}/").data["version"]
+
+    def adjust():
+        own = APIClient()
+        own.force_authenticate(admin)
+        return own.post(f"/api/v1/admin/products/{product.pk}/actions/adjust-stock/",
+                        {"delta": 1, "reason": "Ingreso concurrente", "version": version}, format="json",
+                        HTTP_IDEMPOTENCY_KEY="race-stock-plus").status_code
+
+    def cancel():
+        own = APIClient()
+        own.force_authenticate(admin)
+        return own.post(f"/api/v1/admin/cancellations/{cancellation.pk}/actions/approve/",
+                        {"reason": "Solicitud aceptada"}, format="json",
+                        HTTP_IDEMPOTENCY_KEY="race-cancel-approve").status_code
+
+    assert parallel_domain_calls(adjust, cancel) == [200, 200]
+    order.refresh_from_db()
+    assert order.state == "CANCELED" and order.stock_released
+    assert Product.objects.get(pk=product.pk).stock == 2
+    assert StockAdjustment.objects.filter(product=product, delta=1).count() == 1
+    assert Wallet.objects.get(tourist=tourist).balance == 1000
+    assert WalletEntry.objects.filter(wallet__tourist=tourist, kind="REFUND").count() == 1
 
 
 @pytest.fixture
@@ -68,19 +242,21 @@ def test_provider_membership_selection_and_qr_replay(admin_client):
                        format="json", HTTP_IDEMPOTENCY_KEY="assign-1").status_code == 200
     assert client.post(action, {"user_id": provider_user.pk + 1, "version": provider.data["version"]},
                        format="json", HTTP_IDEMPOTENCY_KEY="assign-1").status_code == 409
+    provider_after_membership = client.get(f"/api/v1/admin/providers/{pid}/").data
     pin = client.post(f"/api/v1/admin/providers/{pid}/actions/set-pin/",
-                      {"pin": "123456", "version": provider.data["version"]}, format="json", HTTP_IDEMPOTENCY_KEY="pin-1")
+                      {"pin": "123456", "version": provider_after_membership["version"]}, format="json", HTTP_IDEMPOTENCY_KEY="pin-1")
     assert pin.status_code == 200
     assert "pin" not in str(pin.data).lower()
     assert ProviderConsumptionCredential.objects.get(provider_id=pid).pin_hash != "123456"
     qr = client.get(f"/api/v1/admin/providers/{pid}/qr/")
     assert qr.status_code == 200 and "#token=" in qr.data["url"]
     assert client.get(f"/api/v1/admin/providers/{pid}/qr.png").status_code == 200
-    rotated = client.post(f"/api/v1/admin/providers/{pid}/actions/rotate-qr/", {"version": provider.data["version"]},
+    provider_after_pin = client.get(f"/api/v1/admin/providers/{pid}/").data
+    rotated = client.post(f"/api/v1/admin/providers/{pid}/actions/rotate-qr/", {"version": provider_after_pin["version"]},
                           format="json", HTTP_IDEMPOTENCY_KEY="rotate-1")
     assert rotated.status_code == 200
     assert client.get(f"/api/v1/admin/providers/{pid}/qr/").data["url"] != qr.data["url"]
-    assert client.post(f"/api/v1/admin/providers/{pid}/actions/rotate-qr/", {"version": provider.data["version"]},
+    assert client.post(f"/api/v1/admin/providers/{pid}/actions/rotate-qr/", {"version": provider_after_pin["version"]},
                        format="json", HTTP_IDEMPOTENCY_KEY="rotate-1").status_code == 200
     benefit = client.post("/api/v1/admin/benefits/", {"provider": pid, "title": "Oferta", "conditions": "Condición",
                                                      "status": "PUBLISHED"}, format="json")
@@ -93,8 +269,9 @@ def test_provider_membership_selection_and_qr_replay(admin_client):
     assert add.status_code == 200
     assert FolderBenefit.objects.filter(collaborator_id=profile.data["id"], benefit_id=benefit.data["id"]).exists()
     assert client.get(f"/api/v1/admin/collaborators/{profile.data['id']}/recommendations/").status_code == 200
+    profile_after_selection = client.get(f"/api/v1/admin/collaborators/{profile.data['id']}/").data
     enabled = client.post(f"/api/v1/admin/collaborators/{profile.data['id']}/actions/enable/",
-                          {"version": profile.data["version"]}, format="json", HTTP_IDEMPOTENCY_KEY="enable-1")
+                          {"version": profile_after_selection["version"]}, format="json", HTTP_IDEMPOTENCY_KEY="enable-1")
     assert enabled.status_code == 200
     old_qr = client.get(f"/api/v1/admin/collaborators/{profile.data['id']}/qr/").data["url"]
     profile_now = client.get(f"/api/v1/admin/collaborators/{profile.data['id']}/").data
@@ -340,3 +517,44 @@ def test_credit_rule_remove_and_unpublished_selection_rejected(admin_client):
                            HTTP_IDEMPOTENCY_KEY="draft-attempt")
     assert response.status_code == 409
     assert not FolderBenefit.objects.filter(collaborator=profile).exists()
+
+
+@pytest.mark.django_db
+def test_related_versions_block_new_key_after_external_credential_membership_and_selection(admin_client):
+    _, client = admin_client
+    provider = Provider.objects.create(slug="related-version", name="Related", status="PUBLISHED")
+    user = User.objects.create_user("related-owner@example.test", "password", role="PROVIDER")
+    base = client.get(f"/api/v1/admin/providers/{provider.pk}/").data["version"]
+    pin_url = f"/api/v1/admin/providers/{provider.pk}/actions/set-pin/"
+    first = client.post(pin_url, {"pin": "111111", "version": base}, format="json", HTTP_IDEMPOTENCY_KEY="related-pin-1")
+    assert first.status_code == 200
+    assert client.post(pin_url, {"pin": "111111", "version": base}, format="json",
+                       HTTP_IDEMPOTENCY_KEY="related-pin-1").data == first.data
+    assert client.post(pin_url, {"pin": "222222", "version": base}, format="json",
+                       HTTP_IDEMPOTENCY_KEY="related-pin-2").status_code == 409
+    ProviderMembership.objects.create(user=user, provider=provider)
+    assert client.patch(f"/api/v1/admin/providers/{provider.pk}/",
+                        {"name": "Overwritten", "version": client.get(f"/api/v1/admin/providers/{provider.pk}/").data["version"]},
+                        format="json").status_code == 200
+    after_membership = client.get(f"/api/v1/admin/providers/{provider.pk}/").data["version"]
+    ProviderMembership.objects.filter(user=user).delete()
+    assert client.patch(f"/api/v1/admin/providers/{provider.pk}/",
+                        {"name": "Stale", "version": after_membership}, format="json").status_code == 409
+
+    referrer = User.objects.create_user("related-referrer@example.test", "password", role="COLLABORATOR")
+    profile = CollaboratorProfile.objects.create(user=referrer, enabled=True)
+    benefit = Benefit.objects.create(provider=provider, title="Offer", conditions="Terms", status="PUBLISHED")
+    old = client.get(f"/api/v1/admin/collaborators/{profile.pk}/").data["version"]
+    add_url = f"/api/v1/admin/collaborators/{profile.pk}/actions/add-benefit/"
+    added = client.post(add_url, {"benefit_id": str(benefit.pk), "version": old}, format="json",
+                        HTTP_IDEMPOTENCY_KEY="related-select-1")
+    assert added.status_code == 200
+    assert client.post(add_url, {"benefit_id": str(benefit.pk), "version": old}, format="json",
+                       HTTP_IDEMPOTENCY_KEY="related-select-1").data == added.data
+    assert client.post(f"/api/v1/admin/collaborators/{profile.pk}/actions/remove-benefit/",
+                       {"benefit_id": str(benefit.pk), "version": old}, format="json",
+                       HTTP_IDEMPOTENCY_KEY="related-select-2").status_code == 409
+    fresh = client.get(f"/api/v1/admin/collaborators/{profile.pk}/").data["version"]
+    FolderBenefit.objects.filter(collaborator=profile).delete()
+    assert client.patch(f"/api/v1/admin/collaborators/{profile.pk}/",
+                        {"network_title": "Stale", "version": fresh}, format="json").status_code == 409

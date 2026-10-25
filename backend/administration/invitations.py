@@ -3,7 +3,7 @@ import logging
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -33,7 +33,8 @@ class InviteOutput(StrictSerializer):
 class InviteView(APIView):
     permission_classes = [IsProgramAdmin]
 
-    @extend_schema(request=InviteInput, responses={200: InviteOutput, 503: InviteOutput})
+    @extend_schema(request=InviteInput, responses={200: InviteOutput, 503: InviteOutput},
+                   parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)])
     def post(self, request, pk):
         body = InviteInput(data=request.data)
         body.is_valid(raise_exception=True)

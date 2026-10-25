@@ -49,7 +49,11 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.SessionJWTAuthentication"],
 }
-SPECTACULAR_SETTINGS = {"TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0"}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0",
+    "POSTPROCESSING_HOOKS": ["drf_spectacular.hooks.postprocess_schema_enums",
+                             "administration.schema.require_admin_patch_versions"],
+}
 JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", "")
 QR_SIGNING_KEY = os.environ.get("QR_SIGNING_KEY", "")
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")

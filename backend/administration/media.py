@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +20,10 @@ from referrals.models import CollaboratorProfile
 from shop.models import Product
 
 from .permissions import IsProgramAdmin
+
+
+class AdminQRResponse(serializers.Serializer):
+    url = serializers.URLField()
 
 
 class AdminImageView(APIView):
@@ -54,7 +59,7 @@ def current_qr(resource, pk):
 class AdminQRView(APIView):
     permission_classes = [IsProgramAdmin]
 
-    @extend_schema(responses={200: None})
+    @extend_schema(responses={200: AdminQRResponse})
     def get(self, request, resource, pk):
         return Response({"url": current_qr(resource, pk)})
 

@@ -17,32 +17,38 @@ from shop.models import CancellationRequest, Order, PaymentOperation, Product, S
 from shop.services import require_admin
 
 from .commands import record_audit
-from .concurrency import require_version
 from .permissions import IsProgramAdmin
 from .resource_serializers import (
     AdjustmentReadSerializer,
+    BenefitPatchRequestSerializer,
     BenefitReadSerializer,
     BenefitWriteSerializer,
     CancellationReadSerializer,
+    CollaboratorPatchRequestSerializer,
     CollaboratorReadSerializer,
     CollaboratorWriteSerializer,
     ConsumptionReadSerializer,
+    CreditRulePatchRequestSerializer,
     CreditRuleReadSerializer,
     CreditRuleWriteSerializer,
     OrderReadSerializer,
     PaymentOperationReadSerializer,
+    ProductPatchRequestSerializer,
     ProductReadSerializer,
     ProductWriteSerializer,
+    ProviderPatchRequestSerializer,
     ProviderReadSerializer,
     ProviderWriteSerializer,
     StockAdjustmentReadSerializer,
     UserCreateSerializer,
+    UserPatchRequestSerializer,
     UserPatchSerializer,
     UserReadSerializer,
     WalletDetailSerializer,
     WalletEntryReadSerializer,
     WalletReadSerializer,
 )
+from .resource_versions import require_admin_resource_version
 from .views import AdminPagination, validate_model
 
 
@@ -167,7 +173,7 @@ class ResourceView(generics.GenericAPIView):
         with transaction.atomic():
             require_admin(request.user)
             obj = self.lock_for_patch(pk)
-            require_version(obj, request.data.get("version"))
+            require_admin_resource_version(obj, request.data.get("version"))
             payload = request.data.copy()
             payload.pop("version", None)
             serializer = self.write_serializer(obj, data=payload, partial=True)
@@ -234,7 +240,7 @@ class UsersView(ResourceView):
 class ProvidersView(ResourceView):
     model, read_serializer, write_serializer = Provider, ProviderReadSerializer, ProviderWriteSerializer
     resource, create_allowed, patch_allowed = "providers", True, True
-    prefetched = ("memberships",)
+    prefetched = ("memberships", "consumption_credential")
     filters = {"status": "status"}
     search_fields = ("name", "slug", "category", "contact")
 
@@ -376,7 +382,14 @@ def resource_endpoint(view_class, *, detail):
     methods = {"get": get, "serializer_class": view_class.read_serializer, "http_method_names": method_names}
     if detail and view_class.patch_allowed:
         method_names.append("patch")
-        request_serializer = UserPatchSerializer if view_class is UsersView else view_class.write_serializer
+        request_serializer = {
+            UsersView: UserPatchRequestSerializer,
+            ProvidersView: ProviderPatchRequestSerializer,
+            BenefitsView: BenefitPatchRequestSerializer,
+            CollaboratorsView: CollaboratorPatchRequestSerializer,
+            ProductsView: ProductPatchRequestSerializer,
+            CreditRulesView: CreditRulePatchRequestSerializer,
+        }[view_class]
 
         @extend_schema(operation_id=f"admin_{name}_update", request=request_serializer,
                        responses=view_class.read_serializer)

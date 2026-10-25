@@ -3,7 +3,7 @@ from django.urls import path
 from .dashboard import DashboardView
 from .invitations import InviteView
 from .media import AdminImageView, AdminQRPNGView, AdminQRView
-from .operations import ActionView
+from .operations import ACTION_INPUT, action_endpoint
 from .recommendations import AdminRecommendationsView
 from .resources import (
     AdjustmentsView,
@@ -40,8 +40,6 @@ urlpatterns = [
     path("admin/dashboard/", DashboardView.as_view(), name="admin-dashboard"),
     path("admin/users/<int:pk>/invite/", InviteView.as_view(), name="admin-user-invite"),
     path("admin/collaborators/<uuid:pk>/recommendations/", AdminRecommendationsView.as_view(), name="admin-recommendations"),
-    path("admin/<str:resource>/<uuid:pk>/actions/<str:action>/", ActionView.as_view(), name="admin-resource-action"),
-    path("admin/<str:resource>/<int:pk>/actions/<str:action>/", ActionView.as_view(), name="admin-integer-action"),
     path("admin/<str:resource>/<uuid:pk>/image/", AdminImageView.as_view(), name="admin-resource-image"),
     path("admin/<str:resource>/<uuid:pk>/qr/", AdminQRView.as_view(), name="admin-resource-qr"),
     path("admin/<str:resource>/<uuid:pk>/qr.png", AdminQRPNGView.as_view(), name="admin-resource-qr-png"),
@@ -72,3 +70,11 @@ urlpatterns = [
     path("admin/payment-operations/", resource_endpoint(PaymentOperationsView, detail=False), name="admin-payment-operations"),
     path("admin/payment-operations/<uuid:pk>/", resource_endpoint(PaymentOperationsView, detail=True), name="admin-payment-operation"),
 ]
+
+for resource, action in ACTION_INPUT:
+    converter = "int" if resource in ("adjustments", "cancellations", "credit-rules") else "uuid"
+    urlpatterns.append(path(
+        f"admin/{resource}/<{converter}:pk>/actions/{action}/",
+        action_endpoint(resource, action),
+        name=f"admin-{resource}-{action}",
+    ))

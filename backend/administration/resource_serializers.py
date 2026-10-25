@@ -14,7 +14,7 @@ from shop.models import (
     StockAdjustment,
 )
 
-from .concurrency import resource_version
+from .resource_versions import admin_resource_version
 from .serializers import StrictModelSerializer, StrictSerializer
 
 
@@ -22,7 +22,7 @@ class VersionedReadSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField()
 
     def get_version(self, obj) -> str:
-        return resource_version(obj)
+        return admin_resource_version(obj)
 
 
 class UserReadSerializer(VersionedReadSerializer):
@@ -43,6 +43,10 @@ class UserPatchSerializer(StrictSerializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
+
+
+class UserPatchRequestSerializer(UserPatchSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
 
 
 class ProviderReadSerializer(VersionedReadSerializer):
@@ -72,6 +76,14 @@ class ProviderWriteSerializer(StrictModelSerializer):
                   "website", "image", "status")
 
 
+class ProviderPatchRequestSerializer(ProviderWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(ProviderWriteSerializer.Meta):
+        ref_name = "AdminProviderPatchRequest"
+        fields = (*ProviderWriteSerializer.Meta.fields, "version")
+
+
 class BenefitReadSerializer(VersionedReadSerializer):
     provider_name = serializers.CharField(source="provider.name", read_only=True)
     image_url = serializers.SerializerMethodField()
@@ -96,6 +108,14 @@ class BenefitWriteSerializer(StrictModelSerializer):
                   "status")
 
 
+class BenefitPatchRequestSerializer(BenefitWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(BenefitWriteSerializer.Meta):
+        ref_name = "AdminBenefitPatchRequest"
+        fields = (*BenefitWriteSerializer.Meta.fields, "version")
+
+
 class CollaboratorReadSerializer(VersionedReadSerializer):
     user_email = serializers.EmailField(source="user.email", read_only=True)
     benefit_ids = serializers.SerializerMethodField()
@@ -114,6 +134,13 @@ class CollaboratorWriteSerializer(StrictModelSerializer):
         model = CollaboratorProfile
         fields = ("user", "network_title", "network_layout", "network_theme", "network_background",
                   "network_page_size", "network_interval_seconds")
+
+
+class CollaboratorPatchRequestSerializer(CollaboratorWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(CollaboratorWriteSerializer.Meta):
+        fields = (*CollaboratorWriteSerializer.Meta.fields, "version")
 
 
 class ConsumptionReadSerializer(serializers.ModelSerializer):
@@ -188,6 +215,13 @@ class ProductWriteSerializer(StrictModelSerializer):
         fields = ("name", "description", "image", "active", "price_money", "price_credits")
 
 
+class ProductPatchRequestSerializer(ProductWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(ProductWriteSerializer.Meta):
+        fields = (*ProductWriteSerializer.Meta.fields, "version")
+
+
 class OrderLineReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderLine
@@ -256,3 +290,10 @@ class CreditRuleWriteSerializer(StrictModelSerializer):
     class Meta:
         model = ProviderCreditRule
         fields = ("provider", "reward")
+
+
+class CreditRulePatchRequestSerializer(CreditRuleWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(CreditRuleWriteSerializer.Meta):
+        fields = (*CreditRuleWriteSerializer.Meta.fields, "version")

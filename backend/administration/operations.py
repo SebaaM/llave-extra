@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -23,13 +22,17 @@ from shop.payments.processing import request_refund, retry_operation
 from shop.services import adjust_stock, advance_order, require_admin, resolve_cancellation
 
 from .commands import CommandResult, record_audit, run_command
-from .concurrency import require_version
 from .permissions import IsProgramAdmin
+from .resource_versions import require_admin_resource_version
 from .serializers import StrictSerializer
 
 
 class EmptyAction(StrictSerializer):
     version = serializers.CharField(required=False)
+
+
+class VersionAction(EmptyAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
 
 
 class MemberAction(EmptyAction):
@@ -49,7 +52,7 @@ class BenefitAction(EmptyAction):
     benefit_id = serializers.UUIDField()
 
 
-class ReasonAction(EmptyAction):
+class ReasonAction(StrictSerializer):
     reason = serializers.CharField(max_length=500, trim_whitespace=True, allow_blank=False)
 
 
@@ -58,12 +61,33 @@ class ResolveAction(ReasonAction):
 
 
 class StockAction(ReasonAction):
+    version = serializers.CharField(required=False)
     delta = serializers.IntegerField(min_value=-1_000_000, max_value=1_000_000)
 
     def validate_delta(self, value):
         if value == 0:
             raise ValidationError("La variación no puede ser cero.")
         return value
+
+
+class MemberActionRequest(MemberAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+
+class UnassignActionRequest(UnassignAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+
+class PinActionRequest(PinAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+
+class BenefitActionRequest(BenefitAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+
+class StockActionRequest(StockAction):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
 
 
 ACTION_INPUT = {
@@ -88,15 +112,88 @@ ACTION_INPUT = {
     ("credit-rules", "remove"): EmptyAction,
 }
 
+ACTION_REQUEST = {
+    MemberAction: MemberActionRequest,
+    UnassignAction: UnassignActionRequest,
+    PinAction: PinActionRequest,
+    BenefitAction: BenefitActionRequest,
+    StockAction: StockActionRequest,
+    EmptyAction: VersionAction,
+}
+
+
+class UpdatedActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    status = serializers.CharField()
+
+
+class MembershipActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    user_id = serializers.IntegerField()
+    assigned = serializers.BooleanField()
+
+
+class AnnulActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    state = serializers.CharField()
+    adjustment_id = serializers.CharField(allow_null=True)
+
+
+class ResolveActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    resolution = serializers.CharField()
+
+
+class StockActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    stock = serializers.IntegerField()
+    adjustment_id = serializers.IntegerField()
+
+
+class StateActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    state = serializers.CharField()
+
+
+class RemoveActionResult(serializers.Serializer):
+    id = serializers.CharField()
+    removed = serializers.BooleanField()
+
+
+ACTION_RESULT = {
+    "providers": MembershipActionResult,
+    "collaborators": UpdatedActionResult,
+    "consumptions": AnnulActionResult,
+    "adjustments": ResolveActionResult,
+    "products": StockActionResult,
+    "orders": StateActionResult,
+    "cancellations": StateActionResult,
+    "payment-operations": StateActionResult,
+    "credit-rules": RemoveActionResult,
+}
+
+
+def action_endpoint(resource, action):
+    """A concrete OpenAPI contract for each command URL."""
+    input_type = ACTION_INPUT[(resource, action)]
+    request_type = ACTION_REQUEST.get(input_type, input_type)
+    result_type = UpdatedActionResult if resource == "providers" and action in ("set-pin", "rotate-qr") else ACTION_RESULT[resource]
+
+    @extend_schema(
+        operation_id=f"admin_{resource.replace('-', '_')}_{action.replace('-', '_')}",
+        request=request_type,
+        responses={200: result_type},
+        parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)],
+    )
+    def post(self, request, pk):
+        return ActionView.post(self, request, resource, pk, action)
+
+    return type(f"Admin{resource.title().replace('-', '')}{action.title().replace('-', '')}Action", (ActionView,), {"post": post}).as_view()
+
 
 class ActionView(APIView):
     permission_classes = [IsProgramAdmin]
 
-    @extend_schema(request=PolymorphicProxySerializer(
-        component_name="AdminActionInput", resource_type_field_name=None,
-        serializers=[EmptyAction, MemberAction, UnassignAction, PinAction, BenefitAction,
-                     ReasonAction, ResolveAction, StockAction],
-    ), responses={200: OpenApiTypes.OBJECT})
     def post(self, request, resource, pk, action):
         input_type = ACTION_INPUT.get((resource, action))
         if input_type is None:
@@ -114,7 +211,7 @@ class ActionView(APIView):
 
 def _versioned(model, pk, version):
     obj = get_object_or_404(model.objects.select_for_update(), pk=pk)
-    require_version(obj, version)
+    require_admin_resource_version(obj, version)
     return obj
 
 
