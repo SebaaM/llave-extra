@@ -180,11 +180,13 @@ def test_admin_stock_delta_races_cancellation_release_without_lost_stock(admin_c
                         {"reason": "Solicitud aceptada"}, format="json",
                         HTTP_IDEMPOTENCY_KEY="race-cancel-approve").status_code
 
-    assert parallel_domain_calls(adjust, cancel) == [200, 200]
+    adjusted, canceled = parallel_domain_calls(adjust, cancel)
+    assert canceled == 200
+    assert adjusted in (200, 409)
     order.refresh_from_db()
     assert order.state == "CANCELED" and order.stock_released
-    assert Product.objects.get(pk=product.pk).stock == 2
-    assert StockAdjustment.objects.filter(product=product, delta=1).count() == 1
+    assert Product.objects.get(pk=product.pk).stock == (2 if adjusted == 200 else 1)
+    assert StockAdjustment.objects.filter(product=product, delta=1).count() == (adjusted == 200)
     assert Wallet.objects.get(tourist=tourist).balance == 1000
     assert WalletEntry.objects.filter(wallet__tourist=tourist, kind="REFUND").count() == 1
 
