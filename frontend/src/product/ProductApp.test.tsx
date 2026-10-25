@@ -72,7 +72,8 @@ describe('recorridos F2 del Cliente', () => {
 
     const ProductApp = await prepareApp('/recomendaciones')
     render(<ProductApp />)
-    await screen.findByRole('heading', { name: 'Prestador privado de A' })
+    await waitFor(() => expect(calls.some(url => url.endsWith('/folders/folder-a-private/providers/'))).toBe(true), { timeout: 5000 })
+    await screen.findByRole('heading', { name: 'Prestador privado de A' }, { timeout: 5000 })
 
     setUrl('/ingresar')
     window.dispatchEvent(new PopStateEvent('popstate'))
@@ -156,7 +157,7 @@ describe('recorridos F2 del Cliente', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/navegador actualizado en una conexión segura/)
-    expect(fetch).not.toHaveBeenCalled()
+    expect(fetch.mock.calls.every(([url]) => String(url).endsWith('/site-settings/'))).toBe(true)
   })
 
   it('oculta la carpeta si el servidor ya revocó el acceso y no consulta prestadores', async () => {

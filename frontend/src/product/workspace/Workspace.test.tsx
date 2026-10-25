@@ -5,8 +5,6 @@ import { currentSessionVersion, invalidatePrivateState } from '../api'
 import type { User } from '../api'
 import { WorkspaceQR } from './WorkspaceQR'
 
-const { openAdmin } = vi.hoisted(() => ({ openAdmin: vi.fn() }))
-vi.mock('./documentNavigation', () => ({ openAdmin }))
 const json = (body: unknown, status = 200) => new Response(body == null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const provider = { id: 'business-1', slug: 'business', name: 'Negocio de prueba', category: 'Café', description: 'Ficha propia', address: 'Calle local', hours: '', contact: '', map_url: '', website: '', image_url: null, status: 'PUBLISHED', demo: true }
 const benefit = { id: 'benefit-1', title: 'Propuesta de prueba', description: 'Descripción de la propuesta', conditions: 'Condiciones de prueba', valid_from: null, valid_until: null, image_url: null, status: 'PUBLISHED', demo: true }
@@ -16,7 +14,7 @@ const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard'
 type Handler = (path: string, init?: RequestInit) => Response | Promise<Response> | undefined
 
 beforeEach(() => {
-  cleanup(); sessionStorage.clear(); invalidatePrivateState(); openAdmin.mockReset()
+  cleanup(); sessionStorage.clear(); invalidatePrivateState()
   Object.defineProperty(navigator, 'locks', { configurable: true, value: { request: (_name: string, _options: unknown, callback: () => Promise<unknown>) => callback() } })
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:workspace-test')
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
@@ -73,7 +71,6 @@ describe('paneles operativos por rol', () => {
     const { calls } = mount(role, '/ingresar')
     await screen.findByRole('heading', { name: 'Qué bueno verte' })
     expect(calls.some(call => /provider\/providers|collaborator\/|me\/wallet/.test(call.path))).toBe(false)
-    expect(openAdmin).not.toHaveBeenCalled()
   })
 
   it('conserva la portada pública para una sesión de red', async () => {
@@ -88,19 +85,20 @@ describe('paneles operativos por rol', () => {
     expect(calls.some(call => /provider\/providers|collaborator\//.test(call.path))).toBe(false)
   })
 
-  it('abre Admin mediante navegación de documento al resolver /espacio', async () => {
+  it('abre el panel React del Administrador al resolver /espacio', async () => {
     mount('ADMIN', '/espacio')
-    await waitFor(() => expect(openAdmin).toHaveBeenCalledWith(true))
+    await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
+    expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
   })
 
-  it('abre Admin mediante documento después del login', async () => {
+  it('abre el panel React del Administrador después del login', async () => {
     mount('ADMIN', '/ingresar')
     await screen.findByRole('heading', { name: 'Qué bueno verte' })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'otra@example.test' } })
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-ejemplo-123!' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
-    await waitFor(() => expect(openAdmin).toHaveBeenCalledWith())
-    expect(window.location.pathname).toBe('/ingresar')
+    await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
+    expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
   })
 
   it('guarda la ficha por multipart con la whitelist y conserva el nombre informativo', async () => {

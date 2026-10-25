@@ -20,4 +20,4 @@ export function loadCatalog(page: number, search: string, category: string, sign
   return api<Page<CatalogBenefit>>(`/api/v1/collaborator/catalog/benefits/?${query}`, { signal })
 }
 export const stateLabel = (status: string) => ({ PUBLISHED: 'Publicado', DRAFT: 'Borrador', INACTIVE: 'Inactivo' })[status] ?? 'Sin publicar'
-export function workspaceHome(user: User) { return user.role === 'PROVIDER' ? '/prestador' : user.role === 'COLLABORATOR' ? '/colaborador' : user.role === 'ADMIN' ? '/admin/' : '/mi-viaje' }
+export function workspaceHome(user: User) { return user.role === 'PROVIDER' ? '/prestador' : user.role === 'COLLABORATOR' ? '/colaborador' : user.role === 'ADMIN' ? '/gestion' : '/mi-viaje' }
