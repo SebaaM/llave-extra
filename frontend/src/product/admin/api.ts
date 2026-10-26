@@ -15,7 +15,7 @@ export async function adminApi<T>(suffix: string, options?: Parameters<typeof ap
 }
 export const dashboard = (signal: AbortSignal) => adminApi<DashboardData>('dashboard/', { signal })
 export const collection = (resource: string, query: string, signal: AbortSignal) => adminApi<Page<Row>>(`${resource}/?${query}`, { signal })
-export const detail = (resource: string, id: string, signal: AbortSignal) => adminApi<Row>(`${resource}/${encodeURIComponent(id)}/`, { signal })
+export const detail = (resource: string, id: string, signal: AbortSignal, query = '') => adminApi<Row>(`${resource}/${encodeURIComponent(id)}/${query ? `?${query}` : ''}`, { signal })
 export const settings = <T>(group: string, signal: AbortSignal) => adminApi<T>(`settings/${group}/`, { signal })
 export const saveSettings = <T>(group: string, body: Record<string, unknown>) => adminApi<T>(`settings/${group}/`, { method: 'PATCH', body })
 

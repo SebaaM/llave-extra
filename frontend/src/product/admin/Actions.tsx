@@ -37,7 +37,10 @@ const actions: Record<string, Action[]> = {
 }
 const versions = new Set(['providers', 'collaborators', 'products', 'credit-rules'])
 export function RecordActions({ resource, data, onSuccess }: { resource: string; data: Row; onSuccess: () => Promise<void> }) {
+  const [owner, setOwner] = useState<string | null>(null)
   const available = (actions[resource] ?? []).filter(action => {
+    // Keep the recovery form mounted even when a refresh changes available actions.
+    if (owner === action.name) return true
     if (resource === 'consumptions') return data.state === 'VALID'
     if (resource === 'adjustments') return !data.resolved_at
     if (resource === 'orders') return action.name === 'prepare' ? data.state === 'PAID' : action.name === 'deliver' ? data.state === 'READY' : data.mode === 'MONEY' && ['PAID', 'READY', 'PICKED_UP', 'PAYMENT_REVIEW'].includes(String(data.state))
@@ -45,18 +48,45 @@ export function RecordActions({ resource, data, onSuccess }: { resource: string;
     if (resource === 'payment-operations') return data.state === 'BLOCKED'
     return true
   })
-  return available.length ? <>{available.map(action => <ActionForm key={`${data.id}:${action.name}`} resource={resource} data={data} action={action} onSuccess={onSuccess} />)}</> : <p>No hay acciones disponibles para el estado actual.</p>
+  return available.length ? <>{available.map(action => <ActionForm key={`${data.id}:${action.name}`} resource={resource} data={data} action={action} onSuccess={onSuccess} blocked={owner !== null && owner !== action.name} claim={() => setOwner(action.name)} release={() => setOwner(null)} />)}</> : <p>No hay acciones disponibles para el estado actual.</p>
 }
-function ActionForm({ resource, data, action, onSuccess }: { resource: string; data: Row; action: Action; onSuccess: () => Promise<void> }) {
+function ActionForm({ resource, data, action, onSuccess, blocked, claim, release }: { resource: string; data: Row; action: Action; onSuccess: () => Promise<void>; blocked: boolean; claim: () => void; release: () => void }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [pending, setPending] = useState<PendingCommand | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState('')
-  useDirtyGuard(Boolean(pending) || Object.values(values).some(value => value !== ''))
+  const [phase, setPhase] = useState<'idle' | 'uncertain' | 'delivery' | 'reload'>('idle')
+  useDirtyGuard(phase !== 'idle' || Object.values(values).some(value => value !== ''))
+  const refreshDetail = async (session: number) => {
+    try {
+      await onSuccess()
+      if (session !== currentSessionVersion()) return
+      setPending(null); setValues({}); setPhase('idle'); setError(''); release()
+    } catch (cause) {
+      if (session === currentSessionVersion()) setError(`No se pudo actualizar la ficha: ${messageOf(cause)}`)
+    }
+  }
+  const recover = async (abandon: boolean) => {
+    if (busy || blocked) return
+    if (abandon && !window.confirm('El resultado anterior puede seguir pendiente. Se conservará su clave hasta cargar la ficha actual. ¿Querés dejar de seguir ese intento e iniciar otra operación?')) return
+    const session = currentSessionVersion()
+    setBusy(true); setError('')
+    await refreshDetail(session)
+    if (session === currentSessionVersion()) setBusy(false)
+  }
+  const confirmed = async (delivery: unknown, session: number) => {
+    if (delivery === 'PENDING') {
+      setPhase('delivery'); setResult('La invitación quedó pendiente de confirmación de envío.')
+      return
+    }
+    setPhase('reload'); setPending(null); setValues({})
+    setResult(delivery === 'SENT' ? 'La invitación fue enviada.' : delivery === 'FAILED' ? 'El envío de la invitación falló. Podés enviar otra invitación después de actualizar la ficha.' : 'La operación se registró.')
+    await refreshDetail(session)
+  }
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (busy) return
+    if (busy || blocked || phase === 'reload') return
     if (!pending && !window.confirm(`${action.confirm}\n\nRegistro: ${String(data.name ?? data.title ?? data.email ?? data.id)}\n¿Confirmás la acción?`)) return
     const body: Record<string, unknown> = pending ? structuredClone(pending.body) : {}
     if (!pending) {
@@ -64,22 +94,20 @@ function ActionForm({ resource, data, action, onSuccess }: { resource: string; d
       for (const field of action.fields ?? []) body[field.name] = field.type === 'number' ? Number(values[field.name]) : field.name === 'reassign' ? values[field.name] === 'true' : values[field.name] ?? field.options?.[0]?.[0] ?? ''
     }
     const command = pending ?? makeCommand(`${resource}/${data.id}/${action.name === 'invite' ? 'invite/' : `actions/${action.name}/`}`, body)
-    setPending(command); setBusy(true); setError(''); setResult('')
+    claim(); setPending(command); setPhase('uncertain'); setBusy(true); setError(''); setResult('')
     const version = currentSessionVersion()
     try {
       const response = await sendCommand<Record<string, unknown>>(command)
       if (version !== currentSessionVersion()) return
-      const delivery = response.delivery
-      setPending(null); setValues({})
-      setResult(delivery === 'SENT' ? 'La invitación fue enviada.' : delivery === 'PENDING' ? 'La invitación quedó pendiente de confirmación de envío.' : 'La operación se registró.')
-      await onSuccess()
+      await confirmed(response.delivery, version)
     } catch (cause) {
       if (version !== currentSessionVersion()) return
-      setError(cause instanceof ApiError && cause.status === 409 ? 'El registro cambió o esta clave ya se usó con otros datos. Recargá la ficha antes de iniciar una operación nueva; si fue un reintento, conservá la carga original.' : cause instanceof ApiError && cause.status === 503 && action.name === 'invite' ? 'No se confirmó el envío del email. Podés consultar el estado con el mismo reintento o enviar otra invitación.' : messageOf(cause))
+      if (action.name === 'invite' && cause instanceof ApiError && (cause.payload as { delivery?: string } | undefined)?.delivery === 'FAILED') await confirmed('FAILED', version)
+      else setError(cause instanceof ApiError && cause.status === 409 ? 'El registro cambió o esta clave ya se usó con otros datos. Recargá la ficha antes de iniciar una operación nueva; si fue un reintento, conservá la carga original.' : messageOf(cause))
     } finally { if (version === currentSessionVersion()) setBusy(false) }
   }
-  return <form className="admin-action" onSubmit={submit}><h3>{action.label}</h3><p>{action.confirm}</p><div className="admin-action-fields">{action.fields?.map(field => field.lookup ? <div key={field.name} className="admin-field"><span>{field.label}</span><ReferencePicker label={field.label} kind={field.lookup} query={field.lookupQuery} disabled={Boolean(pending)} selectedIds={action.name === 'unassign-user' && Array.isArray(data.user_ids) ? data.user_ids as number[] : action.name === 'remove-benefit' && Array.isArray(data.benefit_ids) ? data.benefit_ids as string[] : undefined} value={values[field.name] ?? ''} onChange={value => setValues(current => ({ ...current, [field.name]: value }))} /></div> : <label key={field.name}>{field.label}{field.type === 'select' ? <select disabled={Boolean(pending)} value={values[field.name] ?? field.options?.[0]?.[0]} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input disabled={Boolean(pending)} type={field.type ?? 'text'} required={field.required} minLength={field.name === 'pin' ? 6 : undefined} maxLength={field.name === 'pin' ? 12 : undefined} pattern={field.name === 'pin' ? '[0-9]{6,12}' : undefined} value={values[field.name] ?? ''} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} />}</label>)}</div>{error && <Status error>{error}</Status>}{result && <Status>{result}</Status>}
-    <div className="admin-actions"><button className="button button-dark" disabled={busy}>{busy ? 'Procesando…' : pending ? 'Reintentar operación anterior' : action.label}</button>{pending && <button type="button" className="button button-ghost" onClick={() => { setPending(null); setError('') }}>Iniciar nueva operación</button>}</div>
+  return <form className="admin-action" onSubmit={submit}><h3>{action.label}</h3><p>{action.confirm}</p><div className="admin-action-fields">{action.fields?.map(field => field.lookup ? <div key={field.name} className="admin-field"><span>{field.label}</span><ReferencePicker label={field.label} kind={field.lookup} query={field.lookupQuery} disabled={phase !== 'idle' || blocked || busy} selectedIds={action.name === 'unassign-user' && Array.isArray(data.user_ids) ? data.user_ids as number[] : action.name === 'remove-benefit' && Array.isArray(data.benefit_ids) ? data.benefit_ids as string[] : undefined} value={values[field.name] ?? ''} onChange={value => setValues(current => ({ ...current, [field.name]: value }))} /></div> : <label key={field.name}>{field.label}{field.type === 'select' ? <select disabled={phase !== 'idle' || blocked || busy} value={values[field.name] ?? field.options?.[0]?.[0]} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input disabled={phase !== 'idle' || blocked || busy} type={field.type ?? 'text'} required={field.required} minLength={field.name === 'pin' ? 6 : undefined} maxLength={field.name === 'pin' ? 12 : undefined} pattern={field.name === 'pin' ? '[0-9]{6,12}' : undefined} value={values[field.name] ?? ''} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} />}</label>)}</div>{error && <Status error>{error}</Status>}{result && <Status>{result}</Status>}
+    <div className="admin-actions">{phase === 'reload' ? <button type="button" className="button button-dark" disabled={busy || blocked} onClick={() => void recover(false)}>{busy ? 'Actualizando…' : 'Reintentar actualización de ficha'}</button> : <button className="button button-dark" disabled={busy || blocked}>{busy ? 'Procesando…' : phase === 'delivery' ? 'Consultar estado del envío' : pending ? 'Reintentar operación anterior' : action.label}</button>}{pending && <button type="button" disabled={busy || blocked} className="button button-ghost" onClick={() => void recover(true)}>Iniciar nueva operación</button>}</div>
   </form>
 }
 

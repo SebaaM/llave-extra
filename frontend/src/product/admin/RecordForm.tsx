@@ -16,12 +16,16 @@ export function RecordForm({ resource, data, back, onSaved, onReload }: { resour
   const fields = (resource.fields ?? []).filter(field => data ? !field.createOnly : !field.editOnly)
   const [values, setValues] = useState(() => initial(fields, data))
   const [baseline, setBaseline] = useState(() => initial(fields, data))
+  const [baselineVersion, setBaselineVersion] = useState(data?.version)
   const [file, setFile] = useState<File | null>(null)
+  const [removeImage, setRemoveImage] = useState(false)
+  const [fileReset, setFileReset] = useState(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [conflict, setConflict] = useState(false)
   const [saved, setSaved] = useState(false)
-  const dirty = JSON.stringify(values) !== JSON.stringify(baseline) || file !== null
+  const dirty = JSON.stringify(values) !== JSON.stringify(baseline) || file !== null || removeImage
+  const stale = Boolean(data && data.version !== baselineVersion)
   useDirtyGuard(dirty)
   const reloadCurrent = async () => {
     if (!onReload || !window.confirm('Se perderán los cambios del formulario. ¿Querés cargar la ficha actual?')) return
@@ -30,13 +34,13 @@ export function RecordForm({ resource, data, back, onSaved, onReload }: { resour
       const row = await onReload()
       if (version !== currentSessionVersion()) return
       const next = initial(fields, row)
-      setValues(next); setBaseline(next); setFile(null); setConflict(false); setError('')
+      setValues(next); setBaseline(next); setBaselineVersion(row.version); setFile(null); setRemoveImage(false); setFileReset(value => value + 1); setConflict(false); setError('')
     } catch (cause) { if (version === currentSessionVersion()) setError(messageOf(cause)) }
   }
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (saving) return
-    const body: Record<string, unknown> = data ? { version: data.version } : {}
+    if (saving || stale) return
+    const body: Record<string, unknown> = data ? { version: baselineVersion } : {}
     for (const field of fields) {
       if (field.kind === 'file') continue
       if (data && JSON.stringify(values[field.name]) === JSON.stringify(baseline[field.name])) continue
@@ -44,6 +48,7 @@ export function RecordForm({ resource, data, back, onSaved, onReload }: { resour
       body[field.name] = values[field.name] === '' && (field.kind === 'date' || field.kind === 'number') ? null : values[field.name]
     }
     if (file) body.image = file
+    else if (removeImage) body.image = null
     const multipart = Boolean(file)
     const payload = multipart ? new FormData() : body
     if (multipart) for (const [key, value] of Object.entries(body)) {
@@ -57,7 +62,7 @@ export function RecordForm({ resource, data, back, onSaved, onReload }: { resour
       const row = await adminApi<Row>(data ? `${resource.key}/${data.id}/` : `${resource.key}/`, { method: data ? 'PATCH' : 'POST', body: payload })
       if (version !== currentSessionVersion()) return
       const next = initial(fields, row)
-      setBaseline(next); setValues(next); setFile(null); setSaved(true)
+      setBaseline(next); setValues(next); setBaselineVersion(row.version); setFile(null); setRemoveImage(false); setFileReset(value => value + 1); setSaved(true)
       onSaved(row)
     } catch (cause) {
       if (version !== currentSessionVersion()) return
@@ -69,14 +74,15 @@ export function RecordForm({ resource, data, back, onSaved, onReload }: { resour
     <div className="admin-form-heading"><div><p className="eyebrow">{data ? 'EDITAR REGISTRO' : 'NUEVO REGISTRO'}</p><h2>{data ? `Editar ${resource.singular.toLowerCase()}` : `Nuevo ${resource.singular.toLowerCase()}`}</h2></div><ProductLink href={back}>Cancelar</ProductLink></div>
     <div className="admin-form-grid">{fields.map(field => {
       if (field.kind === 'lookup' && field.lookup) return <div key={field.name} className="admin-field"><span>{field.label}</span><ReferencePicker label={field.label} kind={field.lookup} query={field.lookupQuery} value={String(values[field.name] ?? '')} onChange={value => setValues(current => ({ ...current, [field.name]: field.lookup === 'users' ? Number(value) : value }))} /></div>
+      if (field.kind === 'file') return <div key={field.name} className="admin-field"><span>{field.label}</span><input key={fileReset} type="file" accept="image/png,image/jpeg,image/webp" disabled={removeImage} onChange={event => { setFile(event.target.files?.[0] ?? null); setRemoveImage(false) }} />{Boolean(data?.image_url) && <label className="admin-check"><input type="checkbox" checked={removeImage} onChange={event => { setRemoveImage(event.target.checked); if (event.target.checked) { setFile(null); setFileReset(value => value + 1) } }} />Quitar imagen actual</label>}</div>
       return <label key={field.name} className={field.kind === 'textarea' ? 'admin-wide' : ''}>{field.label}
       {field.kind === 'textarea' ? <textarea rows={4} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} />
         : field.kind === 'select' ? <select value={String(values[field.name] ?? field.options?.[0]?.[0] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
           : field.kind === 'boolean' ? <span className="admin-check"><input type="checkbox" checked={Boolean(values[field.name])} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.checked }))} />{values[field.name] ? 'Sí' : 'No'}</span>
-            : field.kind === 'file' ? <input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => setFile(event.target.files?.[0] ?? null)} />
-              : <input type={field.kind ?? 'text'} required={field.required} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: field.kind === 'number' ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value }))} />}
+            : <input type={field.kind ?? 'text'} step={field.kind === 'number' ? field.precision === 2 ? '0.01' : '1' : undefined} min={field.kind === 'number' ? 0 : undefined} required={field.required} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: field.kind === 'number' && field.precision !== 2 ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value }))} />}
     </label>})}</div>
-    {error && <Status error>{error}</Status>}{conflict && <button type="button" className="button button-ghost" onClick={() => void reloadCurrent()}>Descartar cambios y cargar ficha actual</button>}{saved && <Status>Los cambios se guardaron.</Status>}
-    <div className="admin-actions"><button className="button button-orange" disabled={saving || (Boolean(data) && !dirty)}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>{data && !dirty && <span className="admin-muted">No hay cambios sin guardar.</span>}</div>
+    {stale && <Status error>La ficha cambió mientras editabas. Tus datos siguen aquí; compará con la versión actual antes de guardar.</Status>}{stale && <button type="button" className="button button-ghost" onClick={() => void reloadCurrent()}>Descartar cambios y cargar ficha actual</button>}
+    {error && <Status error>{error}</Status>}{conflict && !stale && <button type="button" className="button button-ghost" onClick={() => void reloadCurrent()}>Descartar cambios y cargar ficha actual</button>}{saved && <Status>Los cambios se guardaron.</Status>}
+    <div className="admin-actions"><button className="button button-orange" disabled={saving || stale || (Boolean(data) && !dirty)}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>{data && !dirty && <span className="admin-muted">No hay cambios sin guardar.</span>}</div>
   </form>
 }

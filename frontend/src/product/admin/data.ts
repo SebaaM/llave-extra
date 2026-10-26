@@ -40,7 +40,7 @@ export const resources: Resource[] = [
   { key: 'adjustments', title: 'Ajustes de créditos', singular: 'Ajuste', columns: ['tourist_email', 'shortfall', 'resolved_at', 'resolution'], filters: [{ name: 'resolved', label: 'Resolución', options: [['false', 'Pendiente'], ['true', 'Resuelto']] }], detail: ['consumption', 'funded_amount', 'forgiven_amount', 'resolution_reason'] },
   { key: 'products', title: 'Productos', singular: 'Producto', columns: ['name', 'active', 'stock', 'price_money', 'price_credits'], fields: [
     { name: 'name', label: 'Nombre', required: true }, { name: 'description', label: 'Descripción', kind: 'textarea' }, media,
-    { name: 'active', label: 'Activo', kind: 'boolean' }, { name: 'price_money', label: 'Precio en pesos', kind: 'number' },
+    { name: 'active', label: 'Activo', kind: 'boolean' }, { name: 'price_money', label: 'Precio en pesos', kind: 'number', precision: 2 },
     { name: 'price_credits', label: 'Precio en créditos', kind: 'number' },
   ], filters: [{ name: 'active', label: 'Activo', options: yesNo }, { name: 'stock', label: 'Stock', options: [['0', 'Sin stock']] }], detail: ['description', 'demo', 'image_url'] },
   { key: 'orders', title: 'Pedidos', singular: 'Pedido', columns: ['customer_email', 'mode', 'state', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['PENDING_PAYMENT', 'Pendiente de pago'], ['PAID', 'Pagado'], ['READY', 'Preparado'], ['PICKED_UP', 'Entregado'], ['CANCELED', 'Cancelado'], ['EXPIRED', 'Vencido'], ['PAYMENT_REVIEW', 'Pago en revisión'], ['REFUND_PENDING', 'Reintegro pendiente'], ['REFUNDED', 'Reintegrado']] }, { name: 'mode', label: 'Medio', options: [['CREDITS', 'Créditos'], ['MONEY', 'Dinero']] }], detail: ['total_money', 'total_credits', 'pickup_snapshot', 'reserved_until', 'payment_provider', 'payment_confirmed', 'lines', 'cancellations', 'payment_operations', 'audit'] },
@@ -50,14 +50,32 @@ export const resources: Resource[] = [
   { key: 'payment-operations', title: 'Operaciones de pago', singular: 'Operación', columns: ['kind', 'state', 'attempts', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['BLOCKED', 'Bloqueada'], ['PENDING', 'Pendiente'], ['RUNNING', 'En proceso'], ['DONE', 'Completada']] }, { name: 'kind', label: 'Tipo', options: [['CREATE', 'Creación'], ['REFUND', 'Reintegro'], ['RECONCILE', 'Consulta']] }], detail: ['order', 'available_at', 'last_code'] },
 ]
 export const resourceByKey = new Map(resources.map(resource => [resource.key, resource]))
-export const fieldLabels: Record<string, string> = Object.assign(Object.fromEntries(resources.flatMap(resource => [...resource.columns, ...(resource.detail ?? [])].map(name => [name, ({
+export const orderHistories: Record<string, readonly string[]> = {
+  lines: ['product', 'name', 'quantity', 'unit_money', 'unit_credits'],
+  cancellations: ['id', 'state', 'reason', 'created_at', 'resolution_reason', 'resolved_at', 'resolved_by'],
+  payment_operations: ['id', 'kind', 'state', 'attempts', 'available_at', 'last_code', 'created_at'],
+  audit: ['created_at', 'actor_email', 'action', 'reason'],
+}
+export const fieldLabels: Record<string, string> = Object.assign(Object.fromEntries(resources.flatMap(resource => (resource.fields ?? []).map(field => [field.name, field.label]))), {
   email: 'Email', role: 'Rol', is_active: 'Activo', email_verified: 'Email verificado', name: 'Nombre', category: 'Categoría', status: 'Estado', user_ids: 'Usuarios asignados',
   title: 'Título', provider_name: 'Prestador', valid_until: 'Válido hasta', enabled: 'Habilitado', benefit_ids: 'Beneficios elegidos', user_email: 'Usuario',
   tourist_email: 'Cliente', award: 'Créditos otorgados', state: 'Estado', created_at: 'Fecha', balance: 'Saldo', redemptions_frozen: 'Canjes suspendidos',
   shortfall: 'Faltante', resolved_at: 'Resuelto el', resolution: 'Resolución', active: 'Activo', stock: 'Stock', price_money: 'Precio en pesos', price_credits: 'Precio en créditos',
   customer_email: 'Cliente', mode: 'Pago', reason: 'Motivo', reward: 'Recompensa', delta: 'Variación', resulting_stock: 'Stock resultante', kind: 'Tipo', attempts: 'Intentos',
-} as Record<string, string>)[name] ?? name]))), { actor_email: 'Actor', action: 'Acción', resource: 'Recurso' })
+  id: 'Identificador', actor_email: 'Responsable', action: 'Acción', resource: 'Recurso', object_id: 'Registro', changed_fields: 'Campos modificados',
+  demo: 'Demostración', provenance: 'Procedencia', image_url: 'Imagen', movements: 'Movimientos',
+  collaborator_email: 'Colaborador', rule_snapshot: 'Regla al acreditar', annulled_at: 'Anulado el', annul_reason: 'Motivo de anulación',
+  consumption: 'Consumo', funded_amount: 'Créditos aportados', forgiven_amount: 'Créditos condonados', resolution_reason: 'Motivo de resolución', resolved_by: 'Resuelto por',
+  total_money: 'Total en pesos', total_credits: 'Total en créditos', pickup_snapshot: 'Punto de retiro al comprar', reserved_until: 'Reserva hasta',
+  payment_provider: 'Proveedor de pagos', payment_confirmed: 'Pago confirmado', stock_released: 'Stock liberado', currency: 'Moneda',
+  lines: 'Productos del pedido', cancellations: 'Solicitudes de cancelación', payment_operations: 'Operaciones de pago', audit: 'Historial del pedido',
+  order: 'Pedido', product: 'Producto', product_name: 'Producto', quantity: 'Cantidad', unit_money: 'Precio unitario en pesos', unit_credits: 'Precio unitario en créditos',
+  available_at: 'Próximo intento', lease_until: 'En proceso hasta', generation: 'Intento de procesamiento', last_code: 'Resultado del último intento',
+  reference: 'Referencia', source_entry: 'Movimiento de origen', source: 'Origen de la regla', amount: 'Créditos', target_visits: 'Meta de visitas',
+  tourist: 'Cliente', collaborator: 'Colaborador', user: 'Usuario', count: 'Cantidad', next: 'Página siguiente', previous: 'Página anterior', results: 'Registros',
+})
 export const stateLabels: Record<string, string> = { TOURIST: 'Cliente', COLLABORATOR: 'Colaborador', PROVIDER: 'Prestador', ADMIN: 'Administrador', DRAFT: 'Borrador', PUBLISHED: 'Publicado', VALID: 'Válido', ANNULLED: 'Anulado', PENDING_PAYMENT: 'Pendiente de pago', PAID: 'Pagado', READY: 'Preparado', PICKED_UP: 'Entregado', CANCELED: 'Cancelado', EXPIRED: 'Vencido', PAYMENT_REVIEW: 'Pago en revisión', REFUND_PENDING: 'Reintegro pendiente', REFUNDED: 'Reintegrado', OPEN: 'Abierta', APPROVED: 'Aprobada', REJECTED: 'Rechazada', CREDITS: 'Créditos', MONEY: 'Dinero', BLOCKED: 'Bloqueada', PENDING: 'Pendiente', RUNNING: 'En proceso', DONE: 'Completada', SENT: 'Enviada', FAILED: 'Fallida', REVERSAL: 'Reversión', FUNDED: 'Cubierto', FORGIVEN: 'Condonado', EARN: 'Acreditación', REDEEM: 'Canje', ADJUSTMENT: 'Ajuste', CREATE: 'Creación', REFUND: 'Reintegro', RECONCILE: 'Consulta' }
+Object.assign(stateLabels, { disabled: 'Deshabilitado', fake: 'Simulado (desarrollo)', mercadopago: 'Mercado Pago', global: 'General', provider: 'Por prestador', RADIAL: 'Radial', ORBIT: 'Órbita', SAND: 'Arena', OCEAN: 'Océano', HARBOR: 'Puerto', BEAGLE: 'Canal Beagle', ARS: 'Pesos argentinos' })
 const auditActions: Record<string, string> = {
   'settings.update': 'Configuración actualizada', 'users.invite': 'Invitación solicitada',
   'providers.assign-user': 'Usuario asignado al prestador', 'providers.unassign-user': 'Usuario desvinculado del prestador',

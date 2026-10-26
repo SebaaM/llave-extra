@@ -1,6 +1,6 @@
 export type Page<T> = { count: number; next: string | null; previous: string | null; results: T[] }
 export type Row = Record<string, unknown> & { id: string | number; version?: string }
-export type Field = { name: string; label: string; kind?: 'text' | 'textarea' | 'number' | 'date' | 'email' | 'url' | 'boolean' | 'select' | 'file' | 'lookup'; lookup?: 'users' | 'providers' | 'benefits'; lookupQuery?: string; options?: readonly (readonly [string, string])[]; required?: boolean; createOnly?: boolean; editOnly?: boolean }
+export type Field = { name: string; label: string; precision?: 2; kind?: 'text' | 'textarea' | 'number' | 'date' | 'email' | 'url' | 'boolean' | 'select' | 'file' | 'lookup'; lookup?: 'users' | 'providers' | 'benefits'; lookupQuery?: string; options?: readonly (readonly [string, string])[]; required?: boolean; createOnly?: boolean; editOnly?: boolean }
 export type Filter = { name: string; label: string; options: readonly (readonly [string, string])[] }
 export type Resource = { key: string; title: string; singular: string; columns: readonly string[]; fields?: readonly Field[]; filters?: readonly Filter[]; detail?: readonly string[]; description?: string }
 
