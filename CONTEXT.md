@@ -1,5 +1,7 @@
 # Contexto y decisiones
 
+Estado vigente al 24/10/2026: E5 backend/API/Django Admin entregado en [PR #11](https://github.com/SebaaM/llave-extra/pull/11), rama `feature/tienda-pagos` contra `develop`, sin fusionar y dependiente de #10. Producto `4c9a402` aprobado por revisión independiente y focal; 213 pruebas PostgreSQL/Redis y QA HTTP completos. Migraciones shop0001–0005 aplicadas al entorno local conservando los conteos previos. CI de producto aprobado; HEAD vigente en las comprobaciones del PR. Detenerse antes de E6 y la UI de tienda F3. Mercado Pago operativo permanece deshabilitado hasta sandbox. Los apartados siguientes conservan el historial de entregas y estados intermedios; evidencia vigente en `docs/verification/05-tienda-pagos.md`.
+
 ## Objetivo
 
 Captar registros de turistas y verificar consumos en la red para otorgar beneficios, progreso y créditos canjeables por regalería 3D. Corrección aprobada el 19/10/2026: catálogo general público configurable desde backoffice; carpetas y recomendaciones del colaborador privadas por QR. Ver `docs/plans/07-catalogo-publico-spec.md` y su plan de implementación.
@@ -53,3 +55,24 @@ Plan 08: `FolderBenefit` es autoridad de selección concreta; `FolderProvider` c
 Los paneles `/prestador` y `/colaborador` tienen barra lateral, gestión operativa propia, medios/QR privados y cuenta/salida; Admin continúa en `/admin/` con sesión independiente. Los rechazos 401/403 de listas, escrituras, medios y credenciales cierran los contenedores privados y desmontan el PIN; un 404 de imagen conserva la vista alternativa. El transporte multipart mantiene refresh, cancelación y aislamiento de sesión. El uso de referencias está reservado a Cliente; portada/catálogo/auth siguen accesibles a otros roles.
 
 Verificación final de CI: backend 97 pruebas PostgreSQL/Redis, Ruff y migraciones sin cambios; frontend 78/78 UI y proxy 1/1, lint/tipos/build y auditoría sin vulnerabilidades conocidas. También se ejecutó la suite frontend completa desde el orquestador. Revisión completa y focal final aprobadas sin hallazgos de producto pendientes. Migración local aplicada; conserva diez asociaciones históricas, ocho selecciones y once beneficios públicos demo. QA real de ambos roles y 320 px, login ADMIN hacia Django, alta/edición de borrador sintético y agregado/quita de selección propia. Subida de imagen manual no declarada end-to-end por límite del selector del controlador; cobertura multipart y medios automatizada. Evidencia durable en `docs/verification/08-backoffice-red.md`. Etapa entregada en PR #10; detenerse antes de E5/E6, sin fusionar PRs.
+
+## Inicio de E5 — 20/10/2026
+
+El pedido vigente autoriza arrancar tienda/pagos y revoca la pausa anterior. Se implementan backend/API/Admin según docs/plans/05-tienda-pagos-spec.md y docs/plans/05-tienda-pagos.md, en feature/tienda-pagos desde 9f8f56d (PR #10 revisado, todavía sin fusionar). Frontend de tienda y E6 esperan su etapa. Sin cobros reales; validación sandbox externa pendiente. Estado y resultados finales se registrarán al cerrar E5.
+
+
+## E5 Task 1 — implementación local del 23/10/2026
+
+Se agregó dominio/API/Admin de tienda: catálogo público independiente, canjes atómicos E4, stock delta auditado, snapshots y claves protegidos en PostgreSQL, pedidos propios y cancelación de créditos. MONEY solo reserva 15 minutos y crea outbox durable sin HTTP; proveedor predeterminado disabled, fake permitido únicamente en desarrollo/pruebas, mercadopago cerrado hasta Task 2. Cancelación monetaria y worker/vencimiento pendientes de Task 2. Retiro requiere configuración administrativa. Contrato en docs/api.md; comprobaciones de esta tarea en docs/verification/05-tienda-pagos-task-1.md. Migraciones ejecutadas solo en BD PostgreSQL de pruebas del proyecto aislado llaveextra-e5; base principal sin modificar. Task 1 queda a revisión independiente; E5 no está terminada ni se validó Mercado Pago real. Frontend sin cambios.
+
+## E5 Task 2 — implementación local del 24/10/2026
+
+Task 1 `a7a6b59` pasó gate independiente sin hallazgos. Task 2 incorpora adaptador Orders con configuración explícita, fake durable DEMO, outbox/inbox recuperables, búsqueda por referencia, vencimiento, cancelación monetaria y refund confirmado exclusivamente por GET. Contratos HTTP/seller congelados y guardados en PostgreSQL; leases y versión global del pedido descartan respuestas antiguas. Se reconcilian pedidos pagados/preparados y terminales; refund tras entrega conserva stock/estado físico y audita incidencia. Admin opera revisión/refund/reintento con motivo, sin edición de historia ni confirmación monetaria manual. Seeds y comandos documentados en docs/shop-operations.md; evidencia en docs/verification/05-tienda-pagos.md. Suite completa 196 pruebas PG/Redis, Ruff, migraciones sin drift y OpenAPI sin warnings. Verificación solo proyecto aislado, sin modificar base/cuentas principal ni ejecutar cobros externos. Gate independiente T2, PR/CI y sandbox pendientes; frontend de tienda/E6 fuera de alcance.
+
+Corrección I1 del gate final E5: PAYMENT_REVIEW ya distingue reserva impaga de stock previamente acreditado mediante Order.payment_confirmed monotónica. Reservas impagas sin refund vencen/cancelan una vez con o sin ID remoto; PAID/READY históricos y REFUND_PENDING retienen stock hasta GET de reintegro. Nueva migración 0005 reconstruye marca desde estados/auditorías sin editar 0001–0004; claves, fencing y recuperación tardía se conservan. Regresiones y verificación en docs/verification/05-tienda-pagos.md; re-review focal y aplicación a QA existente por el orquestador pendientes de cierre. Base principal intacta.
+
+## Cierre E5 — 24/10/2026
+
+Gate Task 2/rama aprobado en 4c9a402 tras corregir I1, sin hallazgos restantes. payment_confirmed conserva la evidencia histórica del pago: reserva impaga vence/cancela; stock previamente acreditado y refund pendiente se retienen hasta confirmación. Upgrade 0004→0005 y QA HTTP post-fix aprobados.
+
+En el entorno local se aplicaron solo migraciones, sin seed ni rotación de cuentas/QR. Se conservaron 17 usuarios, 14 prestadores, 14 beneficios, 10 asociaciones históricas, 8 selecciones, 6 consumos y 7 movimientos de billetera. La tienda local queda sin productos/pedidos; los escenarios DEMO están separados en llaveextra-e5, con guía docs/shop-operations.md. Backend8000, frontend5173 y Admin por proxy iniciados y HTTP200. E6, UI de tienda y sandbox externo siguen pendientes.

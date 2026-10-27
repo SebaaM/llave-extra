@@ -1,5 +1,7 @@
 # Plan de implementación aprobado
 
+Estado vigente al 24/10/2026: E5 backend/API/Admin completada y revisada en `4c9a402`, entrega [PR #11](https://github.com/SebaaM/llave-extra/pull/11) contra develop, sin fusionar y dependiente de #10. CI de producto aprobado; HEAD vigente en las comprobaciones del PR. Ver [evidencia](../verification/05-tienda-pagos.md). Pausar antes de E6 y UI de tienda F3; sandbox externo pendiente. Las pausas de entregas anteriores que siguen son históricas.
+
 > Corrección vigente del 19/10/2026: catálogo general público con interruptor administrativo, recomendaciones QR privadas y consumos directos sin colaborador. GitFlow obligatorio. [Especificación](07-catalogo-publico-spec.md) y [plan de corrección](07-catalogo-publico-gitflow.md) prevalecen sobre las descripciones históricas siguientes. E5/E6/F3 continúan pendientes; completar esta corrección y detenerse.
 
 > Pedido posterior aprobado: adelantar únicamente los dashboards operativos Prestador/Colaborador de F3. Colaborador elige beneficios concretos del catálogo; usuario Prestador maneja un solo negocio. Admin continúa en Django. [Plan 08](08-backoffice-red.md) y [spec](08-backoffice-red-spec.md) prevalecen en este alcance; tienda y analíticas siguen pendientes.
@@ -61,3 +63,12 @@ La integración histórica de F1 y la migración de herramientas a uv 0.11.3 y p
 ## Cierre de etapa
 
 Requisitos implementados y comprobados, registro de pruebas, revisión independiente, contexto/ToDo actualizados y PR adjunto al chat. Cualquier limitación externa queda declarada en el PR. Docker real es requisito para declarar pruebas PostgreSQL completas.
+
+## Inicio autorizado E5 — 20/10/2026
+
+El pedido actual revoca la pausa al cerrar plan 08 y autoriza E5 backend/API/Admin, según [especificación](05-tienda-pagos-spec.md) y [plan](05-tienda-pagos.md). Rama feature/tienda-pagos desde PR #10 revisado; PR a develop dependiente de #10 mientras siga abierto, sin fusiones. E6 y frontend de tienda siguen pendientes.
+
+
+E5 Task 1 implementada localmente el 23/10/2026 y pendiente de revisión independiente. Catálogo/API/Admin, canjes y cancelación de créditos, snapshots protegidos y outbox monetario sin HTTP. Ver [evidencia Task 1](../verification/05-tienda-pagos-task-1.md). Task 2 sigue pendiente para pagos, vencimiento y reembolsos monetarios; frontend/E6 permanecen fuera de alcance. Pruebas solo sobre proyecto Docker aislado llaveextra-e5, sin migrar base principal.
+
+Actualización 24/10/2026: E5 Task 1 `a7a6b59` aprobada por gate independiente sin hallazgos. Task 2 implementada localmente: pasarela Orders/fake durable, inbox/outbox, búsqueda por referencia, expiración/cancelación/refund con GET autoritativo; pendiente gate independiente, PR/CI y sandbox externo. Ver [evidencia E5](../verification/05-tienda-pagos.md) y [operación](../shop-operations.md). Frontend/E6 fuera de alcance. Pruebas solo proyecto aislado llaveextra-e5, sin migrar base principal.

@@ -13,6 +13,8 @@ if len(JWT_SIGNING_KEY) < 50 or len(QR_SIGNING_KEY) < 50:  # noqa: F405
 if JWT_SIGNING_KEY == SECRET_KEY or QR_SIGNING_KEY in (SECRET_KEY, JWT_SIGNING_KEY):  # noqa: F405
     raise RuntimeError("Las claves Django, JWT y QR deben ser independientes")
 DEBUG = False
+if SHOP_PAYMENT_PROVIDER == "fake":  # noqa: F405
+    raise RuntimeError("El simulador de pagos no está permitido en producción")
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
