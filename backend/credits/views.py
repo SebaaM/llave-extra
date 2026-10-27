@@ -74,8 +74,9 @@ class MyConsumptionsView(APIView):
     @extend_schema(responses={200: ConsumptionHistorySerializer(many=True)})
     def get(self, request):
         customer(request.user)
-        items = Consumption.objects.filter(tourist=request.user).order_by("-created_at")
+        items = Consumption.objects.filter(tourist=request.user).select_related("provider").order_by("-created_at")
         return private_response([{"id": str(item.pk), "provider_id": str(item.provider_id),
+                                  "provider_name": item.provider.name,
                                   "collaborator_id": str(item.collaborator_id) if item.collaborator_id else None,
                                   "award": item.award,
                                   "state": item.state, "created_at": item.created_at}
