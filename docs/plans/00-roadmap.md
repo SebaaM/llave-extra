@@ -1,5 +1,7 @@
 # Plan de implementación aprobado
 
+Pedido vigente 27/10/2026: implementar primero la API del [plan visual del Cliente](../superpowers/plans/2026-10-27-frontend-cliente-visual.md). Backend T2/T2b implementado en `e3f04fa`, rama `feature/api-cliente-visual` nacida de develop `754982d` (PR #10 integrado). Categorías públicas completas y nombre actual del comercio en historial privado propio; no cambia POST/replay, reglas de negocio ni frontend. Suite 108 PostgreSQL/Redis, QA HTTP real y revisiones por tarea aprobadas; revisión integral/PR pendientes de cierre. [Evidencia](../verification/12-api-cliente-visual.md). Las pantallas y tipos/hooks siguen pendientes, al igual que E6 y la tienda transaccional. Los estados siguientes conservan el historial previo.
+
 > Corrección vigente del 19/10/2026: catálogo general público con interruptor administrativo, recomendaciones QR privadas y consumos directos sin colaborador. GitFlow obligatorio. [Especificación](07-catalogo-publico-spec.md) y [plan de corrección](07-catalogo-publico-gitflow.md) prevalecen sobre las descripciones históricas siguientes. E5/E6/F3 continúan pendientes; completar esta corrección y detenerse.
 
 > Pedido posterior aprobado: adelantar únicamente los dashboards operativos Prestador/Colaborador de F3. Colaborador elige beneficios concretos del catálogo; usuario Prestador maneja un solo negocio. Admin continúa en Django. [Plan 08](08-backoffice-red.md) y [spec](08-backoffice-red-spec.md) prevalecen en este alcance; tienda y analíticas siguen pendientes.

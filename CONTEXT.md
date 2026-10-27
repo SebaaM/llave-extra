@@ -1,5 +1,11 @@
 # Contexto y decisiones
 
+## API del Cliente implementada primero — 27/10/2026
+
+Pedido vigente: ejecutar solo las mejoras de API del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md), con [diseño](docs/superpowers/specs/2026-10-27-frontend-cliente-visual-design.md). Backend T2/T2b implementado en `feature/api-cliente-visual`, desde `origin/develop` `754982d` (PR #10 ya integrado); no incorpora los PR #12/#13 pendientes ni altera el checkout original. Categorías públicas completas de beneficios vigentes y `provider_name` actual en historial propio, sin cambios al POST/replay de consumo, reglas del dominio, migraciones o frontend. Valores de categoría originales filtran primero de forma exacta; respaldo recortado solo si no existe la categoría original, decidido antes de búsqueda.
+
+Producto `e3f04fa`: 108 pruebas PostgreSQL/Redis aprobadas; Ruff, OpenAPI sin avisos y migraciones sin drift. QA HTTP real con datos sintéticos aislados aprobado; revisiones independientes por tarea aprobadas. Revisión integral y publicación del PR pendientes de cierre. [Evidencia](docs/verification/12-api-cliente-visual.md). Hooks/tipos/pantallas del frontend siguen pendientes; este alcance no inicia E6, compra del Cliente ni pagos externos. Las pausas históricas siguientes no impiden esta entrega API autorizada.
+
 ## Objetivo
 
 Captar registros de turistas y verificar consumos en la red para otorgar beneficios, progreso y créditos canjeables por regalería 3D. Corrección aprobada el 19/10/2026: catálogo general público configurable desde backoffice; carpetas y recomendaciones del colaborador privadas por QR. Ver `docs/plans/07-catalogo-publico-spec.md` y su plan de implementación.

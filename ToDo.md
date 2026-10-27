@@ -1,5 +1,8 @@
 # Pendientes
 
+- [x] Backend de mejoras visuales del Cliente T2/T2b: categorías públicas completas y nombre actual del comercio en historial propio. Producto `e3f04fa`, rama `feature/api-cliente-visual` desde develop `754982d`; 108 pruebas PG/Redis y QA HTTP real aprobados. Revisiones por tarea aprobadas; revisión integral/PR pendientes de cierre. [Evidencia](docs/verification/12-api-cliente-visual.md).
+- [ ] Frontend del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md): hooks y tipos de T2/T2b, navegación, catálogo, red, recomendaciones, pasaporte, QR, acceso/perfil y terminación de tienda. El pedido actual ejecuta primero solo API; no declara completas las tareas visuales ni la tienda transaccional.
+
 - [x] F3 operativo adelantado: dashboards Prestador y Colaborador, barra lateral, un negocio por usuario Prestador y selección concreta de beneficios. Admin en Django; sin tienda ni analíticas. [PR #10](https://github.com/SebaaM/llave-extra/pull/10) contra develop, sin fusionar y dependiente del #9. Producto revisado, QA real y CI `bc36bc0` aprobados; CI vigente en el PR. Ver [plan 08](docs/plans/08-backoffice-red.md) y [evidencia](docs/verification/08-backoffice-red.md). Detenerse al completar esta etapa.
 - [x] Plan 08 Task 1: backend de selección concreta, APIs propias y unicidad de negocio revisados en `26458f2`; migración principal aplicada por el orquestador con preflight sin usuarios multinegocio.
 - [x] Plan 08 Task 2: paneles React Prestador/Colaborador, multipart, rutas por rol y QR privado; QA real y revisión independiente aprobadas en `2405cae`, incluidos denegación de medios/credenciales y controles táctiles de 44 px. Entregado en PR #10 con CI de producto aprobado.
