@@ -74,6 +74,28 @@ class CatalogBenefitsView(APIView):
         return paginator.get_paginated_response(PublicBenefitSerializer(page, many=True).data)
 
 
+class CatalogCategoriesView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        operation_id="catalog_categories_list",
+        description="Categorías de prestadores con beneficios públicos publicados y vigentes.",
+        responses=inline_serializer(
+            "PublicCatalogCategories",
+            fields={"results": serializers.ListField(child=serializers.CharField())},
+        ),
+    )
+    def get(self, request):
+        require_catalog()
+        categories = set(
+            category
+            for category in catalog_benefits().values_list("provider__category", flat=True)
+            if category and category.strip()
+        )
+        return Response({"results": sorted(categories, key=lambda value: (value.casefold(), value))})
+
+
 class CatalogBenefitView(APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
