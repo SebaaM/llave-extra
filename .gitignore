@@ -17,6 +17,7 @@ test-results/
 *.sqlite3
 .tools/
 .superpowers/
+*.diff
 .worktrees/
 docs/cuentas-prueba.local.md
 work/

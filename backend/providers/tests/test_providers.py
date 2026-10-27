@@ -21,11 +21,19 @@ from accounts.security import issue_session
 from providers.access import locked_provider_eligibility
 from providers.admin import (
     BenefitAdmin,
+    FolderBenefitAdmin,
     FolderProviderAdmin,
     ProviderAdmin,
     ProviderMembershipAdmin,
 )
-from providers.models import Benefit, FolderProvider, Provider, ProviderMembership, Publication
+from providers.models import (
+    Benefit,
+    FolderBenefit,
+    FolderProvider,
+    Provider,
+    ProviderMembership,
+    Publication,
+)
 from providers.serializers import BenefitWriteSerializer, ProviderWriteSerializer
 from referrals.models import CollaboratorProfile, FolderAccess
 
@@ -56,6 +64,7 @@ def domain():
     FolderProvider.assign(other_profile.pk, other_provider.pk)
     FolderAccess.objects.create(tourist=tourist, collaborator=profile, qr_version=profile.qr_version)
     benefit = Benefit.objects.create(provider=provider, title="10%", conditions="Con reserva", status=Publication.PUBLISHED)
+    FolderBenefit.assign(profile.pk, benefit.pk)
     return tourist, profile, other_profile, provider, other_provider, benefit
 
 
@@ -72,7 +81,7 @@ def test_tourist_lists_details_and_direct_ids_are_folder_scoped(domain):
     assert client.get(f"{root}{other_provider.pk}/").status_code == 404
     assert client.get(f"{root}{provider.pk}/benefits/{benefit.pk}/").status_code == 200
     assert client.get(f"{root}{other_provider.pk}/benefits/").status_code == 404
-    FolderProvider.remove(profile.pk, provider.pk)
+    FolderBenefit.remove(profile.pk, benefit.pk)
     assert client.get(root).data == []
     assert client.get(f"{root}{provider.pk}/").status_code == 404
 
@@ -175,9 +184,10 @@ def test_private_media_decoding_and_revocation(domain):
     benefit_media = f"/api/v1/folders/{profile.pk}/providers/{provider.pk}/benefits/{benefit.pk}/media/"
     assert APIClient().get(media).status_code == 401
     assert APIClient().get(benefit_media).status_code == 401
-    assert authorized(tourist).get(media).status_code == 200
+    assert authorized(tourist).get(media).status_code == 404  # Last selected offer is now draft.
     assert authorized(tourist).get(benefit_media).status_code == 404
     Benefit.set_status(benefit.pk, Publication.PUBLISHED)
+    assert authorized(tourist).get(media).status_code == 200
     assert authorized(tourist).get(benefit_media).status_code == 200
     assert authorized(tourist).get(f"/api/v1/folders/{profile.pk}/providers/{other_provider.pk}/media/").status_code == 404
     CollaboratorProfile.set_enabled(profile.pk, False)
@@ -195,7 +205,9 @@ def test_e4_eligibility_holds_provider_lock_and_rechecks_folder():
     collaborator = User.objects.create_user("e4-collab@example.test", "Secret-123", role=User.Role.COLLABORATOR)
     profile = CollaboratorProfile.objects.create(user=collaborator, enabled=True)
     provider = Provider.objects.create(slug="e4-provider", name="E4 provider", status=Publication.PUBLISHED)
-    FolderProvider.assign(profile.pk, provider.pk)
+    benefit = Benefit.objects.create(provider=provider, title="Oferta vigente", conditions="Con reserva",
+                           status=Publication.PUBLISHED)
+    FolderBenefit.assign(profile.pk, benefit.pk)
     FolderAccess.objects.create(tourist=tourist, collaborator=profile, qr_version=profile.qr_version)
 
     def competing_lock():
@@ -213,7 +225,7 @@ def test_e4_eligibility_holds_provider_lock_and_rechecks_folder():
         with ThreadPoolExecutor(max_workers=1) as pool:
             assert pool.submit(competing_lock).result(timeout=5) == "locked"
 
-    FolderProvider.remove(profile.pk, provider.pk)
+    FolderBenefit.remove(profile.pk, benefit.pk)
     from rest_framework.exceptions import PermissionDenied
 
     with pytest.raises(PermissionDenied, match="Prestador no habilitado"):
@@ -234,24 +246,32 @@ def test_collaborator_folder_is_read_only_and_enabled(domain):
 
 
 @pytest.mark.django_db
-def test_only_admin_can_assign_folder_even_when_provider_has_django_permission(domain):
+def test_only_admin_can_assign_through_admin_even_with_explicit_permission(domain):
     _, profile, _, _, other_provider, _ = domain
     provider_user = User.objects.create_user(
         "assigned-provider@example.test", "Secret-123", role=User.Role.PROVIDER, is_staff=True,
     )
-    provider_user.user_permissions.add(Permission.objects.get(codename="add_folderprovider"))
+    provider_user.user_permissions.add(
+        Permission.objects.get(codename="add_folderprovider"),
+        Permission.objects.get(codename="add_folderbenefit"),
+    )
     admin_user = User.objects.create_superuser("folder-admin@example.test", "Secret-123")
-    model_admin = FolderProviderAdmin(FolderProvider, AdminSite())
-    request = RequestFactory().get("/admin/providers/folderprovider/add/")
+    model_admin = FolderBenefitAdmin(FolderBenefit, AdminSite())
+    request = RequestFactory().get("/admin/providers/folderbenefit/add/")
 
     request.user = provider_user
     assert not model_admin.has_add_permission(request)
     request.user = admin_user
     assert model_admin.has_add_permission(request)
     model_admin.save_model(
-        request, FolderProvider(collaborator=profile, provider=other_provider), form=None, change=False,
+        request, FolderBenefit(collaborator=profile, benefit=Benefit.objects.create(provider=other_provider, title="Otra", conditions="Reserva", status=Publication.PUBLISHED)), form=None, change=False,
     )
-    assert FolderProvider.objects.filter(collaborator=profile, provider=other_provider).exists()
+    assert FolderBenefit.objects.filter(collaborator=profile, benefit__provider=other_provider).exists()
+    legacy_admin = FolderProviderAdmin(FolderProvider, AdminSite())
+    assert legacy_admin.has_view_permission(request)
+    assert not legacy_admin.has_add_permission(request)
+    assert not legacy_admin.has_change_permission(request)
+    assert not legacy_admin.has_delete_permission(request)
 
 
 @pytest.mark.django_db
@@ -264,7 +284,7 @@ def test_staff_provider_cannot_delete_admin_models_with_explicit_django_permissi
     admin_user = User.objects.create_superuser("delete-admin@example.test", "Secret-123")
     admin_models = (
         (Provider, ProviderAdmin), (ProviderMembership, ProviderMembershipAdmin),
-        (FolderProvider, FolderProviderAdmin), (Benefit, BenefitAdmin),
+        (FolderProvider, FolderProviderAdmin), (FolderBenefit, FolderBenefitAdmin), (Benefit, BenefitAdmin),
     )
     staff_provider.user_permissions.add(*[
         Permission.objects.get(content_type__app_label="providers", codename=f"delete_{model._meta.model_name}")
@@ -284,8 +304,9 @@ def test_staff_provider_cannot_delete_admin_models_with_explicit_django_permissi
     assert FolderProvider.objects.filter(pk=assignment.pk).exists()
 
     request.user = admin_user
-    assert folder_admin.has_delete_permission(request)
-    assert "delete_selected" in folder_admin.get_actions(request)
+    assert not folder_admin.has_delete_permission(request)
+    assert "delete_selected" not in folder_admin.get_actions(request)
+    assert FolderBenefitAdmin(FolderBenefit, AdminSite()).has_delete_permission(request)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -354,9 +375,9 @@ def test_seed_is_initial_only_and_preserves_admin_changes(tmp_path):
         cumbre = Provider.objects.get(legacy_public_id="CUM001")
         assert tiger.memberships.count() == 1 and cumbre.memberships.count() == 1
         primary = CollaboratorProfile.objects.get(user__email="colaborador@llaveextra.test")
-        assert primary.folder_providers.count() >= 5
-        removed = primary.folder_providers.first()
-        FolderProvider.remove(primary.pk, removed.provider_id)
+        assert primary.folder_benefits.count() >= 5
+        removed = primary.folder_benefits.first()
+        FolderBenefit.remove(primary.pk, removed.benefit_id)
         Provider.set_status(tiger.pk, Publication.INACTIVE)
         tiger.name = "Cambio administrativo"
         tiger.save(update_fields=["name"])
@@ -366,5 +387,5 @@ def test_seed_is_initial_only_and_preserves_admin_changes(tmp_path):
         tiger.refresh_from_db()
         assert tiger.name == "Cambio administrativo" and tiger.status == Publication.INACTIVE
         assert tiger.memberships.count() == 0
-        assert not FolderProvider.objects.filter(pk=removed.pk).exists()
+        assert not FolderBenefit.objects.filter(pk=removed.pk).exists()
         assert Provider.objects.count() == 12

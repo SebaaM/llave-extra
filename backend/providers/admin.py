@@ -1,8 +1,47 @@
+from django import forms
 from django.contrib import admin
+from django.db import transaction
 
 from accounts.admin import AdminRoleOnlyMixin
+from referrals.models import CollaboratorProfile
 
-from .models import Benefit, FolderProvider, Provider, ProviderMembership
+from .models import (
+    Benefit,
+    CatalogConfig,
+    FolderBenefit,
+    FolderProvider,
+    Provider,
+    ProviderMembership,
+)
+
+NETWORK_LABELS = {
+    "network_title": "Título de la red",
+    "network_layout": "Distribución",
+    "network_theme": "Tema",
+    "network_background": "Fondo",
+    "network_page_size": "Prestadores por página",
+    "network_interval_seconds": "Intervalo en segundos",
+}
+
+
+class CatalogConfigForm(forms.ModelForm):
+    class Meta:
+        model = CatalogConfig
+        fields = "__all__"
+        labels = {"enabled": "Catálogo público habilitado", **NETWORK_LABELS}
+
+
+@admin.register(CatalogConfig)
+class CatalogConfigAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    form = CatalogConfigForm
+    list_display = ("singleton", "enabled", "network_title", "network_layout", "network_theme", "network_background")
+    fields = ("enabled", "network_title", "network_layout", "network_theme", "network_background", "network_page_size", "network_interval_seconds")
+
+    def has_add_permission(self, request):
+        return super().has_add_permission(request) and not CatalogConfig.objects.filter(singleton=1).exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Provider)
@@ -32,16 +71,42 @@ class ProviderMembershipAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 @admin.register(FolderProvider)
 class FolderProviderAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     list_display = ("collaborator", "provider")
+    readonly_fields = ("collaborator", "provider")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(FolderBenefit)
+class FolderBenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("collaborator", "benefit", "created_at")
+    readonly_fields = ("created_at",)
 
     def get_readonly_fields(self, request, obj=None):
-        return ("collaborator", "provider") if obj else ()
+        return (*self.readonly_fields, "collaborator", "benefit") if obj else self.readonly_fields
 
     def delete_model(self, request, obj):
-        FolderProvider.remove(obj.collaborator_id, obj.provider_id)
+        FolderBenefit.remove(obj.collaborator_id, obj.benefit_id)
 
     def delete_queryset(self, request, queryset):
-        for profile_id, provider_id in queryset.values_list("collaborator_id", "provider_id"):
-            FolderProvider.remove(profile_id, provider_id)
+        # A bulk admin action must take *all* profile locks before any provider:
+        # interleaving profile/provider pairs could deadlock with a single PUT.
+        with transaction.atomic():
+            # Freeze select_across targets once: a concurrent insertion must
+            # neither add a profile after its lock phase nor enter the deletion.
+            selections = list(queryset.values_list("pk", "collaborator_id", "benefit_id", "benefit__provider_id"))
+            list(CollaboratorProfile.objects.select_for_update(of=("self",)).filter(pk__in=[row[1] for row in selections]).order_by("pk"))
+            list(Provider.objects.select_for_update().filter(pk__in=[row[3] for row in selections]).order_by("pk"))
+            list(Benefit.objects.select_for_update().filter(pk__in=[row[2] for row in selections]).order_by("pk"))
+            # All domain locks are held. Delete exact original PKs, preserving
+            # replacements if an original selection was removed and recreated.
+            FolderBenefit.objects.filter(pk__in=[row[0] for row in selections]).delete()
 
 
 @admin.register(Benefit)

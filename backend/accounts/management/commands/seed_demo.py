@@ -9,15 +9,25 @@ from django.db import transaction
 from django.utils.text import slugify
 
 from accounts.models import User
+from credits.models import CreditPolicy, ProviderConsumptionCredential
+from credits.services import (
+    annul_consumption,
+    award_consumption,
+    debit_wallet,
+    set_provider_pin,
+    sign_provider_qr,
+)
+from providers.access import selected_providers
+from providers.catalog import catalog_benefits
 from providers.models import (
     Benefit,
     DemoSeedState,
-    FolderProvider,
+    FolderBenefit,
     Provider,
     ProviderMembership,
     Publication,
 )
-from referrals.models import CollaboratorProfile
+from referrals.models import CollaboratorProfile, FolderAccess
 
 DEMO_ACCOUNTS = [
     ("admin@llaveextra.test", User.Role.ADMIN),
@@ -27,6 +37,9 @@ DEMO_ACCOUNTS = [
     ("colaborador.secundario@llaveextra.test", User.Role.COLLABORATOR),
     ("turista@llaveextra.test", User.Role.TOURIST),
     ("turista.pendiente@llaveextra.test", User.Role.TOURIST),
+    ("turista.creditos@llaveextra.test", User.Role.TOURIST),
+    ("turista.ajuste@llaveextra.test", User.Role.TOURIST),
+    ("turista.extra@llaveextra.test", User.Role.TOURIST),
 ]
 
 
@@ -67,7 +80,8 @@ class Command(BaseCommand):
                 user, created = User.objects.get_or_create(
                     email=email,
                     defaults={"role": role, "is_staff": role == User.Role.ADMIN,
-                              "is_superuser": role == User.Role.ADMIN, "email_verified": role != User.Role.TOURIST or email == "turista@llaveextra.test"},
+                              "is_superuser": role == User.Role.ADMIN,
+                              "email_verified": email != "turista.pendiente@llaveextra.test"},
                 )
                 if created or (options["recover_missing"] and email not in credentials):
                     password = secrets.token_urlsafe(18)
@@ -109,7 +123,51 @@ class Command(BaseCommand):
                     if users[email].role == User.Role.COLLABORATOR:
                         profile, _ = CollaboratorProfile.objects.get_or_create(user=users[email], defaults={"enabled": True})
                         for legacy in sorted(assigned):
-                            FolderProvider.assign(profile.pk, providers[legacy].pk)
+                            for benefit in catalog_benefits().filter(provider=providers[legacy]):
+                                FolderBenefit.assign(profile.pk, benefit.pk)
+
+            # E4 adds a separate, one-time scenario. Never restore changed publication,
+            # folder assignments or PINs on later seed runs.
+            credit_state = DemoSeedState.objects.filter(key="credits-2026-10-18").exists()
+            generated_pins = {}
+            if not credit_state:
+                profile = CollaboratorProfile.objects.filter(user=users["colaborador@llaveextra.test"], enabled=True).first()
+                eligible = list(selected_providers(profile.pk).filter(
+                    demo=True,
+                    consumption_credential__isnull=True, credit_rule__isnull=True,
+                ).order_by("legacy_public_id")[:3]) if profile else []
+                policy, _ = CreditPolicy.objects.get_or_create(singleton=1)
+                if len(eligible) == 3 and policy.base_reward > 1 and all(users[email].role == User.Role.TOURIST and users[email].email_verified
+                                              and not users[email].consumptions.exists()
+                                              for email in ("turista.creditos@llaveextra.test",
+                                                            "turista.ajuste@llaveextra.test",
+                                                            "turista.extra@llaveextra.test")):
+                    for provider in eligible:
+                        pin = f"{secrets.randbelow(1_000_000):06d}"
+                        set_provider_pin(provider.pk, pin)
+                        generated_pins[str(provider.pk)] = (provider.name, pin)
+                    scenarios = (
+                        ("turista.creditos@llaveextra.test", eligible[:2]),
+                        ("turista.ajuste@llaveextra.test", eligible[:1]),
+                        ("turista.extra@llaveextra.test", eligible[1:2]),
+                    )
+                    for email, assigned in scenarios:
+                        tourist = users[email]
+                        FolderAccess.objects.get_or_create(tourist=tourist, collaborator=profile,
+                                                           qr_version=profile.qr_version)
+                        for provider in assigned:
+                            credential = ProviderConsumptionCredential.objects.get(provider=provider)
+                            award_consumption(tourist, profile.pk, sign_provider_qr(credential),
+                                              generated_pins[str(provider.pk)][1],
+                                              f"demo-e4-{provider.pk}")
+                    adjustment_user = users["turista.ajuste@llaveextra.test"]
+                    debit_wallet(adjustment_user.pk, policy.base_reward - 1, "demo-e4-order")
+                    consumption = adjustment_user.consumptions.get(provider=eligible[0])
+                    annul_consumption(consumption.pk, users["admin@llaveextra.test"],
+                                      "Escenario demo de ajuste pendiente")
+                    DemoSeedState.objects.create(key="credits-2026-10-18")
+                else:
+                    self.stdout.write("Se omitió el escenario E4: carpeta, prestadores o clientes demo modificados.")
 
         if generated:
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -133,5 +191,12 @@ class Command(BaseCommand):
             lines.extend(generated_lines[email] for email in generated if email not in found)
             destination.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
             self.stdout.write(f"Credenciales nuevas guardadas en {destination.name}.")
+
+        if generated_pins:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with destination.open("a", encoding="utf-8") as document:
+                document.write("\n## PIN de consumo demo E4\n\n")
+                for provider_name, pin in generated_pins.values():
+                    document.write(f"- Prestador `{provider_name}` — PIN: `{pin}`\n")
 
         self.stdout.write(self.style.SUCCESS("Seed demo completado; las cuentas existentes se conservaron."))

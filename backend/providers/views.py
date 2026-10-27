@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -8,11 +9,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from credits.services import Conflict
 from referrals.access import active_folder_access
 from referrals.models import CollaboratorProfile
 from referrals.views import current_profile, qr_url
 
-from .access import owned_provider, visible_benefits, visible_provider
+from .access import owned_provider, selected_benefits, selected_providers, visible_provider
 from .models import Benefit, Provider, ProviderMembership, Publication
 from .serializers import (
     BenefitReadSerializer,
@@ -52,7 +54,7 @@ class FolderProvidersView(APIView):
     @extend_schema(responses={200: ProviderReadSerializer(many=True)})
     def get(self, request, folder_id):
         folder_profile(request, folder_id)
-        providers = Provider.objects.filter(status=Publication.PUBLISHED, folder_assignments__collaborator_id=folder_id).order_by("name")
+        providers = selected_providers(folder_id).order_by("name", "pk")
         return Response(ProviderReadSerializer(providers, many=True, context={"folder_id": folder_id}).data)
 
 
@@ -71,7 +73,7 @@ class FolderBenefitsView(APIView):
     @extend_schema(responses={200: BenefitReadSerializer(many=True)})
     def get(self, request, folder_id, provider_id):
         provider = visible_provider(request.user, folder_id, provider_id)
-        return Response(BenefitReadSerializer(visible_benefits(provider), many=True, context={"folder_id": folder_id}).data)
+        return Response(BenefitReadSerializer(selected_benefits(folder_id).filter(provider=provider), many=True, context={"folder_id": folder_id}).data)
 
 
 class FolderBenefitView(APIView):
@@ -80,7 +82,7 @@ class FolderBenefitView(APIView):
     @extend_schema(responses={200: BenefitReadSerializer})
     def get(self, request, folder_id, provider_id, benefit_id):
         provider = visible_provider(request.user, folder_id, provider_id)
-        benefit = visible_benefits(provider).filter(pk=benefit_id).first()
+        benefit = selected_benefits(folder_id).filter(provider=provider, pk=benefit_id).first()
         if benefit is None:
             raise NotFound()
         return Response(BenefitReadSerializer(benefit, context={"folder_id": folder_id}).data)
@@ -100,7 +102,7 @@ class FolderBenefitMediaView(APIView):
     @extend_schema(responses=PRIVATE_IMAGE_RESPONSES)
     def get(self, request, folder_id, provider_id, benefit_id):
         provider = visible_provider(request.user, folder_id, provider_id)
-        benefit = visible_benefits(provider).filter(pk=benefit_id).first()
+        benefit = selected_benefits(folder_id).filter(provider=provider, pk=benefit_id).first()
         if benefit is None:
             raise NotFound()
         return private_file(benefit.image)
@@ -154,7 +156,7 @@ class OwnBenefitsView(APIView):
         provider = owned_provider(request.user, provider_id)
         serializer = BenefitWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        benefit = serializer.save(provider=provider)
+        benefit = serializer.save(provider=provider, demo=provider.demo)
         return Response(BenefitReadSerializer(benefit).data, status=status.HTTP_201_CREATED)
 
 
@@ -181,7 +183,7 @@ class OwnBenefitView(APIView):
         benefit = serializer.save()
         return Response(BenefitReadSerializer(benefit).data)
 
-    @extend_schema(responses={204: None})
+    @extend_schema(responses={204: None, 409: OpenApiTypes.OBJECT})
     def delete(self, request, provider_id, benefit_id):
         with transaction.atomic():
             user = User.objects.select_for_update().filter(pk=request.user.pk).first()
@@ -199,7 +201,10 @@ class OwnBenefitView(APIView):
                 raise NotFound()
             if benefit.status == Publication.PUBLISHED:
                 raise PermissionDenied("Solicitá revisión administrativa para retirar una oferta publicada")
-            benefit.delete()
+            try:
+                benefit.delete()
+            except ProtectedError:
+                raise Conflict("El beneficio está seleccionado en una carpeta; solicitá revisión administrativa antes de eliminarlo") from None
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -217,7 +222,7 @@ class CollaboratorFolderView(APIView):
     @extend_schema(responses={200: CollaboratorFolderReadSerializer})
     def get(self, request):
         profile = current_profile(request.user)
-        providers = Provider.objects.filter(status=Publication.PUBLISHED, folder_assignments__collaborator=profile).order_by("name")
+        providers = selected_providers(profile.pk).order_by("name", "pk")
         return Response({"collaborator_id": str(profile.pk), "referral_url": qr_url(profile),
                          "providers": ProviderReadSerializer(providers, many=True, context={"collaborator": True}).data})
 
@@ -228,8 +233,7 @@ class CollaboratorProviderMediaView(APIView):
     @extend_schema(responses=PRIVATE_IMAGE_RESPONSES)
     def get(self, request, provider_id):
         profile = current_profile(request.user)
-        provider = Provider.objects.filter(pk=provider_id, status=Publication.PUBLISHED,
-                                           folder_assignments__collaborator=profile).first()
+        provider = selected_providers(profile.pk).filter(pk=provider_id).first()
         if provider is None:
             raise NotFound()
         return private_file(provider.image)

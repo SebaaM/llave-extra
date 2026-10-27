@@ -1,7 +1,15 @@
+.venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
-.venv/
+.coverage
+htmlcov/
+.env
+.env.*
+*.sqlite3
+*.db
+.git/
 media/
+private_media/
 staticfiles/
