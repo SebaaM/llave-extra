@@ -46,6 +46,6 @@ Actualizado el 26/10/2026. Estado real de la etapa; las casillas pendientes no r
 - [x] Aplicar migraciones locales con respaldo y conteos conservados, sin cargar semillas.
 - [x] Actualizar contexto, pendientes, instrucciones y contrato; simplificar Markdown y revisar datos sensibles.
 - [x] Excluir todos los `*.diff` de Git y comprobar que ninguno esté versionado.
-- [ ] Publicar y adjuntar el PR hacia develop y comprobar CI, sin fusionarlo.
+- [x] Publicar [PR #12](https://github.com/SebaaM/llave-extra/pull/12) hacia develop y consultar sus comprobaciones, sin fusionarlo. Estado de CI vigente en el PR.
 
 Las analíticas, la tienda del Cliente, el sandbox externo de pagos y el despliegue productivo quedan para sus etapas correspondientes.

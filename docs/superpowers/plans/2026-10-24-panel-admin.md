@@ -54,7 +54,7 @@ La lista de pedidos usa un resumen; el detalle conserva líneas, retiro e histor
 - [x] Ejecutar revisión integral de rama y asignar una única ola de correcciones.
 - [x] Registrar comprobaciones del corte corregido y resultado de una revisión focal; no cerrar con fallos pendientes de seguridad/concurrencia.
 - [x] Simplificar/revisar Markdown, actualizar contexto y pendientes y comprobar ausencia de información sensible y archivos temporales versionados. Commits propios por producto/documentación.
-- [ ] Publicar PR a `develop`, consultar CI y adjuntar enlace; sin fusionar.
+- [x] Publicar [PR #12](https://github.com/SebaaM/llave-extra/pull/12) a `develop`, consultar CI y adjuntar enlace; sin fusionar. Estado vigente en las comprobaciones del PR.
 
 ## Límites de aceptación
 

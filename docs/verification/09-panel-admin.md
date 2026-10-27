@@ -1,6 +1,6 @@
 # Verificación del panel administrativo React
 
-Estado al 26/10/2026: `/gestion` y la configuración están implementados. Corte de producto `affa345`, con comprobaciones y revisión independiente aprobadas; publicación del PR/CI pendiente. E6, compra del Cliente, sandbox externo y despliegue productivo quedan fuera de esta etapa.
+Estado al 26/10/2026: `/gestion` y la configuración están implementados. Corte de producto `affa345`, con comprobaciones y revisión independiente aprobadas. Entrega en [PR #12](https://github.com/SebaaM/llave-extra/pull/12) contra `develop`, sin fusionar; estado de CI vigente en sus comprobaciones. E6, compra del Cliente, sandbox externo y despliegue productivo quedan fuera de esta etapa.
 
 ## Corte y entorno
 
@@ -29,7 +29,7 @@ El resumen del DTO de lista de pedidos evita precargar historia anidada; se difi
 
 La revisión integral encontró 0 críticos, 3 importantes y 10 menores. La única ola final produjo `affa345`: QR PNG, errores por campo y controles bloqueados mientras guarda, además de navegación, accesibilidad, recarga, cancelaciones e identidad de actividad. La revisión focal independiente aprobó los tres importantes y nueve menores; el restante es la deuda de escala mitigada descrita arriba. No identificó nuevas roturas atribuibles al cambio. No equivale a una auditoría integral de seguridad.
 
-Pendiente de entrega: PR/CI. Límite de QA: archivos/QR/confirmaciones operativas no acreditados en navegador nativo; la herramienta detuvo el último intento por no poder verificar la URL. El usuario pidió cerrar sin ampliar funcionalidades ni seguir intentando ese QA visual.
+Límite de QA: archivos/QR/confirmaciones operativas no acreditados en navegador nativo; la herramienta detuvo el último intento por no poder verificar la URL. El usuario pidió cerrar sin ampliar funcionalidades ni seguir intentando ese QA visual.
 
 Antes de publicar se revisaron los 17 Markdown nuevos/modificados, se simplificaron plan y evidencia y no se encontraron valores concretos sensibles. `.gitignore` excluye `*.diff`; no hay archivos de ese tipo versionados. Esta revisión documental no certifica la seguridad integral del repositorio.
 
