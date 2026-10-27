@@ -1,5 +1,9 @@
 # F1 · Tres prototipos de frontend (archivo histórico)
 
+## Entrega posterior: catálogo visual de tienda — 26/10/2026
+
+Pedido explícito: solo catálogo visual con ejemplos. `/tienda` y `/tienda/:slug` son públicas, integradas al menú y Mi viaje. Nueve ejemplos estáticos tipados con ilustraciones propias, valores ARS/créditos ilustrativos, búsqueda, categorías, orden y páginas de seis. No usa endpoints de tienda ni carga productos en PostgreSQL; no ofrece compra/canje, pedidos o stock real. Esta entrega adelanta solo esa parte de F3 y no restaura los prototipos históricos. La shell conserva autenticación; abrir tienda con sesión Cliente evita precargar saldo/progreso/historial. [Plan](../superpowers/plans/2026-10-26-catalogo-tienda-visual.md), [evidencia](../verification/10-catalogo-tienda-visual.md).
+
 > Los tres prototipos y `/prototipos` se retiraron en la corrección del 19/10/2026. Las rutas vigentes son `/` para portada, `/beneficios` para catálogo público, `/beneficios/<id>` para detalle, `/recomendaciones` para carpetas QR privadas y `/mi-viaje` para Pasaporte. Lo que sigue documenta la evaluación histórica F1/F2.
 
 ## Alcance entregado

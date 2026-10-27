@@ -39,6 +39,29 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('recorridos F2 del Cliente', () => {
+  it.each([false, true])('abre la tienda pública sin consultar saldo ni operaciones (sesión: %s)', async signedIn => {
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      calls.push(url)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+      if (url.endsWith('/auth/refresh/')) return signedIn ? json({ access: 'access-demo' }) : json({}, 401)
+      if (url.endsWith('/auth/me/')) return json(tourist)
+      if (url.endsWith('/me/folders/')) return json({ folders: [] })
+      return json({}, 404)
+    }))
+    const ProductApp = await prepareApp('/tienda')
+    render(<ProductApp />)
+    expect(screen.getByRole('heading', { name: /Un pedacito del fin/ })).toBeTruthy()
+    if (signedIn) await screen.findByText(tourist.email)
+    else await waitFor(() => expect(calls.some(url => url.endsWith('/auth/refresh/'))).toBe(true))
+    expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
+    fireEvent.click(screen.getByRole('link', { name: 'Ver Faro del Beagle' }))
+    await screen.findByRole('heading', { name: 'Faro del Beagle' })
+    expect(window.location.pathname).toBe('/tienda/faro-del-beagle')
+    expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
+  })
+
   it('vacía el estado de A al entrar con B y antes de esperar el logout remoto', async () => {
     let accountB = false
     let finishLogin!: (response: Response) => void

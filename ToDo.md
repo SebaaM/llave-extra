@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Catálogo visual de tienda adelantado: `/tienda` y fichas públicas con nueve ejemplos, ilustraciones propias, ARS/créditos ilustrativos, búsqueda/filtros/orden/paginación. Sin seed, checkout ni canjes. [Plan](docs/superpowers/plans/2026-10-26-catalogo-tienda-visual.md), [evidencia](docs/verification/10-catalogo-tienda-visual.md). El resto transaccional de F3 y E6 siguen pendientes.
+
 - [x] Panel ADMIN React y configuración: implementados en `/gestion` (`affa345`), con 274 pruebas PostgreSQL/Redis, 115 UI y 1 proxy aprobadas. Revisión integral y focal aprobadas; [PR #12](https://github.com/SebaaM/llave-extra/pull/12) abierto, sin fusionar; CI vigente en sus comprobaciones; sin analíticas ni compra del Cliente. [Checklist](docs/verification/09-panel-admin-checklist.md), [evidencia](docs/verification/09-panel-admin.md), [guía](docs/panel-administracion.md). Rama `feature/panel-admin`, dependiente de #11/#10 sin fusionar.
 
 - [ ] Campaña de auditoría de seguridad por feature/task: [plan](docs/superpowers/plans/2026-10-24-auditoria-seguridad.md), [checklist](docs/security/checklist.md) y [hallazgos/soluciones](docs/security/hallazgos.md). Plan documental preparado el 24/10/2026; auditoría activa/correcciones todavía no iniciadas. Incluye inventario, laboratorio aislado, pruebas de permisos/autenticación/tokens/negocio y subagentes correctores con revisión independiente. No declara E6 completa ni valida sandbox externo.

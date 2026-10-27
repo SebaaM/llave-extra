@@ -6,6 +6,7 @@ import { consumptionToken, referralToken, setReferralToken, verifyToken, setVeri
 import { ProductShell, ButtonLink } from './Layout'
 import { Auth } from './PublicPages'
 import { HomePage } from './HomePage'
+import { ShopPage, ShopDetail } from './shop/ShopPage'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
 import { CreditsPage } from './CreditsPage'
 import { FolderPage, ProviderDetail } from './BenefitsPages'
@@ -160,7 +161,8 @@ export default function ProductApp() {
       identityRef.current = current?.id ?? null
       setUser(current)
       if (current?.role === 'TOURIST') {
-        await Promise.all([loadFolders(), loadTrip()]).catch(error => {
+        const openingShop = window.location.pathname === '/tienda' || window.location.pathname.startsWith('/tienda/')
+        await Promise.all([loadFolders(), ...(openingShop ? [] : [loadTrip()])]).catch(error => {
           if (active && identityRef.current === current.id) setPageError(messageOf(error))
         })
       }
@@ -326,6 +328,8 @@ export default function ProductApp() {
 
   const renderContent = () => {
     if (isProductPublic) return <HomePage settings={site.settings} />
+    if (path === '/tienda' || path === '/tienda/') return <ShopPage />
+    if (path.startsWith('/tienda/')) return <ShopDetail slug={path.slice('/tienda/'.length).replace(/\/$/, '')} />
     if (path === '/beneficios') return <CatalogPage />
     if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
     if (path === '/creditos-imagenes') return <CreditsPage />
