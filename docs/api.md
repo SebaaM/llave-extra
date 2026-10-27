@@ -27,7 +27,7 @@ Las rutas siguientes son anónimas, de solo lectura y siempre responden `Cache-C
 | --- | --- |
 | `GET /catalog/config/` | `{enabled: boolean}` |
 | `GET /catalog/categories/` | `{results: string[]}` con categorías exactas, únicas y ordenadas por comparación sin distinguir mayúsculas; solo de beneficios públicos publicados/vigentes. Omite valores vacíos o compuestos solo por espacios, conserva los demás valores originales e ignora parámetros de paginación y búsqueda. |
-| `GET /catalog/benefits/?page=1&page_size=24&search=...&category=...` | `{count, next, previous, results}`; 24 por página, máximo 48; búsqueda en título, descripción y nombre de prestador, categoría exacta sin distinguir mayúsculas |
+| `GET /catalog/benefits/?page=1&page_size=24&search=...&category=...` | `{count, next, previous, results}`; 24 por página, máximo 48; búsqueda en título, descripción y nombre de prestador. La categoría coincide exactamente sin distinguir mayúsculas; si el parámetro tiene espacios laterales, primero se busca el valor original y solo se recorta cuando no existe esa categoría entre los beneficios públicos vigentes. Un valor solo de espacios no filtra. |
 | `GET /catalog/benefits/{benefit_id}/` | DTO público de un beneficio vigente |
 | `GET /catalog/benefits/{benefit_id}/media/` | Imagen del beneficio, revalidando interruptor, publicación y vigencia |
 | `GET /catalog/providers/{provider_id}/media/` | Imagen del prestador cuando tiene al menos un beneficio público vigente; revalida la misma política |

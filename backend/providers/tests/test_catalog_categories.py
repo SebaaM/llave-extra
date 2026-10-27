@@ -71,6 +71,45 @@ def test_categories_deduplicate_exact_values_keep_case_variants_and_exclude_blan
 
 
 @pytest.mark.django_db
+def test_raw_category_values_remain_distinct_and_filter_their_own_benefits():
+    plain_provider = add_provider("plain-food", "Comida")
+    plain_benefit = add_benefit(plain_provider, "Plain lunch")
+    spaced_provider = add_provider("spaced-food", " Comida ")
+    spaced_benefit = add_benefit(spaced_provider, "Spaced lunch")
+    client = APIClient()
+
+    categories = client.get("/api/v1/catalog/categories/")
+    plain = client.get("/api/v1/catalog/benefits/", {"category": "Comida"})
+    spaced = client.get("/api/v1/catalog/benefits/", {"category": " Comida "})
+
+    assert " Comida " in categories.data["results"]
+    assert "Comida" in categories.data["results"]
+    assert plain.data["count"] == 1
+    assert plain.data["results"][0]["id"] == str(plain_benefit.pk)
+    assert spaced.data["count"] == 1
+    assert spaced.data["results"][0]["id"] == str(spaced_benefit.pk)
+    assert client.get(
+        "/api/v1/catalog/benefits/", {"category": " Comida ", "search": "plain"}
+    ).data["count"] == 0
+
+
+@pytest.mark.django_db
+def test_trimmed_category_fallback_when_raw_category_is_absent_even_with_search():
+    food = add_provider("food", "Comida")
+    food_benefit = add_benefit(food, "Searchable lunch")
+    drinks = add_provider("drinks", "Bebida")
+    add_benefit(drinks, "Other lunch")
+    client = APIClient()
+
+    fallback = client.get("/api/v1/catalog/benefits/", {"category": "  Comida  ", "search": "searchable"})
+    whitespace_only = client.get("/api/v1/catalog/benefits/", {"category": "   "})
+
+    assert fallback.data["count"] == 1
+    assert fallback.data["results"][0]["id"] == str(food_benefit.pk)
+    assert whitespace_only.data["count"] == 2
+
+
+@pytest.mark.django_db
 def test_categories_are_empty_when_no_current_published_benefit_and_filter_values_are_usable():
     provider = add_provider("food", "Comida")
     benefit = add_benefit(provider, "Almuerzo")

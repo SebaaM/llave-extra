@@ -60,14 +60,17 @@ class CatalogBenefitsView(APIView):
         require_catalog()
         benefits = catalog_benefits()
         search = request.query_params.get("search", "").strip()
-        category = request.query_params.get("category", "").strip()
+        category = request.query_params.get("category", "")
+        trimmed_category = category.strip()
+        if trimmed_category:
+            if category != trimmed_category and not benefits.filter(provider__category__iexact=category).exists():
+                category = trimmed_category
+            benefits = benefits.filter(provider__category__iexact=category)
         if search:
             benefits = benefits.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
                 | Q(provider__name__icontains=search)
             )
-        if category:
-            benefits = benefits.filter(provider__category__iexact=category)
         benefits = benefits.order_by("provider__name", "title", "pk")
         paginator = CatalogPagination()
         page = paginator.paginate_queryset(benefits, request, view=self)
