@@ -1,5 +1,11 @@
 # Contexto y decisiones
 
+## Etapa administrativa autorizada — 24/10/2026
+
+Panel React administrativo y configuración implementados en `/gestion`, corte `affa345`, rama `feature/panel-admin`, dependiente de #11/#10 sin fusionar (consulta 26/10). Incluye gestión operativa y cuatro grupos de configuración; `/admin/` conserva su sesión técnica. Verificación: 274 pruebas PostgreSQL/Redis, 115 UI y 1 proxy; HTTP real y QR PNG aprobados con datos sintéticos. Migraciones locales aplicadas con respaldo y conteos conservados, sin semillas. Revisión integral y focal aprobadas. Entrega en [PR #12](https://github.com/SebaaM/llave-extra/pull/12), sin fusionar; CI vigente en sus comprobaciones. Analíticas E6 y compra del Cliente quedan fuera. El detalle de límites, decisiones y QA está en `docs/verification/09-panel-admin.md`; checklist y guía enlazados allí. Las pausas administrativas históricas siguientes no impiden esta etapa autorizada.
+
+Plan solicitado el 24/10/2026: auditor de seguridad para todas las features/tasks implementadas, con checklist/evidencia y subagentes correctores revisados independientemente. Ver [plan](docs/superpowers/plans/2026-10-24-auditoria-seguridad.md), [controles](docs/security/checklist.md) y [hallazgos/soluciones](docs/security/hallazgos.md). Esta entrega es documental; no inicia auditoría activa ni modifica el alcance pendiente E6/F3. El auditor deberá fijar un corte nuevo e incluir solo el panel Admin efectivamente implementado, sin asumir terminadas las tareas de su plan.
+
 Estado vigente al 24/10/2026: E5 backend/API/Django Admin entregado en [PR #11](https://github.com/SebaaM/llave-extra/pull/11), rama `feature/tienda-pagos` contra `develop`, sin fusionar y dependiente de #10. Producto `4c9a402` aprobado por revisión independiente y focal; 213 pruebas PostgreSQL/Redis y QA HTTP completos. Migraciones shop0001–0005 aplicadas al entorno local conservando los conteos previos. CI de producto aprobado; HEAD vigente en las comprobaciones del PR. Detenerse antes de E6 y la UI de tienda F3. Mercado Pago operativo permanece deshabilitado hasta sandbox. Los apartados siguientes conservan el historial de entregas y estados intermedios; evidencia vigente en `docs/verification/05-tienda-pagos.md`.
 
 ## Objetivo

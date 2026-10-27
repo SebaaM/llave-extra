@@ -9,7 +9,7 @@ ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").spl
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits", "shop",
+    "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits", "shop", "administration",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -49,7 +49,11 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.SessionJWTAuthentication"],
 }
-SPECTACULAR_SETTINGS = {"TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0"}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0",
+    "POSTPROCESSING_HOOKS": ["drf_spectacular.hooks.postprocess_schema_enums",
+                             "administration.schema.require_admin_patch_versions"],
+}
 JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", "")
 QR_SIGNING_KEY = os.environ.get("QR_SIGNING_KEY", "")
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")

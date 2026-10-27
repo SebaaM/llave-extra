@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, AuthCoordinationError, api, currentSessionVersion, hasPendingLogout, restoreSession, signOut, verifyEmailToken } from './api'
+import { ApiError, AuthCoordinationError, api, currentSessionVersion, hasPendingLogout, invalidatePrivateState, restoreSession, signOut, verifyEmailToken } from './api'
 import type { Consumption, Folder, Progress, Provider, User, Wallet } from './api'
 import { messageOf } from './shared'
 import { consumptionToken, referralToken, setReferralToken, verifyToken, setVerifyToken } from './qr-intent'
@@ -15,12 +15,15 @@ import { ConsumePage } from './ConsumptionPage'
 import { ProductLink } from './navigation'
 import { Workspace } from './workspace/Workspace'
 import { workspaceHome } from './workspace/data'
-import { openAdmin } from './workspace/documentNavigation'
+import { AdminWorkspace } from './admin/AdminWorkspace'
+import { checkAdminNavigation } from './admin/hooks'
+import { useSiteSettings } from './useSiteSettings'
 
 const logoutNotice = 'La sesión se quitó de este dispositivo, pero no pudimos confirmar su revocación en el servidor. Iniciá sesión de nuevo solo si querés continuar.'
 
 export default function ProductApp() {
   const [path, setPath] = useState(window.location.pathname)
+  const [search, setSearch] = useState(window.location.search)
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
   const [notice, setNotice] = useState(() => hasPendingLogout() ? logoutNotice : '')
@@ -34,6 +37,8 @@ export default function ProductApp() {
   const [pageError, setPageError] = useState('')
   const identityRef = useRef<number | null>(null)
   const selectedFolderRef = useRef('')
+  const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
+  const site = useSiteSettings()
 
   const stillCurrent = useCallback(
     (version: number, identity: number | null) => version === currentSessionVersion()
@@ -112,20 +117,32 @@ export default function ProductApp() {
   }, [clearPrivateData])
 
   useEffect(() => {
-    const update = () => {
+    const applyLocation = () => {
+      const next = `${window.location.pathname}${window.location.search}`
+      locationRef.current = next
       setPath(window.location.pathname)
+      setSearch(window.location.search)
       setSelectedProvider(null)
       setPageError('')
     }
+    const onPopState = () => {
+      const next = `${window.location.pathname}${window.location.search}`
+      if (locationRef.current.startsWith('/gestion') && next !== locationRef.current && !checkAdminNavigation()) {
+        window.history.pushState({}, '', locationRef.current)
+        return
+      }
+      applyLocation()
+    }
     const route = (event: Event) => {
       const target = (event as CustomEvent<string>).detail
+      if (locationRef.current.startsWith('/gestion') && target !== locationRef.current && !checkAdminNavigation()) return
       window.history.pushState({}, '', target)
-      update()
+      applyLocation()
     }
-    window.addEventListener('popstate', update)
+    window.addEventListener('popstate', onPopState)
     window.addEventListener('llave:navigate', route)
     return () => {
-      window.removeEventListener('popstate', update)
+      window.removeEventListener('popstate', onPopState)
       window.removeEventListener('llave:navigate', route)
     }
   }, [])
@@ -133,8 +150,8 @@ export default function ProductApp() {
   useEffect(() => {
     const heading = document.querySelector<HTMLElement>('#contenido h1')
     const title = heading?.textContent?.replace(/\s+/g, ' ').trim() || 'Beneficios para tu viaje'
-    document.title = `${title} · Llave Extra`
-  }, [path, selectedProvider, authReady, user])
+    document.title = `${title} · ${site.settings.site_name}`
+  }, [path, selectedProvider, authReady, user, site.settings.site_name, site.settings.home_title])
 
   useEffect(() => {
     let active = true
@@ -176,6 +193,7 @@ export default function ProductApp() {
 
   useEffect(() => {
     const handler = () => {
+      if (path.startsWith('/gestion') && !checkAdminNavigation()) return
       // Hide the current account's private state before starting network I/O.
       clearAccount()
       setPageError('')
@@ -192,6 +210,20 @@ export default function ProductApp() {
     }
     window.addEventListener('llave:logout', handler)
     return () => window.removeEventListener('llave:logout', handler)
+  }, [clearAccount, path])
+
+  useEffect(() => {
+    const handler = () => {
+      invalidatePrivateState()
+      clearAccount()
+      setNotice('Tu acceso administrativo cambió. Ingresá de nuevo si necesitás continuar.')
+      window.history.replaceState({}, '', '/ingresar')
+      locationRef.current = '/ingresar'
+      setPath('/ingresar')
+      setSearch('')
+    }
+    window.addEventListener('llave:admin-revoked', handler)
+    return () => window.removeEventListener('llave:admin-revoked', handler)
   }, [clearAccount])
 
   useEffect(() => {
@@ -220,8 +252,7 @@ export default function ProductApp() {
 
   useEffect(() => {
     if (!authReady || !user) return
-    if (user.role === 'ADMIN' && (path === '/espacio' || path === '/admin')) openAdmin(true)
-    else if (path === '/espacio') {
+    if (path === '/espacio' || (user.role === 'ADMIN' && path === '/admin')) {
       const target = workspaceHome(user)
       window.history.replaceState({}, '', target)
       window.dispatchEvent(new PopStateEvent('popstate'))
@@ -278,8 +309,8 @@ export default function ProductApp() {
     const target = current.role === 'TOURIST'
       ? consumptionToken ? '/consumo' : referralToken ? '/referencia' : '/mi-viaje'
       : workspaceHome(current)
-    if (current.role === 'ADMIN') { openAdmin(); return }
     window.history.pushState({}, '', target)
+    locationRef.current = target
     setPath(target)
   }
 
@@ -294,7 +325,7 @@ export default function ProductApp() {
   }
 
   const renderContent = () => {
-    if (isProductPublic) return <HomePage />
+    if (isProductPublic) return <HomePage settings={site.settings} />
     if (path === '/beneficios') return <CatalogPage />
     if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
     if (path === '/creditos-imagenes') return <CreditsPage />
@@ -340,7 +371,9 @@ export default function ProductApp() {
     return <main id="contenido" className="product-gate content-width"><h1>Esta sección no está disponible.</h1><a href="/">Volver a inicio</a></main>
   }
 
+  const inAdmin = user && authReady && user.role === 'ADMIN' && (path === '/gestion' || path.startsWith('/gestion/'))
+  if (inAdmin) return <AdminWorkspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} search={search} />
   const inWorkspace = user && authReady && ((user.role === 'PROVIDER' && (path === '/prestador' || path.startsWith('/prestador/'))) || (user.role === 'COLLABORATOR' && (path === '/colaborador' || path.startsWith('/colaborador/'))))
   if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} />
-  return <ProductShell user={shellUser}>{notice && path !== '/verificar' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
+  return <ProductShell user={shellUser} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
 }
