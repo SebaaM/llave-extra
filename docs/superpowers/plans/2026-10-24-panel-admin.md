@@ -1,107 +1,61 @@
-# Plan de implementación del panel administrativo
+# Plan del panel administrativo React
 
-> **Para los agentes:** habilidad requerida: Usar superpowers:subagent-driven-development. Implementación secuencial con revisión independiente por tarea; los implementadores no crean subagentes. Usar casillas (`- [ ]`) para registrar el avance.
+Pedido aprobado el 24/10/2026: implementar `/gestion` y la configuración del sitio, con subagentes y revisión independiente. Las analíticas se incorporan en otra etapa. [Diseño](../specs/2026-10-24-panel-admin-design.md), [contrato API](../../api.md), [checklist](../../verification/09-panel-admin-checklist.md) y [evidencia](../../verification/09-panel-admin.md).
 
-**Objetivo:** Entregar gestión React completa del Administrador y configuración efectiva del sitio, sin analíticas.
+## Alcance y restricciones
 
-**Arquitectura:** Un módulo Django `administration` expone DRF administrativo y configuración pública limitada, reutilizando el dominio E2–E5. Un espacio React `/gestion` consume contratos explícitos, con el transporte JWT existente. Auditoría, comandos idempotentes y precondiciones de escritura protegen los cambios.
+Django/DRF, PostgreSQL/Redis y React/TypeScript/Tailwind del monorepo; Docker local y dependencias bloqueadas. No usar SQLite para verificar dominio. Respetar `AGENTS.md` y los servicios E4/E5.
 
-**Tecnologías:** Django/DRF, PostgreSQL 17/Redis, React/TypeScript/Tailwind; Python 3.13.16/uv 0.11.3, Node 24.19.0/pnpm 11.22.0; Docker Compose.
+- React `/gestion`, API `/api/v1/admin/`; servidor exige cuenta activa, rol `ADMIN`, `is_staff` e `is_superuser`. `/admin/` mantiene sesión técnica independiente.
+- Cuatro roles; `TOURIST` se muestra como Cliente. El panel no asigna privilegios administrativos, cambia roles, verifica emails ni establece contraseñas de terceros. Las invitaciones reutilizan el restablecimiento existente, con envío pendiente/fallido explícito y sin worker nuevo.
+- DTO público `/api/v1/site-settings/`: únicamente `site_name`, `home_title`, `home_description`, `footer_text`, `contact_email`, `whatsapp_url`, `instagram_url`. Texto plano y enlaces validados; sin secretos, configuración privada, QR ni historial.
+- Selecciones concretas por `FolderBenefit`; `FolderProvider` no autoriza. Locks perfil → prestador → beneficio; perfiles con joins usan `of=("self",)`. Un usuario Prestador administra como máximo un negocio.
+- Operaciones financieras por servicios E4/E5, con locks User → Wallet → Order → Product por PK. Historia y snapshots protegidos; stock por delta y motivo, sin edición de saldo absoluto. HTTP remoto fuera de atomic; pagos deshabilitados por defecto.
+- Precondiciones HMAC detectan cambios del registro y relaciones/credenciales relevantes. GET sin locks; escrituras recalculan bajo locks del dominio. Versión obsoleta devuelve 409 sin descartar datos locales.
+- Comandos idempotentes por actor/acción/clave, con fingerprint HMAC y auditoría atómica. Un reintento incierto conserva clave y carga; nueva acción requiere ficha actual. No persistir PIN, QR, tokens ni cuerpos remotos en respuestas, auditoría o almacenamiento del navegador.
+- Limpiar contenido privado y respuestas tardías ante revocación/cambio de sesión. Medios y QR exigen autorización actual; liberar blobs.
+- Rama `feature/panel-admin`, PR hacia `develop`, dependiente de #11/#10. Commits Conventional Commits en español; sin fusiones ni force push. Preservar trabajo ajeno y usar datos sintéticos aislados para QA.
 
-**Diseño:** `docs/superpowers/specs/2026-10-24-panel-admin-design.md` (aprobado).
+## Tarea 1: Configuración y fundamentos
 
-## Restricciones globales
+- [x] Implementar app `administration`, permisos, configuración, precondiciones, comandos y auditoría.
+- [x] Exponer cuatro grupos con guardado independiente: General, Catálogo/red, Créditos y Tienda/retiro. Proveedor de pagos de solo lectura; conservar snapshots históricos.
+- [x] Defaults sin escrituras en GET, validación estricta, DTO público limitado y errores saneados.
+- [x] Probar permisos por rol/flags, conflictos, replay, rollback y concurrencia sobre PostgreSQL/Redis.
+- [x] Aprobar revisión independiente y corrección de versiones malformadas.
 
-- Analíticas E6, UI de compra/canje del Cliente, cobros reales, sandbox externo, despliegue y scheduler permanecen pendientes.
-- Django + DRF, PostgreSQL, React + TypeScript + Tailwind; Docker local. No usar SQLite para validar dominio o integración.
-- Existen exactamente cuatro roles: Cliente (`TOURIST`), Colaborador (`COLLABORATOR`), Prestador (`PROVIDER`) y Administrador (`ADMIN`). El registro público crea solo `TOURIST` sin privilegios.
-- La autorización administrativa requiere usuario activo, rol `ADMIN`, `is_staff` e `is_superuser`, en cada endpoint/acción/medio.
-- `FolderBenefit` es la única selección canónica. Preservar locks perfil → prestador → beneficio; locks de perfil con joins usan `of=("self",)`. Un usuario Prestador tiene como máximo un negocio.
-- Tienda: locks User → Wallet → Order → Product ordenados por PK; reutilizar E4/E5. HTTP fuera de atomic, historia protegida, stock por delta con motivo, payment_confirmed monotónica, refund solo por GET autoritativo.
-- Backoffice en español; `TOURIST` se muestra como Cliente. No versionar secretos, `.env`, QR/PIN ni cuentas reales.
-- GitFlow `feature/panel-admin` → `develop`, dependiente de #11/#10; no merges ni force push. Conservar documentos locales preexistentes. Commits Conventional Commits con descripción en español.
+## Tarea 2: Gestión operativa
 
-## Focos de revisión
+Recursos: usuarios, prestadores, beneficios, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas de créditos, movimientos de stock y operaciones de pago. Sus campos, filtros y acciones exactos se mantienen en el contrato API.
 
-1. Ediciones concurrentes desde React, APIs de Prestador y Django Admin: precondición obsoleta devuelve 409 sin pérdida de cambios.
-2. Timeout/replay de comandos sensibles: mismo resultado/efecto único, clave reutilizada con otra carga devuelve 409; QR/PIN nunca persistidos en respuestas/auditoría.
-3. Revocación o cambio de identidad mientras hay listas, imágenes o escrituras pendientes: no repoblar ni mostrar información de la sesión previa.
-4. Publicación/configuración: cambios visibles en consumidores reales, interruptor público no rompe carpetas/consumos y snapshots anteriores se conservan.
-5. Invitación SMTP fallida, medios no disponibles y errores parciales: informar estado real sin éxito inventado, sin filtrar tokens ni guardar cambios incompletos.
+- [x] Listas paginadas y detalles explícitos; alta/edición permitidas por recurso, sin mass assignment ni edición de historia.
+- [x] Invitaciones, asignación de usuarios Prestador, PIN/QR, habilitación y selección de beneficios del Colaborador.
+- [x] Consumos/créditos y acciones de tienda mediante servicios existentes; imágenes y QR privados dedicados.
+- [x] Dashboard operativo con contadores y enlaces a filtros reales, bandejas y actividad; sin analíticas.
+- [x] Probar permisos de acciones/medios, unicidad, versiones relacionadas, idempotencia, carreras y contrato OpenAPI; revisión independiente aprobada por tarea.
 
-## Decisiones de interfaz y concurrencia
+La lista de pedidos usa un resumen; el detalle conserva líneas, retiro e historia. La paginación independiente de historias extensas y selecciones se difiere y queda documentada como limitación de escala.
 
-Base verificada: `a584e99`, PR #11 y #10 abiertos según GitHub al inicio. Se crea rama desde E5 existente para conservar dependencias; no se integran PRs.
+## Tarea 3: React e integración pública
 
-Crear app Django `administration` con archivos por responsabilidad, no un viewset universal sin permisos/campos explícitos. Prefijo `/api/v1/admin/`; público `GET /api/v1/site-settings/`. Listas `{count,next,previous,results}`, 20 por defecto y máximo 100; `page`, `search`, filtros de recursos, orden estable por PK como desempate. El detalle editable incluye `version`; PATCH exige esa precondición en cuerpo, multipart también, y devuelve 409 si falta/no coincide. Las altas no exigen versión.
+- [x] Ingreso ADMIN y navegación a `/gestion`, menú lateral adaptable, teclado y presentación en español.
+- [x] Búsqueda, filtros/página en URL, fichas, formularios, relaciones por nombre, acciones con confirmación/motivo y estados de carga/error/vacío reales.
+- [x] Configuración con cuatro pestañas, vista previa de red y efectos reales en consumidores públicos; conservar logo e identidad visual.
+- [x] Guardas de cambios locales, conflictos y recuperación de comandos inciertos sin repetir efectos; sesión y respuestas tardías protegidas.
+- [x] Aprobar pruebas, lint, tipos, build y revisión independiente por tarea.
+- [x] Cerrar la ola final conjunta: QR PNG, errores por campo, protección durante guardado y ajustes menores de uso; verificar regresiones y revisión focal.
 
-La versión es un HMAC determinista del estado persistido relevante (incluidos nombres de archivos), calculado también desde objetos recargados bajo locks antes de escribir. Detecta cambios por cualquier ruta, sin timestamps que dependan de hooks omitidos. Para Prestador y Colaborador, la versión administrativa incorpora además el estado relevante de membresías/credencial y selecciones FolderBenefit, respectivamente; lectura y comprobación usan el mismo digest y se recalculan bajo los locks del dominio. Una versión anterior con clave nueva devuelve 409 tras cambios relacionados; un replay con la clave original conserva su resultado. Esta precisión del gate Task2 amplía la firma de columnas del helper general sin modificar los contratos de configuración. Nunca incluir claves/hashes sensibles en DTO; la firma usa secreto del servidor y recurso/PK. Para comandos de estado, revalidar en servicios y usar `Idempotency-Key` obligatorio (máximo 128), actor + acción + clave únicos, huella de carga con HMAC; fila dedicada bloqueada antes de ejecutar dominio, sin bloquear fila de actor como lock global. Respuestas persistidas solo sanitizadas; consultas de QR separadas y actuales. Guardar resultado, efectos y auditoría local en atomic. Comandos de servicios que agenden operaciones remotas no hacen HTTP.
+## Tarea 4: Verificación y entrega
 
-La auditoría registra nombres de campos modificados, sin valores privados. Configuración/modelos faltantes retornan defaults sin escribir en GET. En PATCH crear singleton y verificar versión de defaults de forma transaccional. Validar `full_clean`/serializadores estrictos y constraints; 400 por campos extra, 409 por conflictos protegidos. Guardas de privilegios antes de accesos a recursos.
+- [x] Migrar primero en QA aislado y verificar API real, roles y configuración con fixtures sintéticos.
+- [x] Aplicar migraciones locales con respaldo previo y conteos conservados, sin semillas ni cambios de credenciales. Índice del respaldo comprobado; restauración no ensayada.
+- [x] QA nativa de ingreso, dashboard/listas, guardado/restauración de General, portada pública, menú por teclado y filtro de stock a 320 px.
+- [x] Complementar con componentes y HTTP real para configuración, edición, stock, decimales y QR PNG; distinguirlo de navegador nativo.
+- [x] Ejecutar revisión integral de rama y asignar una única ola de correcciones.
+- [x] Registrar comprobaciones del corte corregido y resultado de una revisión focal; no cerrar con fallos pendientes de seguridad/concurrencia.
+- [x] Simplificar/revisar Markdown, actualizar contexto y pendientes y comprobar ausencia de información sensible y archivos temporales versionados. Commits propios por producto/documentación.
+- [ ] Publicar PR a `develop`, consultar CI y adjuntar enlace; sin fusionar.
 
-## Tarea 1: Configuración del sitio y fundamentos administrativos
+## Límites de aceptación
 
-**Archivos:** crear `backend/administration/{__init__,apps,models,permissions,concurrency,commands,serializers,views,urls}.py`, migraciones y `tests/test_settings.py`; modificar `backend/config/settings/base.py`, `backend/config/urls.py`, `docs/api.md`. Dividir serializers/views en paquetes si crecen, manteniendo responsabilidades claras.
-
-**Interfaces:** produce `IsProgramAdmin`; helpers de versión/precondición; `run_command(actor, action, key, payload, callback)` (API exacta documentada en reporte); `record_audit`; modelos `SiteSettings`, `AdminAudit`, `AdminCommand`; DTOs y endpoints siguientes.
-
-- `GET /api/v1/site-settings/`: `site_name`, `home_title`, `home_description`, `footer_text`, `contact_email`, `whatsapp_url`, `instagram_url` exclusivamente. Defaults de portada actual; contactos vacíos.
-- `GET/PATCH /api/v1/admin/settings/{general,catalog,credits,shop}/`: campos del grupo más `version`. General usa DTO público; catálogo campos existentes `enabled,network_title,network_layout,network_theme,network_background,network_page_size,network_interval_seconds`; créditos `base_reward,target_visits`; retiro `pickup_name,pickup_address,pickup_hours,pickup_enabled` y `payment_provider` readonly.
-- `GET /api/v1/admin/activity/`: lista auditada con filtros `search,actor,action,resource`; DTO `id,actor_email,action,resource,object_id,changed_fields,reason,created_at`.
-- Helpers de `StrictSerializer`/errores sin filtrar validaciones internas. Configuraciones requieren validación de URL HTTPS con dominio exacto permitido (`wa.me`, `api.whatsapp.com`, `www.instagram.com`, `instagram.com`), sin userinfo ni hosts parecidos; email válido y texto plano limitado.
-
-Pasos:
-- [x] Escribir pruebas focales RED de permisos (incluidas flags parciales), GET sin escrituras, configuración efectiva y DTO público restringido, validación, precondiciones y auditoría sin secretos.
-- [x] Implementar los modelos/helpers/configuración; conservar servicios/locks de política y snapshot de retiro. Validar formulario stale luego de escritura fuera del panel.
-- [x] Probar comandos sintéticos bajo concurrencia/replay y rechazo de carga diferente, atomicidad/rollback. No guardar PIN/QR ni siquiera en fingerprint sin HMAC.
-- [x] Verificar en Docker aislado `pytest -q administration/tests/test_settings.py`, suite backend completa, Ruff, `makemigrations --check --dry-run`, OpenAPI `--validate --fail-on-warn`; reportar comandos y resultados. No modificar la BD principal.
-- [x] Autorrevisión, commit solo archivos propios y reporte `task-1-report.md` con APIs/helpers exactos para Task 2/3. Gate independiente antes de Task 2.
-
-## Tarea 2: API de gestión operativa completa
-
-**Archivos:** crear módulos `backend/administration/{resources,resource_serializers,operations,media,dashboard}.py` (o paquetes con nombres equivalentes por responsabilidad), `tests/test_management.py`, `tests/test_commands.py`; extender `urls.py`, `docs/api.md` y fundamentos solo si es necesario.
-
-**Interfaces:** consume Task 1, produce contrato documentado antes de Task 3. Recursos bajo `/api/v1/admin/`: `users`, `providers`, `benefits`, `collaborators`, `consumptions`, `wallets`, `adjustments`, `products`, `orders`, `cancellations`, `credit-rules`, `stock-adjustments`, `payment-operations`. List/detail `/<resource>/[<id>/]`; POST/PATCH solo operaciones de alta/edición permitidas por spec, sin DELETE genérico. Lecturas con DTO explícito y sin payloads/historia editable.
-
-- `users`: campos `id,email,first_name,last_name,role,is_active,email_verified,version`; alta solo TOURIST/PROVIDER/COLLABORATOR con contraseña inutilizable. Editar nombres/actividad (no self-disable, no editar otro ADMIN desde este flujo), desactivar revoca AuthSession; roles y flags readonly. `POST users/<id>/invite/` con key, rate limit y SMTP fuera de atomic mediante callback de commit; reutilizar reset E2. Respuesta distingue fallo de envío y permite reenvío explícito con nueva key sin secretos. Email verificado sigue su flujo E2.
-- `providers`, `benefits`, `products`: DTO completo operativo según modelos, `image_url` administrativo y `version`; alta/edición multipart, medios privados GET `/<resource>/<id>/image/`. Producto stock readonly; delta por comando. Borradores no se excluyen de gestión. Beneficio no cambia prestador después de alta; prestador conserva demo/provenance y productos no convierten datos demo en reales.
-- `collaborators`: perfil con usuario readonly después de alta, enabled/qr_version readonly en formularios, presentación red y selecciones concretas. `GET collaborators/<id>/recommendations/`; comandos agregar/quitar seleccionando `benefit_id`; habilitación y rotación por métodos existentes.
-- `POST <resource>/<id>/actions/<action>/` acepta body estricto e `Idempotency-Key`; acciones `providers`: assign-user/unassign-user (user_id; reassignment explícita), set-pin (pin), rotate-qr; `collaborators`: enable/disable/rotate-qr/add-benefit/remove-benefit; `consumptions`: annul (reason); `adjustments`: resolve (reason,resolution); `products`: adjust-stock (reason,delta); `orders`: prepare/deliver/refund (reason); `cancellations`: approve/reject (reason); `payment-operations`: retry (reason). `credit-rules` alta/edición y eliminación explícita por `remove` conservan métodos actuales. Acciones que modifican filas de formularios incluyen precondición vigente donde corresponda, además de idempotencia.
-- QR dedicados `GET providers/<id>/qr/`, `GET collaborators/<id>/qr/` JSON de URL vigente y rutas `qr.png`; no QR en listas ni comandos persistidos; `no-store`. La inicialización de PIN/credencial valida negocio y se audita.
-- `GET dashboard/`: `{counts,queues,settings,recent_activity,refreshed_at}` con keys/filtros exactos en docs API/reporte; consulta acotada con enlaces de filtro que React resuelve. Operativos actuales, no analítica.
-- Pedidos detail incluye líneas, pickup_snapshot, auditoría sanitizada, cancelaciones y operaciones recuperables sanitizadas; billeteras detail movimientos paginables. Historial/read-only no se acepta por mass assignment. Detalles permiten cliente/provider/collaborator identificables sin N+1.
-
-Pasos:
-- [x] RED focal: roles/permisos de acciones y archivos, privilegios por campos extra, self-disable, activación/invitación, unicidad de membresía y selección beneficio específica.
-- [x] Implementar listas y detalles con filtros estado/rol/actividad/negocio/fechas aplicables y endpoints de medios/QR privados; no confiar en IDs del cliente para autorización.
-- [x] Implementar comandos invocando E4/E5 y locks actuales; cubrir duplicate delta, rotate/replay/QR vigente, anulación/ajuste, preparación/entrega/cancelación/refund/retry, rollback y replay conflictivo. Probar concurrencia entre comando y consumidor de dominio relevante.
-- [x] Cubrir configuración/DTO dashboard en estados vacíos y poblados, consultas acotadas, imagen inválida/ausente, SMTP fallido y reenvío. Los conflictos devuelven estado real sin mutaciones parciales.
-- [x] Verificar suite backend completa PostgreSQL/Redis, Ruff, drift, OpenAPI; actualizar docs/api.md con shapes/acciones exactos, autorrevisar, commit y reporte Task 2. Gate independiente antes de Task 3.
-
-## Tarea 3: Panel React, configuración pública e integración
-
-**Archivos:** crear `frontend/src/product/admin/` con `AdminWorkspace.tsx`, `api.ts`, `types.ts`, `hooks.ts`, `UI.tsx`, `Dashboard.tsx`, `ResourceList.tsx`, módulos/fichas/formularios por área, `Settings.tsx`, `admin.css`, pruebas pertinentes; crear hook/contexto público de configuración. Modificar `ProductApp.tsx`, `Layout.tsx`, `HomePage.tsx`, workspace `data.ts`/navegación y pruebas afectadas. Usar DTOs reales Tasks 1/2, sin endpoints ficticios.
-
-**Interfaces:** rutas `/gestion`, `/gestion/{usuarios,prestadores,beneficios,colaboradores,consumos,billeteras,ajustes,productos,pedidos,cancelaciones,actividad,configuracion,cuenta}`; alta `/nuevo`, detalle `/<id>`, edición dentro de detalle o `/editar`. Configuración tabs `general,catalogo,creditos,retiro` en query. Filtros y page query sobreviven navegación atrás/recarga.
-
-Pasos:
-- [x] RED UI: routing por rol, login ADMIN a `/gestion`, sin APIs de Cliente, 401/403 limpia todo, fetch viejo no repuebla, formularios stale409 preservan texto para recargar, idempotency key estable ante timeout/reintento.
-- [x] Implementar shell consistente con workspace, sidebar móvil/teclado, dashboard clicable con refresh, tablas paginadas/filtradas y fichas de todos los recursos operativos. Estados reales de carga/error/vacío; no usar valores inventados ni solo enlaces a Django.
-- [x] Formularios explícitos para toda alta/edición/acción de Tasks1/2; QR actual con descarga segura, PIN password jamás persistido; formularios financieros con motivo y confirmación. Usar `api` existente, FormData sin Content-Type manual, AbortController/session version y limpiar blobs. Cambios sin guardar protegidos para navegación interna y cierre/recarga; errores de envío SMTP diferenciados.
-- [x] Configuración con cuatro tabs y guardados independientes, vista previa red con opciones reales; reglas por prestador. Versiones y conflictos reales. Payment provider readonly y límites de snapshots explicados.
-- [x] Conectar configuración pública a título/descripcion portada, metadatos, marca textual/accesible y pie/contactos; defaults iguales a sitio actual si no hay configuración, fallo comunicado sin simular guardado. Mantener logo fijo y colores/tipos existentes. No disparar APIs administrativas desde páginas públicas.
-- [x] Pruebas enfocadas en acciones e invariantes (no mirrors del JSX), suite frontend completa, proxy, lint, tipos y build con pnpm. QA/bugs se documentan; autorrevisión, commit y reporte Task 3. Gate independiente.
-
-## Tarea 4: Integración, QA, documentación y entrega
-
-**Responsable:** orquestador; fixes de producto se devuelven al implementador correspondiente y se revisan. Archivos: `docs/verification/09-panel-admin.md`, `CONTEXT.md`, `ToDo.md`, `AGENTS.md`, `docs/plans/00-roadmap.md`, documentación de uso/contrato si hace falta.
-
-- [ ] Aplicar migraciones primero en proyecto QA aislado y probar upgrade sin pérdida de datos; no seed ni rotar cuentas existentes de la base principal. Validar HTTP real E2+admin y regresiones de roles/configuración pública con fixtures sintéticos.
-- [ ] QA real escritorio/320 px por navegador: login, dashboard, filtros, configuración, alta/edición, QR/PIN, selección, delta y pedidos sintéticos. Nunca guardar screenshots con QR/PIN o cuentas reales.
-- [ ] Ejecutar comprobaciones finales pertinentes sobre código final; conservar evidencia y límites externos. Actualizar estado/roadmap/instrucciones y documento aprobado, distinguiendo lo implementado, probado y pendiente.
-- [ ] Revisión independiente de toda la rama en modelo de juicio; corregir hallazgos con una ola y re-review focal, según skill. No declarar entrega completa con fallos pendientes de seguridad/concurrencia.
-- [ ] Commit documental, push, PR a develop con dependencia #11/#10 y CI consultado. Adjuntar PR al chat; no fusionar. Aplicación local de migraciones solo tras revisión con respaldo/preflight sin seed; informar si no se aplica por limitación real.
-
-## Autorrevisión del plan
-
-Cobertura: configuración/seguridad/comandos comunes Task1; todo dominio y bandejas Task2; navegación/operaciones/UI pública Task3; QA/evidencia/entrega Task4. Las interfaces de tareas 1→2→3 se fijan en docs/api.md antes de dispatch posterior. Sin implementadores simultáneos ni ediciones compartidas durante un gate. Plan de ejecución solicitado explícitamente por el usuario; no requiere otra ronda de confirmación para implementar.
+QA nativa pendiente para archivos, QR y confirmaciones sensibles: la herramienta detuvo el intento adicional y no se declara esa cobertura. Las suites y pruebas HTTP tienen su alcance documentado. Analíticas E6, compra/canje del Cliente, sandbox externo, scheduler y despliegue productivo permanecen fuera de esta entrega. Un adaptador simulado no valida el proveedor externo.

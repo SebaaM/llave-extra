@@ -36,11 +36,16 @@ Actualizado el 26/10/2026. Estado real de la etapa; las casillas pendientes no r
 - [x] Revisar ingreso, dashboard, listados, formulario y diseño de 320 px en navegador.
 - [x] Comprobar guardados, stock, menú y centavos con React y API HTTP real: cinco pruebas aprobadas.
 - [x] Comprobar errores, permisos, conflictos y cambios de sesión mediante las suites y QA HTTP.
-- [ ] Completar clics y archivos en navegador nativo, afectados por el bloqueo del diálogo de la herramienta.
-- [x] Ejecutar las comprobaciones pertinentes del producto integrado: 266 backend, 100 interfaz, 1 proxy y 5 integradas.
-- [ ] Cerrar revisión independiente de toda la rama.
+- [x] Guardar y restituir General por navegador; comprobar portada pública, menú por teclado a 320 px y filtro real de stock.
+- [ ] Completar comprobación nativa de archivos, QR y confirmaciones operativas; las pruebas de componentes/API se registran por separado.
+- [x] Verificar el corte corregido: 274 backend, 115 interfaz y 1 proxy; HTTP real y QR PNG aprobados.
+- [x] Ejecutar revisión integral y cerrar su única ola: tres importantes y nueve menores resueltos; deuda de escala mitigada y documentada.
+- [x] Aprobar revisión focal de la única ola de correcciones finales.
+- [x] Corregir y revisar QR actual, validación por campo y edición durante guardados pendientes.
+- [x] Cerrar correcciones finales de navegación, accesibilidad, recarga, cancelaciones e identidad de actividad.
 - [x] Aplicar migraciones locales con respaldo y conteos conservados, sin cargar semillas.
-- [ ] Actualizar contexto, pendientes, instrucciones y contrato.
+- [x] Actualizar contexto, pendientes, instrucciones y contrato; simplificar Markdown y revisar datos sensibles.
+- [x] Excluir todos los `*.diff` de Git y comprobar que ninguno esté versionado.
 - [ ] Publicar y adjuntar el PR hacia develop y comprobar CI, sin fusionarlo.
 
 Las analíticas, la tienda del Cliente, el sandbox externo de pagos y el despliegue productivo quedan para sus etapas correspondientes.
