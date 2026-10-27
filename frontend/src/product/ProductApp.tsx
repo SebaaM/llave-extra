@@ -151,7 +151,7 @@ export default function ProductApp() {
     const heading = document.querySelector<HTMLElement>('#contenido h1')
     const title = heading?.textContent?.replace(/\s+/g, ' ').trim() || 'Beneficios para tu viaje'
     document.title = `${title} · ${site.settings.site_name}`
-  }, [path, selectedProvider, authReady, user, site.settings.site_name])
+  }, [path, selectedProvider, authReady, user, site.settings.site_name, site.settings.home_title])
 
   useEffect(() => {
     let active = true

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ApiError, currentSessionVersion } from '../api'
 import { ProductLink } from '../navigation'
@@ -7,6 +7,8 @@ import { saveSettings, settings } from './api'
 import { useAdminLoad, useDirtyGuard } from './hooks'
 import type { Field } from './types'
 import { LoadState, Status } from './UI'
+import { emptyErrors, fieldErrorProps, formErrors } from './validation'
+import { ErrorSummary, FieldError } from './ValidationErrors'
 
 const general: Field[] = [
   { name: 'site_name', label: 'Nombre del sitio', required: true }, { name: 'home_title', label: 'Título de portada', required: true },
@@ -50,16 +52,18 @@ function SettingsForm({ tab, data, onSaved }: { tab: Tab; data: Record<string, u
   const [baseline, setBaseline] = useState<Record<string, unknown>>(() => formValues(tab, data))
   const [version, setVersion] = useState(data.version)
   const [saveError, setSaveError] = useState('')
+  const [errors, setErrors] = useState(emptyErrors)
+  const prefix = useId()
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const dirty = JSON.stringify(values) !== JSON.stringify(baseline)
-  useDirtyGuard(dirty)
+  useDirtyGuard(dirty || saving)
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (saving) return
     const body: Record<string, unknown> = { version }
     for (const field of tab.fields) if (JSON.stringify(values[field.name]) !== JSON.stringify(baseline[field.name])) body[field.name] = values[field.name]
-    setSaving(true); setSaved(false); setSaveError('')
+    setSaving(true); setSaved(false); setSaveError(''); setErrors(emptyErrors())
     const session = currentSessionVersion()
     try {
       const next = await saveSettings<Record<string, unknown>>(tab.api, body)
@@ -67,23 +71,28 @@ function SettingsForm({ tab, data, onSaved }: { tab: Tab; data: Record<string, u
       const form = formValues(tab, next)
       setValues(form); setBaseline(form); setVersion(next.version); onSaved(next); setSaved(true)
       if (tab.key === 'general') window.dispatchEvent(new Event('llave:site-settings-changed'))
-    } catch (cause) { if (session === currentSessionVersion()) setSaveError(cause instanceof ApiError && cause.status === 409 ? 'Esta configuración cambió desde que la abriste. Tus datos siguen aquí; compará con la versión actual antes de guardar.' : messageOf(cause)) }
+    } catch (cause) {
+      if (session !== currentSessionVersion()) return
+      if (cause instanceof ApiError && cause.status === 409) setSaveError('Esta configuración cambió desde que la abriste. Tus datos siguen aquí; compará con la versión actual antes de guardar.')
+      else setErrors(formErrors(cause, tab.fields.map(field => field.name)))
+    }
     finally { if (session === currentSessionVersion()) setSaving(false) }
   }
   const replaceWithCurrent = async () => {
+    if (saving) return
     if (dirty && !window.confirm('Se perderán tus cambios. ¿Querés cargar la configuración actual?')) return
-    setSaving(true); setSaveError('')
+    setSaving(true); setSaveError(''); setErrors(emptyErrors())
     const session = currentSessionVersion()
     try { const next = await settings<Record<string, unknown>>(tab.api, new AbortController().signal); if (session !== currentSessionVersion()) return; const form = formValues(tab, next); setValues(form); setBaseline(form); setVersion(next.version); onSaved(next) }
     catch (cause) { if (session === currentSessionVersion()) setSaveError(messageOf(cause)) }
     finally { if (session === currentSessionVersion()) setSaving(false) }
   }
-  return <form className="admin-panel admin-form" onSubmit={submit}><div className="admin-form-heading"><div><p className="eyebrow">CONFIGURACIÓN</p><h2>{tab.label}</h2><p>{tab.note}</p></div></div><div className="admin-form-grid">{tab.fields.map(field => <label key={field.name} className={field.kind === 'textarea' ? 'admin-wide' : ''}>{field.label}{field.kind === 'textarea' ? <textarea rows={4} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} /> : field.kind === 'select' ? <select value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select> : field.kind === 'boolean' ? <span className="admin-check"><input type="checkbox" checked={Boolean(values[field.name])} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.checked }))} />{values[field.name] ? 'Sí' : 'No'}</span> : <input type={field.kind ?? 'text'} required={field.required} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: field.kind === 'number' ? Number(event.target.value) : event.target.value }))} />}</label>)}</div>
+  return <form className="admin-panel admin-form" onSubmit={submit}><div className="admin-form-heading"><div><p className="eyebrow">CONFIGURACIÓN</p><h2>{tab.label}</h2><p>{tab.note}</p></div></div><div className="admin-form-grid">{tab.fields.map(field => <div key={field.name} className={field.kind === 'textarea' ? 'admin-field admin-wide' : 'admin-field'}><label htmlFor={`${prefix}-${field.name}`}>{field.label}</label>{field.kind === 'textarea' ? <textarea {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={saving} rows={4} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} /> : field.kind === 'select' ? <select {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={saving} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select> : field.kind === 'boolean' ? <span className="admin-check"><input {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={saving} type="checkbox" checked={Boolean(values[field.name])} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.checked }))} />{values[field.name] ? 'Sí' : 'No'}</span> : <input {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={saving} type={field.kind ?? 'text'} required={field.required} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: field.kind === 'number' ? Number(event.target.value) : event.target.value }))} />}<FieldError errors={errors} name={field.name} prefix={prefix} /></div>)}</div>
       {tab.key === 'catalogo' && <NetworkPreview values={values} />}
       {tab.key === 'creditos' && <p>Las reglas por prestador se administran en <ProductLink href="/gestion/reglas-creditos">Reglas de créditos →</ProductLink></p>}
       {tab.key === 'retiro' && <p>Modo de pagos: <strong>{data.payment_provider === 'disabled' ? 'Deshabilitado' : data.payment_provider === 'fake' ? 'Demostración' : String(data.payment_provider)}</strong>. Se consulta aquí y no se cambia desde este formulario.</p>}
-      {saveError && <Status error>{saveError}</Status>}{saved && <Status>Configuración guardada.</Status>}
-      <div className="admin-actions"><button className="button button-orange" disabled={!dirty || saving}>{saving ? 'Guardando…' : 'Guardar este grupo'}</button><button type="button" className="button button-ghost" onClick={() => void replaceWithCurrent()}>{dirty ? 'Descartar cambios y cargar versión actual' : 'Actualizar desde el servidor'}</button></div>
+      <ErrorSummary errors={errors} />{saveError && <Status error>{saveError}</Status>}{saved && <Status>Configuración guardada.</Status>}
+      <div className="admin-actions"><button className="button button-orange" disabled={!dirty || saving}>{saving ? 'Guardando…' : 'Guardar este grupo'}</button><button type="button" disabled={saving} className="button button-ghost" onClick={() => void replaceWithCurrent()}>{dirty ? 'Descartar cambios y cargar versión actual' : 'Actualizar desde el servidor'}</button></div>
     </form>
 }
 

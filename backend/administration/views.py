@@ -43,7 +43,8 @@ def validate_model(instance):
     except DjangoValidationError as exc:
         # Do not echo model values, constraint SQL or validators' private context.
         fields = list(exc.message_dict) if hasattr(exc, "message_dict") else ["non_field_errors"]
-        raise ValidationError({name: ["Valor inválido o conflicto de configuración."] for name in fields}) from None
+        raise ValidationError({"non_field_errors" if name == "__all__" else name:
+                               ["Valor inválido o conflicto de configuración."] for name in fields}) from None
 
 
 class SettingsView(APIView):
@@ -134,14 +135,16 @@ class ActivityView(APIView):
                                            | Q(resource__icontains=search) | Q(reason__icontains=search))
             order_rows = order_rows.filter(Q(actor__email__icontains=search) | Q(action__icontains=search)
                                            | Q(reason__icontains=search))
-        fields = ("id", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at")
-        admin_rows = admin_rows.annotate(actor_email=F("actor__email")).values(*fields)
+        fields = ("id", "source", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at")
+        admin_rows = admin_rows.annotate(actor_email=F("actor__email"),
+                                         source=Value("admin", output_field=CharField())).values(*fields)
         order_rows = order_rows.annotate(
+            source=Value("order", output_field=CharField()),
             actor_email=F("actor__email"), resource=Value("orders", output_field=CharField()),
             object_id=Cast("order_id", output_field=CharField()),
             changed_fields=Value([], output_field=JSONField()),
         ).values(*fields)
-        combined = admin_rows.union(order_rows, all=True).order_by("-created_at", "-id")
+        combined = admin_rows.union(order_rows, all=True).order_by("-created_at", "-id", "source")
         paginator = AdminPagination()
         page = paginator.paginate_queryset(combined, request, view=self)
         return paginator.get_paginated_response(page)

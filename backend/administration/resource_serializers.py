@@ -107,6 +107,21 @@ class BenefitWriteSerializer(StrictModelSerializer):
         fields = ("provider", "title", "description", "conditions", "valid_from", "valid_until", "image",
                   "status")
 
+    def validate(self, attrs):
+        def current(name, default=None):
+            return attrs.get(name, getattr(self.instance, name, default))
+
+        errors = {}
+        start, end = current("valid_from"), current("valid_until")
+        if start and end and start > end:
+            errors["valid_from"] = ["La fecha inicial no puede ser posterior a la fecha final."]
+            errors["valid_until"] = ["La fecha final no puede ser anterior a la fecha inicial."]
+        if current("status") == "PUBLISHED" and not current("conditions", "").strip():
+            errors["conditions"] = ["Completá las condiciones antes de publicar el beneficio."]
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
 
 class BenefitPatchRequestSerializer(BenefitWriteSerializer):
     version = serializers.CharField(required=True, min_length=64, max_length=64)
@@ -130,6 +145,9 @@ class CollaboratorReadSerializer(VersionedReadSerializer):
 
 
 class CollaboratorWriteSerializer(StrictModelSerializer):
+    network_page_size = serializers.IntegerField(min_value=10, max_value=15, required=False)
+    network_interval_seconds = serializers.IntegerField(min_value=8, max_value=60, required=False)
+
     class Meta:
         model = CollaboratorProfile
         fields = ("user", "network_title", "network_layout", "network_theme", "network_background",
@@ -252,6 +270,16 @@ class PaymentOperationReadSerializer(serializers.ModelSerializer):
         model = PaymentOperation
         fields = ("id", "order", "kind", "state", "attempts", "available_at", "lease_until",
                   "generation", "last_code", "created_at")
+
+
+class OrderSummarySerializer(serializers.ModelSerializer):
+    state = serializers.CharField(read_only=True)
+    customer_email = serializers.EmailField(source="customer.email", read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ("id", "customer", "customer_email", "mode", "state", "currency", "total_money",
+                  "total_credits", "created_at")
 
 
 class OrderReadSerializer(serializers.ModelSerializer):

@@ -139,4 +139,25 @@ describe('gestión administrativa', () => {
     expect(screen.getByText('Contactanos para sumarte.')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'hola@example.test' }).getAttribute('href')).toBe('mailto:hola@example.test')
   })
+
+  it('actualiza document.title al llegar tarde home_title sin cambiar el nombre del sitio', async () => {
+    window.history.replaceState({}, '', '/')
+    let finish!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/site-settings/')) return new Promise<Response>(resolve => { finish = resolve })
+      if (url.endsWith('/catalog/config/')) return json({ enabled: false })
+      if (url.endsWith('/auth/refresh/')) return json({ detail: 'Sin sesión' }, 401)
+      return json({}, 404)
+    }))
+    const { default: ProductApp } = await import('../ProductApp')
+    render(<ProductApp />)
+    await waitFor(() => expect(finish).toBeTypeOf('function'))
+    await screen.findByRole('link', { name: /Ingresar/ })
+    const previous = document.title
+    finish(json({ site_name: 'Llave Extra', home_title: 'Una portada tardía', home_description: 'Descripción', footer_text: 'Pie', contact_email: '', whatsapp_url: '', instagram_url: '' }))
+    await screen.findByRole('heading', { name: 'Una portada tardía' })
+    await waitFor(() => expect(document.title).toBe('Una portada tardía · Llave Extra'))
+    expect(document.title).not.toBe(previous)
+  })
 })

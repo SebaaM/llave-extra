@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ApiError, currentSessionVersion, privateImage } from '../api'
 import { messageOf } from '../shared'
 import { useDirtyGuard } from './hooks'
 import { ReferencePicker } from './ReferencePicker'
-import { adminApi, authorizedDownload, makeCommand, permissionLost, sendCommand } from './api'
+import { authorizedDownload, makeCommand, permissionLost, sendCommand } from './api'
 import type { PendingCommand } from './api'
 import type { Row } from './types'
 import { Status } from './UI'
+import { emptyErrors, fieldErrorProps, formErrors } from './validation'
+import { ErrorSummary, FieldError } from './ValidationErrors'
 
 type ActionField = { name: string; label: string; type?: 'text' | 'number' | 'password' | 'select'; lookup?: 'users' | 'providers' | 'benefits'; lookupQuery?: string; options?: readonly (readonly [string, string])[]; required?: boolean }
 type Action = { name: string; label: string; fields?: readonly ActionField[]; confirm: string }
@@ -36,7 +38,7 @@ const actions: Record<string, Action[]> = {
   'credit-rules': [versioned('remove', 'Eliminar regla', 'Los próximos consumos usarán la regla general; el historial conservará su valor.')],
 }
 const versions = new Set(['providers', 'collaborators', 'products', 'credit-rules'])
-export function RecordActions({ resource, data, onSuccess }: { resource: string; data: Row; onSuccess: () => Promise<void> }) {
+export function RecordActions({ resource, data, onSuccess }: { resource: string; data: Row; onSuccess: (result?: Record<string, unknown>) => Promise<void> }) {
   const [owner, setOwner] = useState<string | null>(null)
   const available = (actions[resource] ?? []).filter(action => {
     // Keep the recovery form mounted even when a refresh changes available actions.
@@ -50,11 +52,13 @@ export function RecordActions({ resource, data, onSuccess }: { resource: string;
   })
   return available.length ? <>{available.map(action => <ActionForm key={`${data.id}:${action.name}`} resource={resource} data={data} action={action} onSuccess={onSuccess} blocked={owner !== null && owner !== action.name} claim={() => setOwner(action.name)} release={() => setOwner(null)} />)}</> : <p>No hay acciones disponibles para el estado actual.</p>
 }
-function ActionForm({ resource, data, action, onSuccess, blocked, claim, release }: { resource: string; data: Row; action: Action; onSuccess: () => Promise<void>; blocked: boolean; claim: () => void; release: () => void }) {
+function ActionForm({ resource, data, action, onSuccess, blocked, claim, release }: { resource: string; data: Row; action: Action; onSuccess: (result?: Record<string, unknown>) => Promise<void>; blocked: boolean; claim: () => void; release: () => void }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [pending, setPending] = useState<PendingCommand | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [errors, setErrors] = useState(emptyErrors)
+  const prefix = useId()
   const [result, setResult] = useState('')
   const [phase, setPhase] = useState<'idle' | 'uncertain' | 'delivery' | 'reload'>('idle')
   useDirtyGuard(phase !== 'idle' || Object.values(values).some(value => value !== ''))
@@ -94,19 +98,29 @@ function ActionForm({ resource, data, action, onSuccess, blocked, claim, release
       for (const field of action.fields ?? []) body[field.name] = field.type === 'number' ? Number(values[field.name]) : field.name === 'reassign' ? values[field.name] === 'true' : values[field.name] ?? field.options?.[0]?.[0] ?? ''
     }
     const command = pending ?? makeCommand(`${resource}/${data.id}/${action.name === 'invite' ? 'invite/' : `actions/${action.name}/`}`, body)
-    claim(); setPending(command); setPhase('uncertain'); setBusy(true); setError(''); setResult('')
+    claim(); setPending(command); setPhase('uncertain'); setBusy(true); setError(''); setErrors(emptyErrors()); setResult('')
     const version = currentSessionVersion()
     try {
       const response = await sendCommand<Record<string, unknown>>(command)
       if (version !== currentSessionVersion()) return
+      if (response.removed === true) {
+        setPending(null); setValues({}); setPhase('idle'); release()
+        await onSuccess(response)
+        return
+      }
       await confirmed(response.delivery, version)
     } catch (cause) {
       if (version !== currentSessionVersion()) return
       if (action.name === 'invite' && cause instanceof ApiError && (cause.payload as { delivery?: string } | undefined)?.delivery === 'FAILED') await confirmed('FAILED', version)
-      else setError(cause instanceof ApiError && cause.status === 409 ? 'El registro cambió o esta clave ya se usó con otros datos. Recargá la ficha antes de iniciar una operación nueva; si fue un reintento, conservá la carga original.' : messageOf(cause))
+      else if (cause instanceof ApiError && cause.status === 409) setError('El registro cambió o esta clave ya se usó con otros datos. Recargá la ficha antes de iniciar una operación nueva; si fue un reintento, conservá la carga original.')
+      else {
+        setErrors(formErrors(cause, (action.fields ?? []).map(field => field.name)))
+        // A validation rejection has no effect to recover. Corrected data is a new command.
+        if (cause instanceof ApiError && cause.status === 400) { setPending(null); setPhase('idle'); release() }
+      }
     } finally { if (version === currentSessionVersion()) setBusy(false) }
   }
-  return <form className="admin-action" onSubmit={submit}><h3>{action.label}</h3><p>{action.confirm}</p><div className="admin-action-fields">{action.fields?.map(field => field.lookup ? <div key={field.name} className="admin-field"><span>{field.label}</span><ReferencePicker label={field.label} kind={field.lookup} query={field.lookupQuery} disabled={phase !== 'idle' || blocked || busy} selectedIds={action.name === 'unassign-user' && Array.isArray(data.user_ids) ? data.user_ids as number[] : action.name === 'remove-benefit' && Array.isArray(data.benefit_ids) ? data.benefit_ids as string[] : undefined} value={values[field.name] ?? ''} onChange={value => setValues(current => ({ ...current, [field.name]: value }))} /></div> : <label key={field.name}>{field.label}{field.type === 'select' ? <select disabled={phase !== 'idle' || blocked || busy} value={values[field.name] ?? field.options?.[0]?.[0]} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input disabled={phase !== 'idle' || blocked || busy} type={field.type ?? 'text'} required={field.required} minLength={field.name === 'pin' ? 6 : undefined} maxLength={field.name === 'pin' ? 12 : undefined} pattern={field.name === 'pin' ? '[0-9]{6,12}' : undefined} value={values[field.name] ?? ''} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} />}</label>)}</div>{error && <Status error>{error}</Status>}{result && <Status>{result}</Status>}
+  return <form className="admin-action" onSubmit={submit}><h3>{action.label}</h3><p>{action.confirm}</p><div className="admin-action-fields">{action.fields?.map(field => <div key={field.name} className="admin-field">{field.lookup ? <><span>{field.label}</span><ReferencePicker {...fieldErrorProps(errors, field.name, prefix)} label={field.label} kind={field.lookup} query={field.lookupQuery} disabled={phase !== 'idle' || blocked || busy} selectedIds={action.name === 'unassign-user' && Array.isArray(data.user_ids) ? data.user_ids as number[] : action.name === 'remove-benefit' && Array.isArray(data.benefit_ids) ? data.benefit_ids as string[] : undefined} value={values[field.name] ?? ''} onChange={value => setValues(current => ({ ...current, [field.name]: value }))} /></> : <><label htmlFor={`${prefix}-${field.name}`}>{field.label}</label>{field.type === 'select' ? <select {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={phase !== 'idle' || blocked || busy} value={values[field.name] ?? field.options?.[0]?.[0]} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input {...fieldErrorProps(errors, field.name, prefix)} id={`${prefix}-${field.name}`} disabled={phase !== 'idle' || blocked || busy} type={field.type ?? 'text'} required={field.required} minLength={field.name === 'pin' ? 6 : undefined} maxLength={field.name === 'pin' ? 12 : undefined} pattern={field.name === 'pin' ? '[0-9]{6,12}' : undefined} value={values[field.name] ?? ''} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))} />}</>}<FieldError errors={errors} name={field.name} prefix={prefix} /></div>)}</div><ErrorSummary errors={errors} />{error && <Status error>{error}</Status>}{result && <Status>{result}</Status>}
     <div className="admin-actions">{phase === 'reload' ? <button type="button" className="button button-dark" disabled={busy || blocked} onClick={() => void recover(false)}>{busy ? 'Actualizando…' : 'Reintentar actualización de ficha'}</button> : <button className="button button-dark" disabled={busy || blocked}>{busy ? 'Procesando…' : phase === 'delivery' ? 'Consultar estado del envío' : pending ? 'Reintentar operación anterior' : action.label}</button>}{pending && <button type="button" disabled={busy || blocked} className="button button-ghost" onClick={() => void recover(true)}>Iniciar nueva operación</button>}</div>
   </form>
 }
@@ -122,8 +136,7 @@ export function PrivateQr({ resource, id }: { resource: 'providers' | 'collabora
     const version = currentSessionVersion()
     setBusy(true); setError('')
     try {
-      const response = await adminApi<{ url: string }>(`${resource}/${id}/qr/`)
-      const blobUrl = await privateImage(response.url)
+      const blobUrl = await privateImage(`/api/v1/admin/${resource}/${id}/qr.png`)
       if (sequence !== request.current || version !== currentSessionVersion()) { if (blobUrl) URL.revokeObjectURL(blobUrl); return }
       setUrl(blobUrl)
     } catch (cause) { permissionLost(cause); if (sequence === request.current && version === currentSessionVersion()) setError(messageOf(cause)) }

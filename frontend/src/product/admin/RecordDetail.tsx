@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { currentSessionVersion, privateImage } from '../api'
 import { ProductLink } from '../navigation'
+import { messageOf } from '../shared'
 import { adminApi, authorizedDownload, detail, permissionLost } from './api'
 import { RecordActions, PrivateQr } from './Actions'
 import { OrderHistory, WalletMovements } from './History'
@@ -16,6 +17,9 @@ export function RecordDetail({ resource, id, search }: { resource: Resource; id:
   const [editing, setEditing] = useState(false)
   const [related, setRelated] = useState<Row[] | null>(null)
   const [relatedError, setRelatedError] = useState('')
+  const [removed, setRemoved] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState('')
   const request = useRef(0)
   useEffect(() => () => { request.current += 1 }, [])
   const base = `/gestion/${routeFor(resource.key)}`
@@ -37,6 +41,14 @@ export function RecordDetail({ resource, id, search }: { resource: Resource; id:
     setRelated(null)
     return next
   }
+  const manualRefresh = async () => {
+    if (refreshing || editing) return
+    const session = currentSessionVersion()
+    setRefreshing(true); setRefreshError('')
+    try { await refresh() }
+    catch (cause) { if (session === currentSessionVersion() && !(cause instanceof DOMException && cause.name === 'AbortError')) setRefreshError(`No se pudo actualizar la ficha: ${messageOf(cause)}`) }
+    finally { if (session === currentSessionVersion()) setRefreshing(false) }
+  }
   const loadRelated = async () => {
     const sequence = ++request.current
     const version = currentSessionVersion()
@@ -48,17 +60,19 @@ export function RecordDetail({ resource, id, search }: { resource: Resource; id:
   }
   return <>
     <BackLink href={`${base}${backQuery.size ? `?${backQuery}` : ''}`} />
+    {removed ? <section className="admin-panel"><Status>El registro fue eliminado.</Status></section> : <>
     <LoadState loading={loading} error={error} retry={reload} />
     {data && <>
-      <div className="admin-record-heading"><div><p className="eyebrow">FICHA DE {resource.singular.toUpperCase()}</p><h2>{String(data.name ?? data.title ?? data.email ?? data.user_email ?? data.customer_email ?? data.id)}</h2><span className="admin-id">ID {data.id}</span></div><div className="admin-actions"><button className="button button-ghost" disabled={editing} onClick={() => void refresh()}>Actualizar ficha</button>{resource.fields && <button className="button button-dark" onClick={() => { if (!editing || checkAdminNavigation()) setEditing(value => !value) }}>{editing ? 'Cerrar edición' : 'Editar'}</button>}</div></div>
-      {editing && resource.fields && <RecordForm key={`${resource.key}:${id}`} resource={resource} data={data} back={`${base}/${id}${search}`} onReload={refresh} onSaved={row => { setState({ data: row, loading: false, error: '' }); setEditing(false) }} />}
+      <div className="admin-record-heading"><div><p className="eyebrow">FICHA DE {resource.singular.toUpperCase()}</p><h2>{String(data.name ?? data.title ?? data.email ?? data.user_email ?? data.customer_email ?? data.id)}</h2><span className="admin-id">ID {data.id}</span></div><div className="admin-actions"><button className="button button-ghost" disabled={editing || refreshing} onClick={() => void manualRefresh()}>{refreshing ? 'Actualizando ficha…' : 'Actualizar ficha'}</button>{resource.fields && <button className="button button-dark" disabled={refreshing} onClick={() => { if (!editing || checkAdminNavigation()) setEditing(value => !value) }}>{editing ? 'Cerrar edición' : 'Editar'}</button>}</div></div>
+      {refreshError && <><Status error>{refreshError}</Status><button className="button button-ghost" disabled={refreshing || editing} onClick={() => void manualRefresh()}>Reintentar actualización de ficha</button></>}
+      {editing && resource.fields && <RecordForm key={`${resource.key}:${id}`} resource={resource} data={data} back={`${base}/${id}${search}`} onCancel={() => { if (checkAdminNavigation()) setEditing(false) }} onReload={refresh} onSaved={row => { setState({ data: row, loading: false, error: '' }); setEditing(false) }} />}
       <section className="admin-panel"><h2>Información</h2><DetailFields data={data} names={[...resource.columns, ...(resource.detail ?? [])].filter((name, index, all) => all.indexOf(name) === index && name !== 'image_url' && name !== 'movements' && !(resource.key === 'orders' && name in orderHistories))} />{typeof data.image_url === 'string' && <PrivateMedia key={data.image_url} path={data.image_url} />}</section>
       {resource.key === 'collaborators' && <section className="admin-panel"><h2>Beneficios seleccionados</h2><p>Solo estas ofertas concretas integran la carpeta del colaborador.</p><button className="button button-ghost" onClick={() => void loadRelated()}>Consultar selección actual</button>{relatedError && <Status error>{relatedError}</Status>}{related && (related.length ? <ul className="admin-related">{related.map(item => <li key={String(item.benefit_id)}><strong>{item.available ? 'Disponible' : 'No disponible'}</strong> · {String(item.benefit_id)}{Boolean(item.benefit) && <span> · {String((item.benefit as Row).title)}</span>}</li>)}</ul> : <p>No hay beneficios seleccionados.</p>)}</section>}
       {(resource.key === 'providers' || resource.key === 'collaborators') && <PrivateQr key={`${data.id}:${data.version}`} resource={resource.key} id={data.id} />}
-      <section className="admin-panel"><h2>Acciones</h2><p className="admin-muted">Cada operación comprueba el estado actual. Después de un cambio, la ficha se actualiza para la próxima acción.</p><div className="admin-action-grid"><RecordActions resource={resource.key} data={data} onSuccess={() => refresh().then(() => undefined)} /></div></section>
+      <section className="admin-panel"><h2>Acciones</h2><p className="admin-muted">Cada operación comprueba el estado actual. Después de un cambio, la ficha se actualiza para la próxima acción.</p><div className="admin-action-grid"><RecordActions resource={resource.key} data={data} onSuccess={async result => { if (result?.removed === true) setRemoved(true); else await refresh() }} /></div></section>
       {resource.key === 'wallets' && Boolean(data.movements) && <WalletMovements movements={data.movements as Page<Row>} search={search} base={`${base}/${id}`} />}
       {resource.key === 'orders' && <section className="admin-panel"><h2>Detalles del pedido</h2>{Object.keys(orderHistories).map(name => <OrderHistory key={name} name={name} value={data[name]} />)}</section>}
-    </>}
+    </>}</>}
   </>
 }
 

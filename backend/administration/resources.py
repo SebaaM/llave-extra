@@ -32,6 +32,7 @@ from .resource_serializers import (
     CreditRuleReadSerializer,
     CreditRuleWriteSerializer,
     OrderReadSerializer,
+    OrderSummarySerializer,
     PaymentOperationReadSerializer,
     ProductPatchRequestSerializer,
     ProductReadSerializer,
@@ -56,6 +57,7 @@ class ResourceView(generics.GenericAPIView):
     permission_classes = [IsProgramAdmin]
     model = None
     read_serializer = None
+    list_serializer = None
     write_serializer = None
     create_allowed = False
     patch_allowed = False
@@ -142,7 +144,7 @@ class ResourceView(generics.GenericAPIView):
                 queryset = queryset.filter(**{lookup: parsed})
         page = AdminPagination()
         items = page.paginate_queryset(queryset.order_by("-pk"), request, view=self)
-        return page.get_paginated_response(self.read_serializer(items, many=True).data)
+        return page.get_paginated_response((self.list_serializer or self.read_serializer)(items, many=True).data)
 
     def post(self, request, pk=None):
         if not self.create_allowed or pk is not None:
@@ -321,8 +323,13 @@ class OrdersView(ResourceView):
     model, read_serializer, resource = Order, OrderReadSerializer, "orders"
     joins = ("customer",)
     prefetched = ("lines", "cancellations", "payment_operations", "audit__actor")
+    list_serializer = OrderSummarySerializer
     filters = {"state": "state", "mode": "mode", "customer": "customer_id"}
     search_fields = ("customer__email",)
+
+    def queryset(self):
+        queryset = Order.objects.select_related("customer")
+        return queryset.prefetch_related(*self.prefetched) if "pk" in self.kwargs else queryset
 
 
 class CancellationsView(ResourceView):
@@ -372,7 +379,7 @@ def resource_endpoint(view_class, *, detail):
         f"Admin{name.title().replace('_', '')}Page",
         fields={"count": serializers.IntegerField(), "next": serializers.URLField(allow_null=True),
                 "previous": serializers.URLField(allow_null=True),
-                "results": view_class.read_serializer(many=True)},
+                "results": (view_class.list_serializer or view_class.read_serializer)(many=True)},
     )
 
     @extend_schema(operation_id=f"admin_{name}_{'retrieve' if detail else 'list'}", responses=response)

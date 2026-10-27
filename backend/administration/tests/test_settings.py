@@ -71,7 +71,7 @@ def test_patch_defaults_public_effect_and_audit(admin):
     assert audit.actor == admin
     listed = api.get("/api/v1/admin/activity/?action=settings.update&resource=settings.general&search=admin&actor=" + str(admin.pk))
     assert listed.data["count"] == 1
-    assert set(listed.data["results"][0]) == {"id", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at"}
+    assert set(listed.data["results"][0]) == {"id", "source", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at"}
 
 
 @pytest.mark.parametrize("group,field,value,model", [

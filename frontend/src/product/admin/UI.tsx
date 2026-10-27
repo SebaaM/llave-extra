@@ -10,6 +10,6 @@ export function LoadState({ loading, error, retry }: { loading: boolean; error: 
   return null
 }
 export function DetailFields({ data, names }: { data: Record<string, unknown>; names: readonly string[] }) {
-  return <dl className="admin-details">{names.map(name => <div key={name}><dt>{fieldLabels[name] ?? 'Información adicional'}</dt><dd>{formatValue(data[name], name)}</dd></div>)}</dl>
+  return <dl className="admin-details">{names.map(name => <div key={name}><dt>{fieldLabels[name] ?? 'Información adicional'}</dt><dd>{name === 'order' && typeof data[name] === 'string' ? <ProductLink href={`/gestion/pedidos/${encodeURIComponent(data[name])}`}>{data[name]}</ProductLink> : formatValue(data[name], name)}</dd></div>)}</dl>
 }
 export function BackLink({ href, children = 'Volver al listado' }: { href: string; children?: ReactNode }) { return <ProductLink className="admin-back" href={href}>← {children}</ProductLink> }

@@ -88,7 +88,8 @@ class ShopSettingsSerializer(VersionedSettingsSerializer):
 
 class AdminAuditSerializer(serializers.ModelSerializer):
     actor_email = serializers.EmailField(source="actor.email", read_only=True)
+    source = serializers.ChoiceField(choices=("admin", "order"), read_only=True, default="admin")
 
     class Meta:
         model = AdminAudit
-        fields = ("id", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at")
+        fields = ("id", "source", "actor_email", "action", "resource", "object_id", "changed_fields", "reason", "created_at")
