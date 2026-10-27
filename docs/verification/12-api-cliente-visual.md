@@ -36,7 +36,13 @@ Revisión T2b aprobada sin hallazgos sobre `c52bea8..e3f04fa`: DTO aditivo priva
 
 El helper HTTP se ejecutó con el mismo prefijo agregando `-e PYTHONPATH=/app`, con sufijo `uv run --locked python /qa/api_client_http_qa.py`. Inicializa solamente la base por defecto del proyecto aislado mediante migraciones existentes, crea usuarios/comercio/beneficio sintéticos, usa JWT/QR/PIN generados en memoria y hace requests HTTP reales contra WSGI local. No imprime credenciales ni QR; el catálogo desactivado al finalizar pertenece exclusivamente al laboratorio. El servidor temporal se cierra al terminar. No es validación de un servicio externo.
 
-El entorno es PostgreSQL real, nunca SQLite. No se ejecutaron lint/tipos/build del frontend en esta entrega: ningún archivo ni consumidor frontend se modifica y el campo nuevo es aditivo. Los helpers y reportes de trabajo permanecen ignorados; este documento conserva la evidencia resumida. Revisión integral y PR pendientes de cierre.
+El entorno es PostgreSQL real, nunca SQLite. No se ejecutaron lint/tipos/build del frontend en esta entrega: ningún archivo ni consumidor frontend se modifica y el campo nuevo es aditivo. Los helpers y reportes de trabajo permanecen ignorados; este documento conserva la evidencia resumida.
+
+## Revisión integral y publicación
+
+Revisión integral independiente aprobada sobre `754982d..dc468cc`, sin hallazgos accionables ni escenarios problemáticos descartados. Confirma compatibilidad del filtro, autorización/DTO privados, consulta sin N+1, invariantes de consumo y documentación. Desde el producto probado `e3f04fa` solo cambió documentación. El primer intento de revisor se interrumpió antes de evaluar por límite de uso; se completó con otro revisor disponible. `git diff --check` y árbol limpio verificados en el corte revisado; los cambios posteriores solo registran este cierre documental.
+
+La publicación de `feature/api-cliente-visual` en `https://github.com/SebaaM/llave-extra.git` fue rechazada antes de ejecutar por revisión automática. Se verificó mediante GitHub que la cuenta conectada coincide con el propietario, el repositorio es público y tiene permisos push/admin; un reintento con esa evidencia también fue rechazado por falta de autorización explícita del usuario para divulgar código en ese destino. No se intentó otra vía de publicación, no hay PR creado por esta entrega ni CI remoto ejecutado por ella. Falta únicamente autorizar push y creación de PR hacia `develop`; no fusionar. Código, pruebas y cierre local completos.
 
 ## Límites
 
