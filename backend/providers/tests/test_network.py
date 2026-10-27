@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from providers.admin import CatalogConfigAdmin
-from providers.models import Benefit, CatalogConfig, FolderProvider, Provider, Publication
+from providers.models import Benefit, CatalogConfig, FolderBenefit, Provider, Publication
 from referrals.models import CollaboratorProfile, FolderAccess
 
 
@@ -67,7 +67,7 @@ def test_network_folder_is_independent_private_and_revalidates_each_page():
     client.force_authenticate(tourist)
     providers = [published_provider(f"folder-network-{i:02}", f"Local {i:02}") for i in range(11)]
     for provider in providers:
-        FolderProvider.assign(profile.pk, provider.pk)
+        FolderBenefit.assign(profile.pk, provider.benefits.get().pk)
     providers[0].image.save("private.png", png())
 
     root = f"/api/v1/folders/{profile.pk}/network/"

@@ -19,6 +19,58 @@ afterEach(() => {
 })
 
 describe('cliente de API con sesión de cliente', () => {
+  it('reintenta multipart conservando FormData y autorización sin fijar boundary', async () => {
+    const attempts: RequestInit[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-form' })
+      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-renovado' })
+      attempts.push(init!)
+      return attempts.length === 1 ? json({ detail: 'Expirado' }, 401) : json({ id: 'benefit-form' })
+    }))
+    const { api, setAccessToken } = await import('./api')
+    setAccessToken('access-anterior')
+    const form = new FormData()
+    form.append('title', 'Propuesta')
+    form.append('image', new File(['image'], 'imagen.png', { type: 'image/png' }))
+    await api('/api/v1/provider/providers/provider-test/benefits/', { method: 'POST', body: form, idempotencyKey: 'multipart-test' })
+    expect(attempts).toHaveLength(2)
+    expect(attempts.every(attempt => attempt.body === form)).toBe(true)
+    expect(attempts.every(attempt => !new Headers(attempt.headers).has('Content-Type'))).toBe(true)
+    expect(attempts.every(attempt => attempt.cache === 'no-store' && attempt.credentials === 'same-origin')).toBe(true)
+    expect(new Headers(attempts[1].headers).get('Authorization')).toBe('Bearer access-renovado')
+    expect(attempts.every(attempt => new Headers(attempt.headers).get('Idempotency-Key') === 'multipart-test')).toBe(true)
+  })
+
+  it('no envía una escritura multipart si la sesión cambia durante el refresh', async () => {
+    let finishRefresh!: (response: Response) => void
+    const writes: string[] = []
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf' }))
+      if (url.endsWith('/auth/refresh/')) return new Promise<Response>(resolve => { finishRefresh = resolve })
+      writes.push(url); return Promise.resolve(json({}))
+    }))
+    const { api, invalidatePrivateState } = await import('./api')
+    const pending = api('/api/v1/provider/providers/provider-test/', { method: 'PATCH', body: new FormData() })
+    const rejection = expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    await vi.waitFor(() => expect(finishRefresh).toBeTypeOf('function'))
+    invalidatePrivateState()
+    finishRefresh(json({ access: 'viejo' }))
+    await rejection
+    expect(writes).toHaveLength(0)
+  })
+
+  it('respeta la cancelación previa de una subida multipart', async () => {
+    const fetcher = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    const { api, setAccessToken } = await import('./api')
+    setAccessToken('access')
+    const controller = new AbortController(); controller.abort()
+    await expect(api('/api/v1/provider/providers/provider-test/', { method: 'PATCH', body: new FormData(), signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
   it('comparte una sola rotación de refresh entre solicitudes privadas concurrentes', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
@@ -98,7 +150,7 @@ describe('cliente de API con sesión de cliente', () => {
     expect(calls.some(call => call.url.endsWith('/auth/login/'))).toBe(false)
 
     finishRefresh(json({ access: 'access-a' }))
-    await expect(previousRequest).rejects.toMatchObject({ status: 401 })
+    await expect(previousRequest).rejects.toMatchObject({ name: 'AbortError' })
     await expect(nextLogin).resolves.toMatchObject({ id: 2, email: 'b@example.test' })
     await api('/api/v1/me/wallet/')
 
