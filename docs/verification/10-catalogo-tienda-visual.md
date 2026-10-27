@@ -40,6 +40,8 @@ Captura local de apoyo: `work/catalogo-tienda.png` (ignorada, no es evidencia de
 
 Revisor `shop_visual_review`, modelo económico, solo lectura. Detectó precarga de wallet/progreso/historial desde la shell al restaurar Cliente en tienda; se agregó guarda de ruta y dos regresiones integradas. Revisión focal confirmó cierre y ausencia de otros problemas en ese cambio. No se reconstruyó la autenticación ni se alteraron servicios financieros.
 
+La revisión focal del último ajuste de desplazamiento también quedó aprobada sin nuevos hallazgos. Producto en `f048c06`; entrega [PR #13](https://github.com/SebaaM/llave-extra/pull/13) contra develop, abierto y sin fusionar, dependiente de #12. Comprobaciones remotas vigentes en el PR; los resultados de la tabla anterior corresponden a ejecución local, no sustituyen el CI remoto.
+
 ## Pendientes fuera de esta entrega
 
 Integración con productos/medios de API, administración del inventario de ejemplos, carrito, compra/canje, pedidos del Cliente, validación sandbox externa, E6 y auditoría activa. La vista previa no representa disponibilidad ni precios comerciales confirmados. Revisar los ejemplos con el usuario antes de convertirlos en productos reales.

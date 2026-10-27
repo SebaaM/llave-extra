@@ -2,6 +2,8 @@
 
 ## Catálogo visual de tienda autorizado — 26/10/2026
 
+Entregado en [PR #13](https://github.com/SebaaM/llave-extra/pull/13) hacia develop, sin fusionar y dependiente de #12. Producto `f048c06`; revisión independiente aprobada y checks locales documentados. CI remoto vigente en las comprobaciones del PR. Detenerse al completar este catálogo visual.
+
 El usuario adelanta solo el catálogo visual de F3 con ejemplos cargados. `/tienda` y `/tienda/:slug` públicas: nueve productos ficticios, ilustraciones SVG propias, valores de ejemplo ARS/créditos, búsqueda/categorías/orden y paginación de seis. Acceso desde menú y Pasaporte. Datos estáticos tipados; sin seed, stock real, carrito, compra, canje ni llamadas a API de tienda. Al restaurar sesión desde tienda se omite la precarga de saldo/progreso/historial. E6, auditoría activa, integración comercial y compras del Cliente siguen pendientes. Rama `feature/catalogo-tienda-visual`, desde `d87a039` del PR #12 aún abierto al comprobarlo; PR hacia develop sin fusiones. [Plan](docs/superpowers/plans/2026-10-26-catalogo-tienda-visual.md) y [evidencia](docs/verification/10-catalogo-tienda-visual.md).
 
 ## Etapa administrativa autorizada — 24/10/2026
