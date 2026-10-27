@@ -24,6 +24,7 @@ class ConsumptionResponseSerializer(serializers.Serializer):
 class ConsumptionHistorySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     provider_id = serializers.UUIDField()
+    provider_name = serializers.CharField(help_text="Nombre actual del Prestador asociado al consumo")
     collaborator_id = serializers.UUIDField(allow_null=True)
     award = serializers.IntegerField()
     state = serializers.CharField()

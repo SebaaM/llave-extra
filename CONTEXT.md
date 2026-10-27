@@ -1,5 +1,10 @@
 # Contexto y decisiones
 
+## API del Cliente implementada primero — 27/10/2026
+
+Pedido vigente: ejecutar solo las mejoras de API del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md), con [diseño](docs/superpowers/specs/2026-10-27-frontend-cliente-visual-design.md). Backend T2/T2b implementado en `feature/api-cliente-visual`, desde `origin/develop` `754982d` (PR #10 ya integrado); no incorpora los PR #12/#13 pendientes ni altera el checkout original. Categorías públicas completas de beneficios vigentes y `provider_name` actual en historial propio, sin cambios al POST/replay de consumo, reglas del dominio, migraciones o frontend. Valores de categoría originales filtran primero de forma exacta; respaldo recortado solo si no existe la categoría original, decidido antes de búsqueda.
+
+Producto `e3f04fa`: 108 pruebas PostgreSQL/Redis aprobadas; Ruff, OpenAPI sin avisos y migraciones sin drift. QA HTTP real con datos sintéticos aislados aprobado; revisiones independientes por tarea e integral (`754982d..dc468cc`) aprobadas sin hallazgos pendientes. Entrega en [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia `develop`, abierto y sin fusionar. El usuario autorizó expresamente la publicación después del rechazo inicial de revisión automática; la rama ya está publicada. CI remoto vigente en las comprobaciones del PR. [Evidencia](docs/verification/12-api-cliente-visual.md). Hooks/tipos/pantallas del frontend siguen pendientes; este alcance no inicia E6, compra del Cliente ni pagos externos. Las pausas históricas siguientes no impiden esta entrega API autorizada.
 ## Catálogo visual de tienda autorizado — 26/10/2026
 
 Entregado en [PR #13](https://github.com/SebaaM/llave-extra/pull/13) hacia develop, sin fusionar y dependiente de #12. Producto `f048c06`; revisión independiente aprobada y checks locales documentados. CI remoto vigente en las comprobaciones del PR. Detenerse al completar este catálogo visual.

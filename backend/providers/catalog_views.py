@@ -60,18 +60,43 @@ class CatalogBenefitsView(APIView):
         require_catalog()
         benefits = catalog_benefits()
         search = request.query_params.get("search", "").strip()
-        category = request.query_params.get("category", "").strip()
+        category = request.query_params.get("category", "")
+        trimmed_category = category.strip()
+        if trimmed_category:
+            if category != trimmed_category and not benefits.filter(provider__category__iexact=category).exists():
+                category = trimmed_category
+            benefits = benefits.filter(provider__category__iexact=category)
         if search:
             benefits = benefits.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
                 | Q(provider__name__icontains=search)
             )
-        if category:
-            benefits = benefits.filter(provider__category__iexact=category)
         benefits = benefits.order_by("provider__name", "title", "pk")
         paginator = CatalogPagination()
         page = paginator.paginate_queryset(benefits, request, view=self)
         return paginator.get_paginated_response(PublicBenefitSerializer(page, many=True).data)
+
+
+class CatalogCategoriesView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        operation_id="catalog_categories_list",
+        description="Categorías de prestadores con beneficios públicos publicados y vigentes.",
+        responses=inline_serializer(
+            "PublicCatalogCategories",
+            fields={"results": serializers.ListField(child=serializers.CharField())},
+        ),
+    )
+    def get(self, request):
+        require_catalog()
+        categories = set(
+            category
+            for category in catalog_benefits().values_list("provider__category", flat=True)
+            if category and category.strip()
+        )
+        return Response({"results": sorted(categories, key=lambda value: (value.casefold(), value))})
 
 
 class CatalogBenefitView(APIView):
