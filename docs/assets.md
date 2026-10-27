@@ -23,3 +23,7 @@ Los medios comerciales de demostración se versionan en `backend/providers/fixtu
 | `ksar-navegacion.webp` | KSAR001, foto del beneficio, 600 × 800 | [Llave Extra](https://www.llaveextra.com/excursiones/imagenes/veleroksar.webp) |
 
 Los beneficios históricos cargados desde fuentes públicas se identifican como `demo` en la API y la interfaz. La carga de imágenes no altera condiciones, vigencia, publicación, QR, PIN ni créditos.
+
+## Tienda visual — 26/10/2026
+
+`frontend/src/product/shop/ProductArt.tsx` contiene ilustraciones SVG originales creadas para los ejemplos: pingüino, faro, montañas, maceta, llavero y soporte. Variantes de color en `examples.ts`; sin descargas ni recursos de terceros. La interfaz indica que son ilustraciones y productos de ejemplo, no fotografías o productos comerciales confirmados. Se conservan logo, fuentes y colores del sitio.

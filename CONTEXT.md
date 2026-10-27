@@ -1,5 +1,11 @@
 # Contexto y decisiones
 
+## Catálogo visual de tienda autorizado — 26/10/2026
+
+Entregado en [PR #13](https://github.com/SebaaM/llave-extra/pull/13) hacia develop, sin fusionar y dependiente de #12. Producto `f048c06`; revisión independiente aprobada y checks locales documentados. CI remoto vigente en las comprobaciones del PR. Detenerse al completar este catálogo visual.
+
+El usuario adelanta solo el catálogo visual de F3 con ejemplos cargados. `/tienda` y `/tienda/:slug` públicas: nueve productos ficticios, ilustraciones SVG propias, valores de ejemplo ARS/créditos, búsqueda/categorías/orden y paginación de seis. Acceso desde menú y Pasaporte. Datos estáticos tipados; sin seed, stock real, carrito, compra, canje ni llamadas a API de tienda. Al restaurar sesión desde tienda se omite la precarga de saldo/progreso/historial. E6, auditoría activa, integración comercial y compras del Cliente siguen pendientes. Rama `feature/catalogo-tienda-visual`, desde `d87a039` del PR #12 aún abierto al comprobarlo; PR hacia develop sin fusiones. [Plan](docs/superpowers/plans/2026-10-26-catalogo-tienda-visual.md) y [evidencia](docs/verification/10-catalogo-tienda-visual.md).
+
 ## Etapa administrativa autorizada — 24/10/2026
 
 Panel React administrativo y configuración implementados en `/gestion`, corte `affa345`, rama `feature/panel-admin`, dependiente de #11/#10 sin fusionar (consulta 26/10). Incluye gestión operativa y cuatro grupos de configuración; `/admin/` conserva su sesión técnica. Verificación: 274 pruebas PostgreSQL/Redis, 115 UI y 1 proxy; HTTP real y QR PNG aprobados con datos sintéticos. Migraciones locales aplicadas con respaldo y conteos conservados, sin semillas. Revisión integral y focal aprobadas. Entrega en [PR #12](https://github.com/SebaaM/llave-extra/pull/12), sin fusionar; CI vigente en sus comprobaciones. Analíticas E6 y compra del Cliente quedan fuera. El detalle de límites, decisiones y QA está en `docs/verification/09-panel-admin.md`; checklist y guía enlazados allí. Las pausas administrativas históricas siguientes no impiden esta etapa autorizada.
