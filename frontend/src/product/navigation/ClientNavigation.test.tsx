@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { User } from '../api'
 import { ProductShell } from '../Layout'
 
@@ -78,6 +79,113 @@ describe('navegación del Cliente', () => {
     screen.getByText('Menú').closest('details')!.open = true
     rerender(shell({ ...tourist, id: 42 }, '/mi-viaje'))
     expect(screen.getByText('Menú').closest('details')!.open).toBe(false)
+  })
+  it.each(['Tienda', 'Cuenta'])('conserva el foco en el contenido de destino al activar %s con Enter', async label => {
+    const keyboard = userEvent.setup()
+    const destination = label === 'Tienda' ? '/tienda' : '/perfil'
+    const view = (path: string) => <ProductShell user={tourist} path={path}><main id="contenido"><h1>{path === destination ? 'Página de destino' : 'Página inicial'}</h1><button>Acción del destino</button></main></ProductShell>
+    const { rerender } = render(view('/beneficios'))
+    const listener = () => rerender(view(destination))
+    window.addEventListener('llave:navigate', listener)
+    try {
+      screen.getByText('Menú').focus()
+      await keyboard.keyboard('{Enter}')
+      await keyboard.tab()
+      if (label === 'Cuenta') await keyboard.tab()
+      expect(document.activeElement).toBe(screen.getByRole('link', { name: label }))
+      await keyboard.keyboard('{Enter}')
+      expect(screen.getByRole('heading', { name: 'Página de destino' })).toBeTruthy()
+      expect(document.activeElement).toBe(screen.getByRole('heading'))
+      expect(screen.getByText('Menú').closest('details')!.open).toBe(false)
+      await keyboard.tab()
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Acción del destino' }))
+    } finally { window.removeEventListener('llave:navigate', listener) }
+  })
+
+  it('mantiene el destino de foco mientras carga y al reemplazar el contenido', async () => {
+    const keyboard = userEvent.setup()
+    const view = (path: string, loading = false) => <ProductShell user={tourist} path={path}>{loading
+      ? <main id="contenido" role="status">Cargando página…</main>
+      : <main id="contenido"><h1>Cuenta disponible</h1><button>Acción de cuenta</button></main>}</ProductShell>
+    const { rerender } = render(view('/beneficios'))
+    const listener = () => rerender(view('/perfil', true))
+    window.addEventListener('llave:navigate', listener)
+    try {
+      screen.getByText('Menú').focus()
+      await keyboard.keyboard('{Enter}')
+      await keyboard.tab()
+      await keyboard.tab()
+      await keyboard.keyboard('{Enter}')
+      const destination = screen.getByRole('region', { name: 'Contenido de la página' })
+      expect(screen.getByRole('status').textContent).toBe('Cargando página…')
+      expect(document.activeElement).toBe(destination)
+      rerender(view('/perfil'))
+      expect(document.activeElement).toBe(destination)
+      await keyboard.tab()
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Acción de cuenta' }))
+    } finally { window.removeEventListener('llave:navigate', listener) }
+  })
+
+  it.each([
+    { ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }, { target: '_blank' }, { download: '' },
+  ])('no cierra ni mueve el foco al abrir otro contexto: %j', options => {
+    render(shell(tourist))
+    const menu = screen.getByText('Menú').closest('details')!
+    menu.open = true
+    const link = within(menu).getByRole('link', { name: 'Cuenta' })
+    if ('target' in options) link.setAttribute('target', options.target!)
+    if ('download' in options) link.setAttribute('download', options.download!)
+    link.focus()
+    const listener = vi.fn()
+    window.addEventListener('llave:navigate', listener)
+    try {
+      expect(fireEvent.click(link, options)).toBe(true)
+      expect(document.activeElement).toBe(link)
+      expect(menu.open).toBe(true)
+      expect(listener).not.toHaveBeenCalled()
+    } finally { window.removeEventListener('llave:navigate', listener) }
+  })
+
+  it('no traslada foco por un cambio de ruta ajeno al menú', () => {
+    const { rerender } = render(shell(tourist))
+    const logout = screen.getByRole('button', { name: 'Salir' })
+    logout.focus()
+    rerender(shell(tourist, '/mi-viaje'))
+    expect(document.activeElement).toBe(logout)
+  })
+  it('traslada el foco también al activar la ruta actual desde el menú', async () => {
+    const keyboard = userEvent.setup()
+    render(shell(tourist, '/perfil'))
+    screen.getByText('Menú').focus()
+    await keyboard.keyboard('{Enter}')
+    await keyboard.tab()
+    await keyboard.tab()
+    await keyboard.keyboard('{Enter}')
+    expect(document.activeElement).toBe(screen.getByRole('heading'))
+    expect(screen.getByText('Menú').closest('details')!.open).toBe(false)
+  })
+
+  it('no conserva una intención de foco tras un clic modificado', () => {
+    const { rerender } = render(shell(tourist))
+    const menu = screen.getByText('Menú').closest('details')!
+    menu.open = true
+    const link = within(menu).getByRole('link', { name: 'Cuenta' })
+    link.focus()
+    fireEvent.click(link, { ctrlKey: true })
+    const logout = screen.getByRole('button', { name: 'Salir' })
+    logout.focus()
+    rerender(shell(tourist, '/perfil'))
+    expect(document.activeElement).toBe(logout)
+  })
+  it('conserva menú y foco al abrir Cómo funciona en otra pestaña', () => {
+    render(shell(tourist))
+    const menu = screen.getByText('Menú').closest('details')!
+    menu.open = true
+    const link = within(menu).getByRole('link', { name: 'Cómo funciona' })
+    link.focus()
+    expect(fireEvent.click(link, { ctrlKey: true })).toBe(true)
+    expect(menu.open).toBe(true)
+    expect(document.activeElement).toBe(link)
   })
   it('desmonta menú y barra al cerrar sesión o cambiar de rol', () => {
     const { rerender } = render(shell(tourist))

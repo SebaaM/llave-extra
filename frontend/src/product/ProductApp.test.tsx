@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
@@ -62,6 +63,38 @@ describe('recorridos F2 del Cliente', () => {
     expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
   })
 
+  it('anuncia el contenido de Cuenta después de navegar desde el menú con teclado', async () => {
+    const keyboard = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
+      if (url.endsWith('/auth/me/')) return json(tourist)
+      if (url.endsWith('/me/folders/')) return json({ folders: [] })
+      return json({}, 404)
+    }))
+    const ProductApp = await prepareApp('/tienda')
+    render(<ProductApp />)
+    await screen.findByText(tourist.email)
+    const titlesAtFocus: Array<string | null | undefined> = []
+    const listener = (event: FocusEvent) => {
+      if ((event.target as HTMLElement).tagName === 'H1') {
+        titlesAtFocus.push((event.target as HTMLElement).textContent)
+      }
+    }
+    document.addEventListener('focusin', listener)
+    try {
+      screen.getByText('Menú').focus()
+      await keyboard.keyboard('{Enter}')
+      await keyboard.tab()
+      await keyboard.tab()
+      await keyboard.keyboard('{Enter}')
+      expect(window.location.pathname).toBe('/perfil')
+      expect(screen.getByRole('heading', { name: tourist.email })).toBeTruthy()
+      expect(document.activeElement).toBe(screen.getByRole('heading', { name: tourist.email }))
+      expect(titlesAtFocus).toEqual([tourist.email])
+    } finally { document.removeEventListener('focusin', listener) }
+  })
   it('vacía el estado de A al entrar con B y antes de esperar el logout remoto', async () => {
     let accountB = false
     let finishLogin!: (response: Response) => void

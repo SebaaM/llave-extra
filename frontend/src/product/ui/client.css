@@ -55,7 +55,7 @@
   margin-inline: auto;
   padding: var(--client-space-2) max(var(--client-space-2), env(safe-area-inset-right, 0px)) calc(var(--client-space-2) + env(safe-area-inset-bottom, 0px)) max(var(--client-space-2), env(safe-area-inset-left, 0px));
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr);
   gap: var(--client-space-1);
   background: var(--client-sand);
   border: 1px solid var(--client-border);
@@ -110,10 +110,12 @@
 .product-shell .client-menu-links {
   position: absolute;
   z-index: 45;
+  left: auto;
   right: 0;
   top: calc(100% + 8px);
   display: flex;
   flex-direction: column;
+  flex-wrap: nowrap;
   align-items: stretch;
   gap: 0;
   width: min(260px, calc(100vw - 32px));
@@ -191,4 +193,10 @@
 @media (prefers-reduced-motion: reduce) {
   .product-shell .client-navigation a { transition: none; }
   .product-shell .client-card-skeleton { animation: none; }
+}
+
+.product-shell .client-page-content:focus,
+.product-shell .client-page-content h1[tabindex="-1"]:focus {
+  outline: 3px solid var(--client-petrol);
+  outline-offset: -3px;
 }

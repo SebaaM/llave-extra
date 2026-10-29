@@ -6,6 +6,7 @@ export function ProductLink({ href, children, onClick, ...props }: AnchorHTMLAtt
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event)
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if ((event.currentTarget.target && event.currentTarget.target.toLowerCase() !== '_self') || event.currentTarget.hasAttribute('download')) return
     const target = new URL(href ?? '/', window.location.href)
     if (target.origin !== window.location.origin) return
     event.preventDefault()
