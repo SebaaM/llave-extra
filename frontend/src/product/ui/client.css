@@ -17,6 +17,110 @@
   background: var(--client-sand);
 }
 
+.product-shell .client-home-postcard {
+  min-width: 0;
+  padding: var(--client-space-4);
+  border-radius: var(--client-radius);
+  border: 1px solid #ffffff73;
+  background: #ffffff17;
+}
+
+.product-shell .client-home-categories {
+  padding-block: var(--client-space-12);
+}
+
+.product-shell .client-journey-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--client-space-3);
+  margin-block: var(--client-space-6);
+}
+
+.product-shell .client-journey-steps button {
+  display: flex;
+  align-items: center;
+  gap: var(--client-space-3);
+  min-height: 64px;
+  padding: var(--client-space-4);
+  border: 1px solid var(--client-border);
+  border-radius: 12px;
+  background: white;
+  color: var(--client-ink);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+
+.product-shell .client-journey-steps button[aria-pressed="true"] {
+  background: var(--client-petrol);
+  color: white;
+  border-color: var(--client-petrol);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.product-shell .client-step-explanation {
+  padding: var(--client-space-6);
+  border: 1px solid var(--client-border);
+  border-left: 4px solid var(--client-orange);
+  border-radius: 12px;
+  background: white;
+  color: var(--client-ink);
+}
+
+.product-shell .client-step-explanation h3 { margin-top: 0; }
+.product-shell .client-step-explanation p { margin-bottom: 0; }
+
+.product-shell .client-trip-summary {
+  margin-top: var(--client-space-6);
+  padding: var(--client-space-6);
+  background: white;
+  color: var(--client-ink);
+  border: 1px solid var(--client-border);
+  border-radius: var(--client-radius);
+}
+
+.product-shell .client-trip-summary dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--client-space-6);
+}
+
+.product-shell .client-trip-summary dl div { flex: 1 1 120px; }
+.product-shell .client-trip-summary dt { font-size: .85rem; }
+.product-shell .client-trip-summary dd { margin: var(--client-space-2) 0; font-size: 1.7rem; font-weight: 700; overflow-wrap: anywhere; }
+
+.product-shell .client-private-heading {
+  padding: var(--client-space-6);
+  border: 1px solid var(--client-border);
+  border-left: 4px solid var(--client-petrol);
+  border-radius: var(--client-radius);
+  background: white;
+  margin-bottom: var(--client-space-6);
+  overflow-wrap: anywhere;
+}
+
+.product-shell .client-folder-label { font-weight: 700; color: var(--client-petrol); }
+.product-shell .client-private-postcard { border-radius: var(--client-radius); border: 1px solid var(--client-border); overflow: hidden; }
+.product-shell .client-private-postcard .product-provider-image { aspect-ratio: 4 / 3; height: auto; }
+.product-shell .client-private-postcard h2 { overflow-wrap: anywhere; }
+.product-shell .client-private-postcard button { min-height: 44px; }
+.product-shell .client-recommendations .search-row :is(input, select) { min-height: 44px; min-width: 0; max-width: 100%; }
+
+@media (max-width: 768px) {
+  .product-shell .client-journey-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 390px) {
+  .product-shell .client-journey-steps { grid-template-columns: minmax(0, 1fr); }
+  .product-shell :is(.client-trip-summary, .client-private-heading) { padding: var(--client-space-4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-shell .client-journey-steps button { transition: none; }
+}
+
 .product-shell:has(.client-navigation) {
   padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
 }

@@ -6,6 +6,7 @@ import type { Benefit, Folder, Provider } from './api'
 import { messageOf } from './shared'
 import { NetworkCanvas } from './NetworkCanvas'
 import { safeExternal } from './catalog'
+import { EmptyState } from './ui/EmptyState'
 
 type FolderPageProps = {
   folders: Folder[]
@@ -17,8 +18,63 @@ type FolderPageProps = {
 }
 
 export function FolderPage({ folders, selected, select, providers, onOpen, onAccessRevoked }: FolderPageProps) {
+  return <FolderContent key={`${selected}:${currentSessionVersion()}`} folders={folders} selected={selected} select={select} providers={providers} onOpen={onOpen} onAccessRevoked={onAccessRevoked} />
+}
+
+function FolderPhoto({ provider, onDenied, onMissing }: { provider: Provider; onDenied: () => void; onMissing: (path: string) => void }) {
+  const path = provider.image_url
+  const missing = useCallback(() => { if (path) onMissing(path) }, [path, onMissing])
+  return <PrivatePhoto path={path} alt={`Imagen de ${provider.name}`} onDenied={onDenied} onMissing={missing} />
+}
+
+function FolderContent({ folders, selected, select, providers: initialProviders, onOpen, onAccessRevoked }: FolderPageProps) {
+  const version = currentSessionVersion()
+  const [revision, setRevision] = useState(0)
+  const [result, setResult] = useState<{ state: 'initial' | 'loading' | 'ready' | 'denied' | 'error'; providers: Provider[]; error: string }>({ state: 'initial', providers: [], error: '' })
+  const [missingPaths, setMissingPaths] = useState<string[]>([])
+  const revokedRef = useRef(onAccessRevoked)
+  const activeRef = useRef(true)
+  const blockedRef = useRef(false)
+  const controllerRef = useRef<AbortController | null>(null)
+  useEffect(() => { revokedRef.current = onAccessRevoked }, [onAccessRevoked])
+  useEffect(() => {
+    activeRef.current = true
+    return () => { activeRef.current = false; controllerRef.current?.abort() }
+  }, [])
+  const denyMedia = useCallback(() => {
+    if (!activeRef.current || version !== currentSessionVersion() || blockedRef.current) return
+    blockedRef.current = true
+    controllerRef.current?.abort()
+    setResult({ state: 'denied', providers: [], error: '' })
+    revokedRef.current?.()
+  }, [version])
+  const missingMedia = useCallback((path: string) => {
+    if (!activeRef.current || version !== currentSessionVersion() || blockedRef.current) return
+    // Retirar también red y filtros: el 404 todavía no confirma autorización.
+    blockedRef.current = true
+    setMissingPaths(previous => [...previous, path])
+    setResult({ state: 'loading', providers: [], error: '' })
+    setRevision(value => value + 1)
+  }, [version])
+  useEffect(() => {
+    if (revision === 0) return
+    const controller = new AbortController()
+    controllerRef.current = controller
+    void api<Provider[]>(`/api/v1/folders/${encodeURIComponent(selected)}/providers/`, { signal: controller.signal }).then(providers => {
+      if (controller.signal.aborted || version !== currentSessionVersion()) return
+      blockedRef.current = false
+      setResult({ state: 'ready', providers, error: '' })
+    }).catch(error => {
+      if (controller.signal.aborted || version !== currentSessionVersion()) return
+      blockedRef.current = false
+      if (error instanceof ApiError && [401, 403, 404].includes(error.status)) denyMedia()
+      else setResult({ state: 'error', providers: [], error: messageOf(error) })
+    })
+    return () => controller.abort()
+  }, [revision, selected, version, denyMedia])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
+  const providers = result.state === 'initial' ? initialProviders : result.providers
   const categories = [...new Set(providers.map(provider => provider.category).filter(Boolean))].sort()
   const shown = providers.filter(provider => {
     const matchesCategory = !category || provider.category === category
@@ -26,18 +82,23 @@ export function FolderPage({ folders, selected, select, providers, onOpen, onAcc
     return matchesCategory && searchable.includes(query.toLocaleLowerCase())
   })
 
-  return <main id="contenido" className="private-benefits">
+  if (['loading', 'denied', 'error'].includes(result.state)) return <main id="contenido" className="private-benefits"><div className="content-width">
+    {result.state === 'error' ? <div role="alert"><p>{result.error}</p><button className="button button-dark" onClick={() => { blockedRef.current = true; setResult({ state: 'loading', providers: [], error: '' }); setRevision(value => value + 1) }}>Reintentar recomendaciones</button></div> : <p role="status">{result.state === 'loading' ? 'Consultando recomendaciones vigentes…' : 'El acceso a estas recomendaciones ya no está disponible.'}</p>}
+  </div></main>
+
+  return <main id="contenido" className="private-benefits client-recommendations">
     <div className="content-width">
-      <p className="eyebrow">BENEFICIOS PARA VOS</p>
+      <header className="client-private-heading"><p className="eyebrow">TU SELECCIÓN PRIVADA</p>
       <h1>Recomendaciones locales.</h1>
       <p className="private-lead">Explorá la selección disponible en tus carpetas y revisá las condiciones de cada beneficio. El acceso depende de la referencia QR activa.</p>
+      {selected && <p className="client-folder-label">Carpeta · {selected.slice(0, 8)}</p>}</header>
       {folders.length > 1 && <label className="folder-picker">
         Carpeta
         <select value={selected} onChange={event => select(event.target.value)}>
           {folders.map(folder => <option key={folder.collaborator_id} value={folder.collaborator_id}>Carpeta · {folder.collaborator_id.slice(0, 8)}</option>)}
         </select>
       </label>}
-      {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={onAccessRevoked} />}
+      {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={denyMedia} />}
       <div className="search-row">
         <label htmlFor="provider-search">Buscar recomendaciones</label>
         <input id="provider-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nombre, categoría o descripción" />
@@ -50,20 +111,16 @@ export function FolderPage({ folders, selected, select, providers, onOpen, onAcc
         </>}
       </div>
       {shown.length ? <div className="product-provider-grid">
-        {shown.map(provider => <article className="product-provider-card" key={provider.id}>
-          <PrivatePhoto path={provider.image_url} alt={`Imagen de ${provider.name}`} />
+        {shown.map(provider => <article className="product-provider-card client-private-postcard" key={provider.id}>
+          <FolderPhoto provider={missingPaths.includes(provider.image_url ?? '') ? { ...provider, image_url: null } : provider} onDenied={denyMedia} onMissing={missingMedia} />
           <div>
-            <span>{provider.category || 'Recomendación'}</span>
+            <span>{provider.category || 'Recomendación'} {provider.demo && '· Dato demo'}</span>
             <h2>{provider.name}</h2>
             <p>{provider.description || 'Conocé los beneficios y condiciones disponibles.'}</p>
             <button className="button button-dark" onClick={() => onOpen(provider.id)}>Ver beneficios</button>
           </div>
         </article>)}
-      </div> : <div className="product-empty">
-        <span aria-hidden="true">✳</span>
-        <h2>{providers.length ? 'No encontramos coincidencias.' : 'Todavía no hay recomendaciones en esta carpeta.'}</h2>
-        <p>{providers.length ? 'Probá con otra búsqueda.' : 'Cuando haya beneficios vigentes disponibles, los vas a encontrar acá.'}</p>
-      </div>}
+      </div> : <EmptyState title={providers.length ? 'No encontramos coincidencias.' : 'Todavía no hay recomendaciones en esta carpeta.'} description={providers.length ? 'Probá con otra búsqueda o categoría.' : 'Cuando haya beneficios vigentes disponibles, los vas a encontrar acá.'}>{providers.length > 0 && <button className="button button-dark" onClick={() => { setQuery(''); setCategory('') }}>Limpiar filtros</button>}</EmptyState>}
     </div>
   </main>
 }

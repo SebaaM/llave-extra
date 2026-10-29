@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 const json = (body: unknown, status = 200) => new Response(body === null ? null : JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const setUrl = (path: string, hash = '') => window.history.replaceState({}, '', `${path}${hash}`)
@@ -40,6 +40,41 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('recorridos F2 del Cliente', () => {
+  it('mantiene el último detalle elegido cuando el anterior responde tarde', async () => {
+    let finishFirst!: (response: Response) => void
+    const providers = ['Primera elección', 'Última elección'].map((name, index) => ({
+      id: `p${index + 1}`, slug: `p${index + 1}`, name, category: 'Café', description: '', address: '', hours: '', contact: '', map_url: '', website: '', image_url: null, status: 'ACTIVE', demo: true,
+    }))
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input); calls.push(url)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-demo' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(tourist))
+      if (url.endsWith('/me/folders/')) return Promise.resolve(json({ folders: [{ collaborator_id: 'a', granted_at: '' }] }))
+      if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
+      if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
+      if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.endsWith('/folders/a/providers/')) return Promise.resolve(json(providers))
+      if (url.endsWith('/providers/p1/')) return new Promise<Response>(resolve => { finishFirst = resolve })
+      if (url.endsWith('/providers/p2/')) return Promise.resolve(json(providers[1]))
+      if (url.endsWith('/providers/p2/benefits/')) return Promise.resolve(json([]))
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/recomendaciones')
+    render(<ProductApp />)
+    await screen.findByRole('heading', { name: 'Primera elección' })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ver beneficios' })[0])
+    await waitFor(() => expect(finishFirst).toBeTypeOf('function'))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ver beneficios' })[1])
+    await screen.findByRole('heading', { level: 1, name: 'Última elección' })
+    await act(async () => finishFirst(json(providers[0])))
+    await waitFor(() => expect(screen.queryByRole('heading', { level: 1, name: 'Primera elección' })).toBeNull())
+    expect(calls.some(url => url.endsWith('/providers/p1/benefits/'))).toBe(false)
+    expect(calls.some(url => url.includes('/catalog/providers/'))).toBe(false)
+  })
+
   it.each([false, true])('abre la tienda pública sin consultar saldo ni operaciones (sesión: %s)', async signedIn => {
     const calls: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
@@ -132,6 +167,13 @@ describe('recorridos F2 del Cliente', () => {
     await screen.findByRole('heading', { name: 'Prestador privado de A' }, { timeout: 5000 })
     expect(screen.getByRole('navigation', { name: 'Tu viaje' })).toBeTruthy()
 
+    const tripCallsBeforeHome = calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url)).length
+    setUrl('/')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    const summaryA = await screen.findByRole('region', { name: 'Resumen de Mi viaje' })
+    await waitFor(() => expect(within(summaryA).getByText('777')).toBeTruthy())
+    expect(calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url))).toHaveLength(tripCallsBeforeHome)
+
     setUrl('/ingresar')
     window.dispatchEvent(new PopStateEvent('popstate'))
     await screen.findByRole('heading', { name: 'Qué bueno verte' })
@@ -149,6 +191,12 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
     expect(screen.queryByText('Carpeta · folder-a')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Prestador privado de A' })).toBeNull()
+
+    setUrl('/')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    const summaryB = await screen.findByRole('region', { name: 'Resumen de Mi viaje' })
+    await waitFor(() => expect(within(summaryB).getByText('22')).toBeTruthy())
+    expect(within(summaryB).queryByText('777')).toBeNull()
 
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))

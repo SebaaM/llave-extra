@@ -35,8 +35,11 @@ export default function ProductApp() {
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [progress, setProgress] = useState<Progress | null>(null)
   const [history, setHistory] = useState<Consumption[]>([])
+  const [tripOwner, setTripOwner] = useState<{ identity: number; version: number } | null>(null)
   const [pageError, setPageError] = useState('')
   const identityRef = useRef<number | null>(null)
+  const providersRequestRef = useRef(0)
+  const detailRequestRef = useRef(0)
   const selectedFolderRef = useRef('')
   const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
   const site = useSiteSettings()
@@ -49,6 +52,8 @@ export default function ProductApp() {
   )
 
   const clearPrivateData = useCallback(() => {
+    providersRequestRef.current += 1
+    detailRequestRef.current += 1
     setFolders([])
     setSelectedFolder('')
     selectedFolderRef.current = ''
@@ -57,6 +62,7 @@ export default function ProductApp() {
     setWallet(null)
     setProgress(null)
     setHistory([])
+    setTripOwner(null)
   }, [])
 
   const loadTrip = useCallback(async () => {
@@ -71,6 +77,7 @@ export default function ProductApp() {
     setWallet(nextWallet)
     setProgress(nextProgress)
     setHistory(nextHistory)
+    setTripOwner({ identity: identity!, version })
   }, [stillCurrent])
 
   const loadFolders = useCallback(async () => {
@@ -94,16 +101,23 @@ export default function ProductApp() {
   const loadProviders = useCallback(async (folderId: string) => {
     const version = currentSessionVersion()
     const identity = identityRef.current
+    const request = ++providersRequestRef.current
     if (!folderId) {
       setProviders([])
       return
     }
-    const result = await api<Provider[]>(`/api/v1/folders/${folderId}/providers/`)
-    if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
-    setProviders(result)
+    try {
+      const result = await api<Provider[]>(`/api/v1/folders/${folderId}/providers/`)
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== providersRequestRef.current) return
+      setProviders(result)
+    } catch (error) {
+      if (stillCurrent(version, identity) && selectedFolderRef.current === folderId && request === providersRequestRef.current) throw error
+    }
   }, [stillCurrent])
 
   const selectFolder = useCallback((folderId: string) => {
+    providersRequestRef.current += 1
+    detailRequestRef.current += 1
     selectedFolderRef.current = folderId
     setSelectedFolder(folderId)
     setProviders([])
@@ -119,6 +133,7 @@ export default function ProductApp() {
 
   useEffect(() => {
     const applyLocation = () => {
+      detailRequestRef.current += 1
       const next = `${window.location.pathname}${window.location.search}`
       locationRef.current = next
       setPath(window.location.pathname)
@@ -265,30 +280,38 @@ export default function ProductApp() {
     const folderId = selectedFolderRef.current
     const version = currentSessionVersion()
     const identity = identityRef.current
+    const request = ++detailRequestRef.current
     if (!folderId || !identity) return
     setPageError('')
     setSelectedProvider(null)
     try {
       const provider = await api<Provider>(`/api/v1/folders/${folderId}/providers/${providerId}/`)
-      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== detailRequestRef.current) return
       setSelectedProvider(provider)
     } catch (error) {
-      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== detailRequestRef.current) return
       setPageError(messageOf(error))
       await loadFolders()
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== detailRequestRef.current) return
       await loadProviders(folderId).catch(() => setProviders([]))
     }
   }
 
   const revokeProviderView = async () => {
+    const version = currentSessionVersion()
+    const identity = identityRef.current
+    const revokedFolder = selectedFolderRef.current
+    providersRequestRef.current += 1
+    detailRequestRef.current += 1
     setSelectedProvider(null)
     setProviders([])
     try {
       await loadFolders()
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== revokedFolder) return
       const folderId = selectedFolderRef.current
       if (folderId) await loadProviders(folderId)
     } catch (error) {
-      setPageError(messageOf(error))
+      if (stillCurrent(version, identity) && selectedFolderRef.current === revokedFolder) setPageError(messageOf(error))
     }
   }
 
@@ -327,7 +350,7 @@ export default function ProductApp() {
   }
 
   const renderContent = () => {
-    if (isProductPublic) return <HomePage settings={site.settings} />
+    if (isProductPublic) return <HomePage settings={site.settings} trip={user?.role === 'TOURIST' && wallet && progress && tripOwner?.identity === user.id && tripOwner.version === currentSessionVersion() ? { wallet, progress } : undefined} />
     if (path === '/tienda' || path === '/tienda/') return <ShopPage />
     if (path.startsWith('/tienda/')) return <ShopDetail slug={path.slice('/tienda/'.length).replace(/\/$/, '')} />
     if (path === '/beneficios') return <CatalogPage search={search} />
