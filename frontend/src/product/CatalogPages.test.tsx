@@ -5,6 +5,7 @@ import { BenefitDetail, CatalogPage } from './CatalogPages'
 import { HomePage } from './HomePage'
 import { NetworkCanvas } from './NetworkCanvas'
 import ProductApp from './ProductApp'
+import userEvent from '@testing-library/user-event'
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } })
 const provider = { id: 'p1', slug: 'kuar', name: 'Kuar', category: 'Gastronomía', description: '', address: '', hours: '', contact: '', map_url: '', website: '', demo: true, image_url: null }
@@ -381,4 +382,44 @@ it('presenta textos extensos completos y confirma copia con enlaces HTTP seguros
   fireEvent.click(screen.getByRole('button', { name: 'Copiar dirección' }))
   await screen.findByText('Dirección copiada.')
   expect(writeText).toHaveBeenCalledTimes(1)
+})
+
+
+it('conserva el campo y su foco al buscar con Enter y sincroniza URL sin recuperar borradores', async () => {
+  const requested: URL[] = []
+  const user = userEvent.setup()
+  window.history.replaceState({}, '', '/beneficios?search=puerto&category=+Comida+&page=3')
+  vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+    const url = new URL(String(input))
+    if (url.pathname.endsWith('/config/')) return json({ enabled: true })
+    if (url.pathname.endsWith('/categories/')) return json({ results: [' Comida '] })
+    if (!url.pathname.includes('/catalog/benefits/')) return json({}, 404)
+    requested.push(url)
+    return json({ count: 90, next: 'next', previous: 'prev', results: [benefit] })
+  }))
+  render(<ProductApp />)
+  await screen.findByText(benefit.title)
+  const input = screen.getByLabelText('Buscar beneficio o prestador') as HTMLInputElement
+  await user.clear(input)
+  await user.type(input, '  nuevo  ')
+  await user.keyboard('{Enter}')
+  await waitFor(() => expect(requested.at(-1)?.searchParams.get('search')).toBe('nuevo'))
+  expect(document.activeElement).toBe(input)
+  expect(screen.getByLabelText('Buscar beneficio o prestador')).toBe(input)
+  expect(input.value).toBe('nuevo')
+  expect(requested.at(-1)?.searchParams.get('page')).toBe('1')
+  expect(requested.at(-1)?.searchParams.get('category')).toBe(' Comida ')
+  await user.type(input, ' borrador')
+  window.history.back()
+  await waitFor(() => expect(input.value).toBe('puerto'))
+  expect(document.activeElement).toBe(input)
+  window.history.forward()
+  await waitFor(() => expect(input.value).toBe('nuevo'))
+  expect(document.activeElement).toBe(input)
+  expect(screen.getByLabelText('Buscar beneficio o prestador')).toBe(input)
+  await user.clear(input)
+  await user.type(input, '  nuevo  ')
+  await user.keyboard('{Enter}')
+  expect(input.value).toBe('nuevo')
+  expect(document.activeElement).toBe(input)
 })

@@ -50,6 +50,9 @@ export function BenefitCard({ benefit }: { benefit: PublicBenefit }) {
 
 export function CatalogPage({ search }: { search: string }) {
   const query = readCatalogQuery(search)
+  const searchContext = useMemo(() => ({ search }), [search])
+  const [draft, setDraft] = useState<{ context: object; value: string } | null>(null)
+  const searchValue = draft?.context === searchContext ? draft.value : query.search
   const { enabled, data, loading, error, retry } = usePublicCatalog(query.page, query.search, query.category)
   const categories = useCatalogCategories(enabled)
   const apply = (changes: Partial<typeof query>) => navigate(catalogHref({ ...query, ...changes }))
@@ -60,11 +63,12 @@ export function CatalogPage({ search }: { search: string }) {
     <p className="catalog-intro">Explorá las propuestas publicadas y vigentes de la red. Consultá las condiciones de cada una antes de visitar el local.</p>
     <form className="client-catalog-search" onSubmit={event => {
       event.preventDefault()
-      const value = new FormData(event.currentTarget).get('search')
-      apply({ search: String(value ?? '').trim(), page: 1 })
+      const value = String(new FormData(event.currentTarget).get('search') ?? '').trim()
+      setDraft({ context: searchContext, value })
+      apply({ search: value, page: 1 })
     }}>
       <label htmlFor="catalog-search">Buscar beneficio o prestador</label>
-      <div><input key={search} id="catalog-search" name="search" defaultValue={query.search} placeholder="¿Qué te gustaría descubrir?" type="search" /><button className="button button-dark">Buscar</button></div>
+      <div><input id="catalog-search" name="search" value={searchValue} onChange={event => setDraft({ context: searchContext, value: event.target.value })} placeholder="¿Qué te gustaría descubrir?" type="search" /><button className="button button-dark">Buscar</button></div>
     </form>
     <CategoryChips categories={categories.categories} value={query.category} onChange={category => apply({ category, page: 1 })} />
     {categories.loading && <p className="form-help" role="status">Consultando categorías…</p>}
