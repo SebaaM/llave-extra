@@ -17,6 +17,89 @@
   background: var(--client-sand);
 }
 
+.product-shell .client-trip { background: var(--client-sand); }
+.product-shell .client-trip :is(.trip-heading > div, .trip-stats > section, .trip-history-head > div) { min-width: 0; overflow-wrap: anywhere; }
+.product-shell .client-trip :is(.trip-balance, .trip-progress) { border-radius: var(--client-radius); }
+.product-shell .client-trip .trip-progress { border: 1px solid var(--client-border); }
+.product-shell .client-trip .trip-stats strong { overflow-wrap: anywhere; }
+.product-shell .client-trip .trip-shop-link { display: inline-flex; align-items: center; min-height: 44px; max-width: 100%; color: white; }
+.product-shell .client-trip-modes { display: flex; flex-wrap: wrap; gap: var(--client-space-2); margin-bottom: var(--client-space-4); }
+.product-shell .client-trip-modes button {
+  min-height: 44px;
+  padding: var(--client-space-3) var(--client-space-6);
+  border: 1px solid var(--client-petrol);
+  border-radius: 24px;
+  background: white;
+  color: var(--client-petrol);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+.product-shell .client-trip-modes button[aria-pressed="true"] { color: white; background: var(--client-petrol); text-decoration: underline; text-underline-offset: 4px; }
+.product-shell .client-trip :is(button, a):focus-visible { outline: 3px solid var(--client-petrol); outline-offset: 4px; }
+.product-shell .client-trip .trip-balance a:focus-visible { outline-color: white; }
+.product-shell .client-trip-name-note { color: var(--client-muted); font-size: .85rem; }
+.product-shell .client-passport {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--client-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.product-shell .client-visit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--client-space-4);
+  min-width: 0;
+  padding: var(--client-space-6);
+  background: white;
+  border: 1px solid var(--client-border);
+  border-top: 4px solid var(--client-petrol);
+  border-radius: var(--client-radius);
+  color: var(--client-ink);
+  overflow-wrap: anywhere;
+}
+.product-shell .client-visit-annulled { border-top-color: #984738; background: #fcf4f0; }
+.product-shell .client-visit-unknown { border-top-color: var(--client-muted); }
+.product-shell .client-visit-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border: 2px dashed currentColor;
+  border-radius: 50%;
+  color: var(--client-petrol);
+  font-size: 2rem;
+}
+.product-shell .client-visit-annulled .client-visit-mark { color: #984738; }
+.product-shell .client-visit-unknown .client-visit-mark { color: var(--client-muted); }
+.product-shell .client-visit-details { min-width: 0; }
+.product-shell .client-visit h3 { margin: 0 0 var(--client-space-2); font: 750 1.1rem/1.4 Montserrat, sans-serif; }
+.product-shell .client-visit p { margin: var(--client-space-2) 0 0; font-size: .85rem; line-height: 1.6; }
+.product-shell .client-visit-status { font-weight: 700; }
+.product-shell .client-visit .client-visit-award { margin-top: auto; padding-top: var(--client-space-3); border-top: 1px solid var(--client-border); font-weight: 700; }
+.product-shell .client-trip-history .client-passport { grid-template-columns: minmax(0, 1fr); gap: var(--client-space-3); }
+.product-shell .client-trip-history .client-visit { display: grid; grid-template-columns: 48px minmax(0, 1fr) minmax(100px, .4fr); align-items: center; padding: var(--client-space-4); }
+.product-shell .client-trip-history .client-visit-mark { width: 44px; height: 44px; font-size: 1.5rem; }
+.product-shell .client-trip-history .client-visit-award { margin: 0; padding: 0; border: 0; }
+
+@media (max-width: 900px) {
+  .product-shell .client-passport { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .product-shell .client-passport { grid-template-columns: minmax(0, 1fr); }
+  .product-shell .client-trip .trip-history-head { flex-wrap: wrap; align-items: flex-start; gap: var(--client-space-3); }
+  .product-shell .client-trip-history .client-visit { grid-template-columns: 44px minmax(0, 1fr); gap: var(--client-space-3); }
+  .product-shell .client-trip-history .client-visit-award { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-shell .client-trip-modes button { transition: none; }
+}
+
 .product-shell .client-home-postcard {
   min-width: 0;
   padding: var(--client-space-4);

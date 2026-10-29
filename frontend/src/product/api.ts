@@ -2,7 +2,8 @@ export type User = { id: number; email: string; role: 'TOURIST' | 'COLLABORATOR'
 export type Folder = { collaborator_id: string; granted_at: string }
 export type Provider = { id: string; slug: string; name: string; category: string; description: string; address: string; hours: string; contact: string; map_url: string; website: string; image_url: string | null; status: string; demo: boolean }
 export type Benefit = { id: string; title: string; description: string; conditions: string; valid_from: string | null; valid_until: string | null; image_url: string | null; status: string; demo: boolean }
-export type Consumption = { id: string; provider_id: string; collaborator_id: string | null; award: number; state: string; created_at: string }
+// Nombre actual del comercio en lectura propia; puede faltar en respuestas anteriores.
+export type Consumption = { id: string; provider_id: string; provider_name?: string | null; collaborator_id: string | null; award: number; state: string; created_at: string }
 export type Wallet = { balance: number; redemptions_frozen: boolean }
 export type Progress = { total: number; target: number; completed: boolean }
 

@@ -303,6 +303,52 @@ describe('recorridos F2 del Cliente', () => {
     finishLogout(json(null, 204))
   })
 
+  it('retira los sellos de A y descarta su historial tardío después de entrar con B', async () => {
+    let accountB = false
+    let historyReadsA = 0
+    let finishHistoryA!: (response: Response) => void
+    const visitA = { id: 'visit-a', provider_id: 'p-a', provider_name: 'Comercio de la cuenta A', collaborator_id: null, award: 777, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }
+    const visitB = { ...visitA, id: 'visit-b', provider_id: 'p-b', provider_name: 'Comercio de la cuenta B', award: 22 }
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-a' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(accountB ? { ...tourist, id: 805, email: 'b@example.test' } : tourist))
+      if (url.endsWith('/auth/login/')) { accountB = true; return Promise.resolve(json({ access: 'access-b' })) }
+      if (url.endsWith('/me/folders/')) return Promise.resolve(json({ folders: [] }))
+      if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: accountB ? 22 : 777, redemptions_frozen: false }))
+      if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: accountB ? 1 : 2, target: 5, completed: false }))
+      if (url.endsWith('/me/consumptions/')) {
+        if (accountB) return Promise.resolve(json([visitB]))
+        historyReadsA += 1
+        if (historyReadsA === 1) return Promise.resolve(json([visitA]))
+        return new Promise<Response>(resolve => { finishHistoryA = resolve })
+      }
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/mi-viaje')
+    render(<ProductApp />)
+    await screen.findByRole('heading', { name: visitA.provider_name })
+    fireEvent.click(screen.getByRole('button', { name: 'Historial' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }))
+    await waitFor(() => expect(finishHistoryA).toBeTypeOf('function'))
+    await act(async () => { setUrl('/ingresar'); window.dispatchEvent(new PopStateEvent('popstate')) })
+    await screen.findByRole('heading', { name: 'Qué bueno verte' })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'b@example.test' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await screen.findByRole('heading', { name: visitB.provider_name })
+    expect(screen.queryByText(visitA.provider_name)).toBeNull()
+    expect(screen.queryByText('777')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Pasaporte' }).getAttribute('aria-pressed')).toBe('true')
+    await act(async () => finishHistoryA(json([{ ...visitA, provider_name: 'Respuesta tardía privada de A' }])))
+    fireEvent.click(screen.getByRole('button', { name: 'Historial' }))
+    expect(screen.getByRole('heading', { name: visitB.provider_name })).toBeTruthy()
+    expect(screen.queryByText('Respuesta tardía privada de A')).toBeNull()
+    expect(screen.queryByText(visitA.provider_name)).toBeNull()
+    expect(screen.queryByText('777')).toBeNull()
+  })
+
   it('envía una sola verificación de email con un token de un solo uso bajo StrictMode', async () => {
     const calls: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
