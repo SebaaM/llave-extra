@@ -10,6 +10,27 @@ afterEach(() => { cleanup(); vi.clearAllMocks() })
 const props = { onLogin: vi.fn(), onRegistered: vi.fn() }
 
 describe('acceso del Cliente', () => {
+  it.each(['login', 'register', 'reset'] as const)('asocia contraseña vacía y limpia el error al editar en %s', mode => {
+    render(<Auth mode={mode} {...props} />)
+    if (mode !== 'reset') fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'cliente@example.test' } })
+    const password = screen.getByLabelText('Contraseña')
+    const submit = mode === 'login' ? 'Ingresar' : mode === 'register' ? 'Crear mi cuenta' : 'Actualizar contraseña'
+    fireEvent.click(screen.getByRole('button', { name: submit }))
+    const error = screen.getByRole('alert')
+    expect(error.textContent).toBe('Ingresá tu contraseña para continuar.')
+    expect(error.id).not.toBe('')
+    expect(password.getAttribute('aria-invalid')).toBe('true')
+    expect(password.getAttribute('aria-describedby')).toBe(error.id)
+    expect(document.activeElement).toBe(password)
+    expect(mocks.authenticate).not.toHaveBeenCalled()
+    expect(mocks.register).not.toHaveBeenCalled()
+    expect(mocks.api).not.toHaveBeenCalled()
+    fireEvent.change(password, { target: { value: 'clave sintética' } })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(password.getAttribute('aria-invalid')).toBeNull()
+    expect(password.getAttribute('aria-describedby')).toBeNull()
+  })
+
   it('muestra y oculta la contraseña con teclado sin enviarla ni perder el valor', async () => {
     const keyboard = userEvent.setup()
     render(<Auth mode="login" {...props} />)
