@@ -200,3 +200,59 @@
   outline: 3px solid var(--client-petrol);
   outline-offset: -3px;
 }
+
+.product-shell .client-catalog-page { color: var(--client-ink); }
+.product-shell .client-catalog-page :is(h1, h2, h3, p, a, button) { overflow-wrap: anywhere; }
+.product-shell .client-catalog-search { margin: var(--client-space-8) 0 var(--client-space-6); max-width: 760px; }
+.product-shell .client-catalog-search label { display: block; font-size: .85rem; font-weight: 750; margin-bottom: var(--client-space-2); }
+.product-shell .client-catalog-search > div { display: flex; gap: var(--client-space-2); }
+.product-shell .client-catalog-search input { min-height: 48px; min-width: 0; flex: 1; border: 1px solid var(--client-border); border-radius: 10px; padding: 12px 16px; color: var(--client-ink); background: white; font: inherit; }
+.product-shell .client-catalog-search input:focus-visible { outline: 3px solid var(--client-petrol); outline-offset: 3px; }
+.product-shell :is(.client-category-chips, .client-active-filters) { display: flex; flex-wrap: wrap; gap: var(--client-space-2); margin-bottom: var(--client-space-6); }
+.product-shell :is(.client-category-chips, .client-active-filters, .client-category-error, .client-copy-address) button { min-width: 44px; min-height: 44px; max-width: 100%; border: 1px solid var(--client-border); border-radius: 10px; padding: 10px 16px; font-family: inherit; font-size: .82rem; font-weight: 700; line-height: 1.4; color: var(--client-petrol); background: white; cursor: pointer; }
+.product-shell .client-category-chips button { border-radius: 24px; transition: background-color 180ms ease, color 180ms ease; white-space: pre-wrap; }
+.product-shell .client-category-chips button[aria-pressed="true"] { color: white; background: var(--client-petrol); border-color: var(--client-petrol); }
+.product-shell .client-category-chips button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.product-shell .client-active-filters { padding: var(--client-space-4); background: #e8eee8; border-radius: 12px; }
+.product-shell .client-category-error { padding: var(--client-space-4); border-left: 3px solid var(--client-orange); margin-bottom: var(--client-space-6); }
+.product-shell .client-category-error p { margin: 0 0 var(--client-space-3); }
+.product-shell .client-benefit-card { border-color: var(--client-border); border-radius: var(--client-radius); box-shadow: 0 4px 16px #16464a0a; transition: transform 180ms ease, box-shadow 180ms ease; min-width: 0; }
+.product-shell .client-benefit-card:focus-within { box-shadow: 0 6px 20px #16464a20; }
+.product-shell .client-benefit-card .catalog-photo { height: auto; aspect-ratio: 4 / 3; }
+.product-shell .client-benefit-card .catalog-card-copy { padding: var(--client-space-6); }
+.product-shell .client-benefit-card .catalog-card-copy > span { color: #924003; }
+.product-shell .client-benefit-card .client-benefit-provider { color: var(--client-muted); font-size: .9rem; }
+.product-shell .client-benefit-card .catalog-card-conditions { border-top: 1px solid var(--client-border); padding-top: var(--client-space-3); margin-top: var(--client-space-3); font-weight: 600; }
+.product-shell .client-benefit-card .catalog-card-link { color: #924003; text-underline-offset: 4px; }
+.product-shell .client-benefit-card .catalog-card-link:hover { text-decoration: underline; }
+.product-shell .client-catalog-page .catalog-pagination { flex-wrap: wrap; margin-top: var(--client-space-8); gap: var(--client-space-3); }
+.product-shell .client-catalog-page .catalog-pagination button { border-radius: 10px; }
+.product-shell .client-benefit-detail { margin-top: var(--client-space-8); }
+.product-shell .client-detail-main { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: var(--client-space-8); align-items: start; }
+.product-shell .client-detail-photo.catalog-photo { height: auto; aspect-ratio: 4 / 3; border-radius: var(--client-radius); }
+.product-shell .client-benefit-detail h1 { font-size: clamp(2rem, 4vw, 3.5rem); }
+.product-shell .client-benefit-detail h2 { font: 750 1.25rem/1.35 Montserrat, sans-serif; color: var(--client-petrol); margin-bottom: var(--client-space-4); }
+.product-shell .client-benefit-detail p { line-height: 1.7; }
+.product-shell .client-detail-provider { color: var(--client-muted); font-weight: 700; margin-bottom: var(--client-space-6); }
+.product-shell .client-detail-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--client-space-6); margin-top: var(--client-space-8); }
+.product-shell .client-detail-sections section { background: white; border: 1px solid var(--client-border); border-radius: var(--client-radius); padding: var(--client-space-6); }
+.product-shell .client-detail-number { display: block; color: #924003; font-weight: 800; margin-bottom: var(--client-space-3); }
+.product-shell .client-address { user-select: text; white-space: pre-wrap; }
+.product-shell .client-copy-address [role="status"]:empty { margin: 0; }
+.product-shell .client-location-links { display: flex; flex-wrap: wrap; gap: var(--client-space-3); }
+.product-shell .client-location-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--client-petrol); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+@media (hover: hover) { .product-shell .client-benefit-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px #16464a20; } }
+@media (max-width: 760px) {
+  .product-shell .client-detail-main, .product-shell .client-detail-sections { grid-template-columns: minmax(0, 1fr); }
+  .product-shell .client-detail-main { gap: var(--client-space-6); }
+}
+@media (max-width: 390px) {
+  .product-shell .client-catalog-search > div { flex-wrap: wrap; }
+  .product-shell .client-catalog-search input { flex-basis: 100%; }
+  .product-shell .client-catalog-search .button { width: 100%; }
+  .product-shell .client-detail-sections section { padding: var(--client-space-4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-shell .client-benefit-card, .product-shell .client-category-chips button { transition: none; }
+  .product-shell .client-benefit-card:hover { transform: none; }
+}

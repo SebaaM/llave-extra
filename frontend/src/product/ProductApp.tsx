@@ -330,7 +330,7 @@ export default function ProductApp() {
     if (isProductPublic) return <HomePage settings={site.settings} />
     if (path === '/tienda' || path === '/tienda/') return <ShopPage />
     if (path.startsWith('/tienda/')) return <ShopDetail slug={path.slice('/tienda/'.length).replace(/\/$/, '')} />
-    if (path === '/beneficios') return <CatalogPage />
+    if (path === '/beneficios') return <CatalogPage search={search} />
     if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
     if (path === '/creditos-imagenes') return <CreditsPage />
     if (!authReady) return <main id="contenido" className="product-loading" role="status">Preparando tu viaje…</main>

@@ -4,6 +4,7 @@ import { setAccessToken } from './api'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
 import { HomePage } from './HomePage'
 import { NetworkCanvas } from './NetworkCanvas'
+import ProductApp from './ProductApp'
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } })
 const provider = { id: 'p1', slug: 'kuar', name: 'Kuar', category: 'Gastronomía', description: '', address: '', hours: '', contact: '', map_url: '', website: '', demo: true, image_url: null }
@@ -43,7 +44,7 @@ describe('catálogo público', () => {
       if (url.includes('/catalog/benefits/')) return json({ count: 1, next: null, previous: null, results: [benefit] })
       return json({ detail: 'No encontrado' }, 404)
     }))
-    render(<CatalogPage />)
+    render(<CatalogPage search="" />)
     await screen.findByText('10% de descuento en consumo')
     enabled = false
     fireEvent(window, new Event('focus'))
@@ -70,22 +71,26 @@ describe('catálogo público', () => {
 
   it('busca en todo el catálogo, filtra por categoría y pagina según el servidor', async () => {
     const requested: string[] = []
+    window.history.replaceState({}, '', '/beneficios')
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
       if (url.endsWith('/catalog/config/')) return json({ enabled: true })
+      if (url.endsWith('/catalog/categories/')) return json({ results: ['Gastronomía'] })
+      if (!url.includes('/catalog/benefits/')) return json({}, 404)
       requested.push(url)
       const page = Number(new URL(url).searchParams.get('page'))
       return json({ count: 2, previous: page === 1 ? null : 'prev', next: page === 1 ? 'next' : null, results: [{ ...benefit, id: `b${page}`, title: `Propuesta ${page}` }] })
     }))
-    render(<CatalogPage />)
+    render(<ProductApp />)
     await screen.findByText('Propuesta 1')
-    fireEvent.change(screen.getByLabelText('Buscar beneficio o prestador'), { target: { value: 'Kuar' } })
-    fireEvent.change(screen.getByLabelText('Categoría exacta'), { target: { value: 'Gastronomía' } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Gastronomía' }))
+    fireEvent.change(screen.getByLabelText('Buscar beneficio o prestador'), { target: { value: '  Kuar  ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
     await waitFor(() => expect(requested.some(url => url.includes('search=Kuar') && url.includes('category=Gastronom%C3%ADa'))).toBe(true))
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
     await screen.findByText('Propuesta 2')
     expect(requested.at(-1)).toContain('page=2')
+    expect(window.location.search).toContain('page=2')
     expect(screen.getByText('Página 2 · 2 beneficios')).toBeTruthy()
   })
 
@@ -97,7 +102,7 @@ describe('catálogo público', () => {
       if (failing) return json({ detail: 'Servicio temporalmente fuera de línea' }, 503)
       return json({ count: 0, next: null, previous: null, results: [] })
     }))
-    render(<CatalogPage />)
+    render(<CatalogPage search="" />)
     await screen.findByRole('alert')
     failing = false
     fireEvent.click(screen.getByRole('button', { name: 'Volver a intentar' }))
@@ -244,4 +249,136 @@ describe('catálogo público', () => {
     }
     await waitFor(() => expect(scheduled).toHaveLength(2))
   })
+})
+
+
+describe('exploración visual del catálogo', () => {
+  it('restaura URL directa e historial y conserva categoría con espacios al reiniciar y limpiar', async () => {
+    const requested: URL[] = []
+    window.history.replaceState({}, '', '/beneficios?search=puerto&category=+Comida+&page=3')
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/config/')) return json({ enabled: true })
+      if (url.pathname.endsWith('/categories/')) return json({ results: [' Comida ', 'Paseos'] })
+      if (!url.pathname.includes('/catalog/benefits/')) return json({}, 404)
+      requested.push(url)
+      return json({ count: 90, next: 'next', previous: 'prev', results: [benefit] })
+    }))
+    render(<ProductApp />)
+    const input = await screen.findByLabelText('Buscar beneficio o prestador') as HTMLInputElement
+    await screen.findByText(benefit.title)
+    expect(input.value).toBe('puerto')
+    expect(requested[0].searchParams.get('category')).toBe(' Comida ')
+    expect(requested[0].searchParams.get('page')).toBe('3')
+    fireEvent.change(input, { target: { value: '  nuevo  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
+    await waitFor(() => expect(requested.at(-1)?.searchParams.get('search')).toBe('nuevo'))
+    expect(requested.at(-1)?.searchParams.get('page')).toBe('1')
+    expect(requested.at(-1)?.searchParams.get('category')).toBe(' Comida ')
+    await screen.findByRole('button', { name: 'Paseos' })
+    fireEvent.change(screen.getByLabelText('Buscar beneficio o prestador'), { target: { value: 'borrador sin aplicar' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Paseos' }))
+    await waitFor(() => expect(requested.at(-1)?.searchParams.get('category')).toBe('Paseos'))
+    expect((screen.getByLabelText('Buscar beneficio o prestador') as HTMLInputElement).value).toBe('nuevo')
+    window.history.back()
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Comida' })).getAttribute('aria-pressed')).toBe('true'))
+    window.history.forward()
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Paseos' })).getAttribute('aria-pressed')).toBe('true'))
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+    await waitFor(() => expect(window.location.search).toBe(''))
+    expect((screen.getByLabelText('Buscar beneficio o prestador') as HTMLInputElement).value).toBe('')
+    expect(requested.at(-1)?.searchParams.get('category')).toBeNull()
+    expect(requested.at(-1)?.searchParams.get('page')).toBe('1')
+  })
+
+  it('mantiene un filtro retirado visible y recupera categorías sin impedir la búsqueda', async () => {
+    let categoryFailure = true
+    const requested: URL[] = []
+    window.history.replaceState({}, '', '/beneficios?category=Retirada')
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/config/')) return json({ enabled: true })
+      if (url.pathname.endsWith('/categories/')) return categoryFailure ? json({}, 503) : json({ results: ['Paseos'] })
+      if (!url.pathname.includes('/catalog/benefits/')) return json({}, 404)
+      requested.push(url)
+      return json({ count: 0, next: null, previous: null, results: [] })
+    }))
+    render(<ProductApp />)
+    await screen.findByText('No encontramos beneficios para esta búsqueda.')
+    await screen.findByRole('button', { name: 'Reintentar categorías' })
+    expect(screen.getByRole('button', { name: /Quitar categoría: Retirada/ })).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Buscar beneficio o prestador'), { target: { value: 'té' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
+    await waitFor(() => expect(requested.at(-1)?.searchParams.get('search')).toBe('té'))
+    categoryFailure = false
+    fireEvent.click(await screen.findByRole('button', { name: 'Reintentar categorías' }))
+    await screen.findByRole('button', { name: 'Paseos' })
+    expect(screen.getByRole('button', { name: /Retirada.*filtro guardado/ }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: /Quitar categoría: Retirada/ }))
+    await waitFor(() => expect(requested.at(-1)?.searchParams.get('category')).toBeNull())
+  })
+
+  it.each([true, false])('recupera el 404 de página con catálogo enabled=%s', async enabled => {
+    let configs = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/config/')) return json({ enabled: ++configs === 1 ? true : enabled })
+      if (url.endsWith('/categories/')) return json({ results: [] })
+      return json({ detail: 'Página inválida.' }, 404)
+    }))
+    render(<CatalogPage search="?page=9" />)
+    if (enabled) {
+      await screen.findByRole('heading', { name: 'Esta página ya no existe.' })
+      expect(screen.getByRole('link', { name: 'Volver a la página 1' }).getAttribute('href')).toBe('/beneficios')
+      expect(screen.queryByText('El catálogo general no está disponible ahora.')).toBeNull()
+    } else await screen.findByText('El catálogo general no está disponible ahora.')
+  })
+
+  it('ofrece dirección seleccionable si falla copiar, sin exponer URLs inválidas y retira la ficha al apagarse', async () => {
+    let enabled = true
+    const writeText = vi.fn().mockRejectedValue(new Error('Sin permiso'))
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => String(input).endsWith('/config/')
+      ? json({ enabled })
+      : json({ ...benefit, provider: { ...provider, address: 'San Martín 123', hours: '10 a 18', website: 'javascript:alert(1)', map_url: 'data:text/html,peligro' } })))
+    render(<BenefitDetail id="b1" />)
+    await screen.findByRole('heading', { name: benefit.title })
+    expect(writeText).not.toHaveBeenCalled()
+    expect(screen.getByText('10% de descuento en consumo')).toBeTruthy()
+    expect(screen.getByText(/DATO DEMO/)).toBeTruthy()
+    expect(screen.getByLabelText('Kuar')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Cómo usarlo' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Dónde encontrarlo' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Sitio del prestador|Ver mapa/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar dirección' }))
+    await screen.findByText('No pudimos copiar la dirección. Podés seleccionar y copiar el texto.')
+    expect(writeText).toHaveBeenCalledWith('San Martín 123')
+    expect(screen.getByText('San Martín 123')).toBeTruthy()
+    enabled = false
+    fireEvent(window, new Event('focus'))
+    expect(screen.queryByText('San Martín 123')).toBeNull()
+    await screen.findByRole('heading', { name: 'Este beneficio no está disponible.' })
+  })
+})
+
+
+it('presenta textos extensos completos y confirma copia con enlaces HTTP seguros', async () => {
+  const description = 'Una propuesta para descubrir la ciudad. '.repeat(25)
+  const conditions = 'Consultá disponibilidad en el local antes de usar este beneficio. '.repeat(20)
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+  vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => String(input).endsWith('/config/')
+    ? json({ enabled: true })
+    : json({ ...benefit, description, conditions, provider: { ...provider, address: 'Avenida de ejemplo 456', website: 'https://ejemplo.test/sitio', map_url: 'https://ejemplo.test/mapa' } })))
+  render(<BenefitDetail id="b1" />)
+  await screen.findByRole('heading', { name: benefit.title })
+  expect(screen.getByText(description.trim())).toBeTruthy()
+  expect(screen.getByText(conditions.trim())).toBeTruthy()
+  const map = screen.getByRole('link', { name: /Ver mapa del prestador/ })
+  expect(map.getAttribute('href')).toBe('https://ejemplo.test/mapa')
+  expect(map.getAttribute('rel')).toBe('noopener noreferrer')
+  expect(screen.getByRole('link', { name: /Sitio del prestador/ }).getAttribute('href')).toBe('https://ejemplo.test/sitio')
+  fireEvent.click(screen.getByRole('button', { name: 'Copiar dirección' }))
+  await screen.findByText('Dirección copiada.')
+  expect(writeText).toHaveBeenCalledTimes(1)
 })

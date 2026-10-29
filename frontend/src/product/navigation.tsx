@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from 'react'
 
-function navigate(path: string) { window.dispatchEvent(new CustomEvent('llave:navigate', { detail: path })) }
+import { navigate } from './navigate'
 
 export function ProductLink({ href, children, onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { children: ReactNode }) {
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
