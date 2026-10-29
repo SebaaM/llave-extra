@@ -1,27 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
-import { ApiError, api } from './api'
-import { privateImage } from './api'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { ApiError, api, currentSessionVersion } from './api'
 import { publicNetwork } from './catalog'
 import type { NetworkItem, NetworkPage, Presentation } from './catalog'
 import { PublicPhoto } from './CatalogPages'
-import { ProductLink } from './navigation'
+import { PrivatePhoto } from './PrivatePhoto'
+import { NetworkPreview } from './NetworkPreview'
 import { messageOf } from './shared'
 
-function PrivateNetworkPhoto({ path, name }: { path: string | null; name: string }) {
-  const [image, setImage] = useState<{ path: string; url: string } | null>(null)
-  useEffect(() => {
-    if (!path) return
-    let alive = true
-    let created: string | null = null
-    void privateImage(path).then(url => {
-      if (!url) return
-      created = url
-      if (alive) setImage({ path, url })
-      else URL.revokeObjectURL(url)
-    }).catch(() => { if (alive) setImage(null) })
-    return () => { alive = false; if (created) URL.revokeObjectURL(created) }
-  }, [path])
-  return <span className="network-node-photo">{image?.path === path ? <img src={image.url} alt="" /> : name.slice(0, 2).toLocaleUpperCase()}</span>
+function NetworkPhoto({ item, folderId, onDenied, onMissing }: { item: NetworkItem; folderId?: string; onDenied: () => void; onMissing: (path: string) => void }) {
+  const path = item.provider.image_url
+  const missing = useCallback(() => { if (path) onMissing(path) }, [path, onMissing])
+  return folderId
+    ? <PrivatePhoto path={path} alt="" className="network-node-photo" onDenied={onDenied} onMissing={missing} />
+    : <PublicPhoto path={path} alt="" name={item.provider.name} className="network-node-photo" />
 }
 
 const backgroundImage = { HARBOR: '/images/ushuaia-harbor.jpg', BEAGLE: '/images/ushuaia-beagle.jpg' }
@@ -35,7 +26,17 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
   const [hidden, setHidden] = useState(document.visibilityState === 'hidden')
   const [reduced, setReduced] = useState(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const [revision, setRevision] = useState(0)
-  const key = `${folderId ?? 'public'}:${page}:${revision}`
+  const [view, setView] = useState<'network' | 'list'>('network')
+  const [selection, setSelection] = useState<{ key: string; id: string } | null>(null)
+  const [missingImages, setMissingImages] = useState<{ context: string; paths: string[] }>({ context: '', paths: [] })
+  const sessionVersion = folderId ? currentSessionVersion() : 0
+  const context = `${folderId ?? 'public'}:${sessionVersion}`
+  const key = `${context}:${page}:${revision}`
+  // Descartar la selección también si se vuelve luego a la página o carpeta anterior.
+  if (selection && selection.key !== key) setSelection(null)
+  const previewId = useId()
+  const selectedButton = useRef<HTMLButtonElement | null>(null)
+  const requestRef = useRef<AbortController | null>(null)
   const loading = response.key !== key
   const data = loading ? null : response.data
   const error = loading ? '' : response.error
@@ -44,17 +45,36 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
 
   useEffect(() => {
     const controller = new AbortController()
-    // Public pages carry no JWT. Folder pages use the regular private client.
+    requestRef.current = controller
+    // Las páginas públicas no envían JWT; la carpeta revalida su acceso privado.
     const request = folderId
       ? api<NetworkPage>(`/api/v1/folders/${encodeURIComponent(folderId)}/network/?page=${page}`, { signal: controller.signal })
       : publicNetwork(page, controller.signal)
-    void request.then(result => { if (!controller.signal.aborted) setResponse({ key, data: result, error: '' }) }).catch(caught => {
-      if (controller.signal.aborted) return
+    void request.then(result => { if (!controller.signal.aborted && (!folderId || sessionVersion === currentSessionVersion())) setResponse({ key, data: result, error: '' }) }).catch(caught => {
+      if (controller.signal.aborted || (folderId && sessionVersion !== currentSessionVersion())) return
       setResponse({ key, data: null, error: messageOf(caught) })
       if (folderId && caught instanceof ApiError && [401, 403, 404].includes(caught.status)) revokedRef.current?.()
     })
     return () => controller.abort()
-  }, [folderId, page, revision, key])
+  }, [folderId, page, revision, key, sessionVersion])
+
+  const denyMedia = useCallback(() => {
+    if (!folderId || sessionVersion !== currentSessionVersion() || requestRef.current?.signal.aborted) return
+    requestRef.current?.abort()
+    setResponse({ key, data: null, error: 'El acceso a esta red ya no está disponible.' })
+    revokedRef.current?.()
+  }, [folderId, sessionVersion, key])
+  const missingMedia = useCallback((path: string) => {
+    if (!folderId || sessionVersion !== currentSessionVersion() || requestRef.current?.signal.aborted) return
+    requestRef.current?.abort()
+    // Un 404 puede ser un archivo ausente. Ocultar contenido y revalidar la red,
+    // conservando ese archivo como ausente para no provocar reintentos en bucle.
+    setMissingImages(previous => ({ context, paths: [...(previous.context === context ? previous.paths : []), path] }))
+    setRevision(value => value + 1)
+  }, [folderId, sessionVersion, context])
+  const nodes = (data?.results ?? []).map(item => missingImages.context === context && missingImages.paths.includes(item.provider.image_url ?? '')
+    ? { ...item, provider: { ...item.provider, image_url: null } } : item)
+  const selected = selection?.key === key ? nodes.find(item => item.provider.id === selection.id) : undefined
 
   useEffect(() => {
     const visibility = () => { setHidden(document.visibilityState === 'hidden'); if (document.visibilityState === 'visible') setRevision(value => value + 1) }
@@ -64,14 +84,14 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
     motion?.addEventListener('change', change)
     return () => { document.removeEventListener('visibilitychange', visibility); motion?.removeEventListener('change', change) }
   }, [])
-  // Keep the server's board configuration mounted while a different page loads.
+  // Mantener la presentación del servidor durante la carga, sin nodos anteriores.
   const presentation: Presentation = response.data?.presentation ?? { title: folderId ? 'Red de recomendaciones' : 'La red Llave Extra', layout: 'RADIAL', theme: 'SAND', background: 'BEAGLE', page_size: 12, interval_seconds: 10, city: 'Ushuaia' }
   const totalPages = data ? Math.max(1, Math.ceil(data.count / presentation.page_size)) : 1
   useEffect(() => {
-    if (!data?.next || paused || hovered || focusWithin || loading || hidden || reduced) return
+    if (!data?.next || selected || paused || hovered || focusWithin || loading || hidden || reduced) return
     const timer = window.setTimeout(() => setPage(value => value + 1), presentation.interval_seconds * 1000)
     return () => window.clearTimeout(timer)
-  }, [data, paused, hovered, focusWithin, loading, hidden, reduced, presentation.interval_seconds])
+  }, [data, selected, paused, hovered, focusWithin, loading, hidden, reduced, presentation.interval_seconds])
 
   const slotCount = Math.min(presentation.page_size, response.data?.count ?? presentation.page_size)
   const slots = Array.from({ length: slotCount }, (_, index) => {
@@ -79,13 +99,22 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
     const radius = presentation.layout === 'ORBIT' ? (index % 2 ? 41 : 34) : 39
     return { x: 50 + Math.cos(angle) * radius, y: 50 + Math.sin(angle) * radius }
   })
-  const nodes = data?.results ?? []
+  const selectItem = (item: NetworkItem, button: HTMLButtonElement) => {
+    selectedButton.current = button
+    setSelection({ key, id: item.provider.id })
+  }
+  const nodeButton = (item: NetworkItem) => <button ref={button => { if (button && selected?.provider.id === item.provider.id) selectedButton.current = button }} onClick={event => selectItem(item, event.currentTarget)} aria-label={`${item.provider.name}: ${item.benefit_title}`} aria-pressed={selected?.provider.id === item.provider.id} aria-controls={previewId}>
+    <NetworkPhoto key={`${key}:${item.provider.id}`} item={item} folderId={folderId} onDenied={denyMedia} onMissing={missingMedia} /><span>{item.provider.name}</span>{view === 'list' && <span>{item.benefit_title}</span>}
+  </button>
   return <section className={`network-section network-${presentation.theme.toLowerCase()}`} aria-label={presentation.title} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocusWithin(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false) }}>
     <div className="content-width network-heading"><div><p className="eyebrow">{folderId ? 'TU RED PRIVADA' : 'RED ACTIVA EN USHUAIA'}</p><h2>{presentation.title}</h2><p>Prestadores con beneficios vigentes. Cada punto representa un lugar de la red; su posición es visual y no indica una ubicación real.</p></div><span className="network-city">{presentation.city} · Tierra del Fuego</span></div>
-    <div className="network-scene" style={{ backgroundImage: `linear-gradient(90deg,rgba(12,50,53,.78),rgba(12,50,53,.3)),url(${backgroundImage[presentation.background]})` }}><div className="network-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" className="network-lines">{slots.map((slot, index) => <line key={index} x1="50" y1="50" x2={slot.x} y2={slot.y} />)}</svg><div className="network-center"><img src="/logo-llave-extra.png" alt="" /><strong>La red que conecta tu viaje</strong></div>{slots.map((slot, index) => {
+    <div className="content-width client-network-switch" role="group" aria-label="Vista de la red"><button aria-pressed={view === 'network'} onClick={() => setView('network')}>Red</button><button aria-pressed={view === 'list'} onClick={() => setView('list')}>Lista</button><p>Ambas vistas muestran los prestadores de esta página.</p></div>
+    <div className="network-scene" hidden={view !== 'network'} style={{ backgroundImage: `linear-gradient(90deg,rgba(12,50,53,.78),rgba(12,50,53,.3)),url(${backgroundImage[presentation.background]})` }}><div className="network-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" className="network-lines">{slots.map((slot, index) => <line key={index} x1="50" y1="50" x2={slot.x} y2={slot.y} />)}</svg><div className="network-center"><img src="/logo-llave-extra.png" alt="" /><strong>La red que conecta tu viaje</strong></div>{slots.map((slot, index) => {
       const item: NetworkItem | undefined = nodes[index]
-      return <div key={index} className={`network-slot ${item ? 'network-slot-filled' : ''}`} style={{ left: `${slot.x}%`, top: `${slot.y}%` }}>{item && (folderId ? <button onClick={() => onOpenProvider?.(item.provider.id)} aria-label={`${item.provider.name}: ${item.benefit_title}`}><PrivateNetworkPhoto path={item.provider.image_url} name={item.provider.name} /><span>{item.provider.name}</span></button> : <ProductLink href={`/beneficios/${item.benefit_id}`} aria-label={`${item.provider.name}: ${item.benefit_title}`}><PublicPhoto path={item.provider.image_url} alt="" name={item.provider.name} className="network-node-photo" /><span>{item.provider.name}</span></ProductLink>)}</div>
+      return <div key={index} className={`network-slot ${item ? 'network-slot-filled' : ''}`} style={{ left: `${slot.x}%`, top: `${slot.y}%` }}>{view === 'network' && item && nodeButton(item)}</div>
     })}</div></div>
+    {view === 'list' && <ul className="content-width client-network-list" aria-label="Prestadores de esta página">{nodes.map(item => <li key={item.provider.id}>{nodeButton(item)}</li>)}</ul>}
     <div className="content-width network-controls"><div>{loading ? <span role="status">Cargando red…</span> : error ? <span role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Reintentar</button></span> : data?.count === 0 ? <span>Pronto habrá prestadores vigentes para mostrar.</span> : <span>Página {page} de {totalPages} · {data?.count ?? 0} prestadores</span>}</div><div><button disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)} aria-label="Página anterior">←</button><button onClick={() => setPaused(value => !value)} aria-pressed={paused}>{paused ? 'Reanudar' : 'Pausar'}</button><button disabled={loading || !data?.next} onClick={() => setPage(value => value + 1)} aria-label="Página siguiente">→</button></div></div>
+    <div className="content-width" id={previewId}>{selected && <NetworkPreview key={`${key}:${selected.provider.id}`} item={selected} folderId={folderId} onOpenProvider={onOpenProvider ? id => { setSelection(null); onOpenProvider(id) } : undefined} onClose={() => { setSelection(null); if (selectedButton.current?.isConnected) selectedButton.current.focus() }} onDenied={denyMedia} onMissing={missingMedia} />}</div>
   </section>
 }

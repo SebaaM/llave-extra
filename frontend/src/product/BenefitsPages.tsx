@@ -1,7 +1,7 @@
 import { PrivatePhoto } from './PrivatePhoto'
 export { PrivatePhoto } from './PrivatePhoto'
-import { useEffect, useRef, useState } from 'react'
-import { ApiError, api } from './api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ApiError, api, currentSessionVersion } from './api'
 import type { Benefit, Folder, Provider } from './api'
 import { messageOf } from './shared'
 import { NetworkCanvas } from './NetworkCanvas'
@@ -75,39 +75,59 @@ type ProviderDetailProps = {
 }
 
 export function ProviderDetail({ folderId, provider, onAccessRevoked }: ProviderDetailProps) {
-  const key = `${folderId}/${provider.id}`
-  const [result, setResult] = useState<{ key: string; benefits: Benefit[]; error: string }>({ key: '', benefits: [], error: '' })
+  const [revision, setRevision] = useState(0)
+  const [missingImage, setMissingImage] = useState<{ context: string; path: string | null } | null>(null)
+  const version = currentSessionVersion()
+  const context = `${folderId}/${provider.id}/${version}`
+  const key = `${context}/${revision}`
+  const [result, setResult] = useState<{ key: string; benefits: Benefit[]; error: string; denied?: boolean }>({ key: '', benefits: [], error: '' })
   const accessRevokedRef = useRef(onAccessRevoked)
 
   useEffect(() => { accessRevokedRef.current = onAccessRevoked }, [onAccessRevoked])
 
   useEffect(() => {
     let alive = true
-    api<Benefit[]>(`/api/v1/folders/${folderId}/providers/${provider.id}/benefits/`)
+    const controller = new AbortController()
+    api<Benefit[]>(`/api/v1/folders/${encodeURIComponent(folderId)}/providers/${encodeURIComponent(provider.id)}/benefits/`, { signal: controller.signal })
       .then(benefits => {
-        if (alive) setResult({ key, benefits, error: '' })
+        if (alive && version === currentSessionVersion()) setResult({ key, benefits, error: '' })
       })
       .catch(error => {
-        if (!alive) return
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-          setResult({ key, benefits: [], error: '' })
+        if (!alive || version !== currentSessionVersion()) return
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+          setResult({ key, benefits: [], error: '', denied: true })
           accessRevokedRef.current()
           return
         }
         setResult({ key, benefits: [], error: messageOf(error) })
       })
-    return () => { alive = false }
-  }, [folderId, provider.id, key])
+    return () => { alive = false; controller.abort() }
+  }, [folderId, provider.id, key, version])
+
+  const denyMedia = useCallback(() => {
+    if (version !== currentSessionVersion()) return
+    setResult({ key, benefits: [], error: '', denied: true })
+    accessRevokedRef.current()
+  }, [version, key])
+  const missingMedia = useCallback(() => {
+    if (version !== currentSessionVersion()) return
+    setMissingImage({ context, path: provider.image_url })
+    setRevision(value => value + 1)
+  }, [version, provider.image_url, context])
 
   const loading = result.key !== key
   const benefits = loading ? [] : result.benefits
   const error = loading ? '' : result.error
 
+  if (loading || result.denied || error) return <main id="contenido" className="private-benefits"><div className="content-width">
+    {error ? <div role="alert"><p>{error}</p><button onClick={() => setRevision(value => value + 1)}>Reintentar</button></div> : <p role="status">{loading ? 'Consultando beneficios vigentes…' : 'El acceso a esta recomendación ya no está disponible.'}</p>}
+  </div></main>
+
   return <main id="contenido" className="private-benefits">
     <div className="content-width">
       <a className="back-link" href="/recomendaciones">← Volver a recomendaciones</a>
       <div className="provider-detail">
-        <PrivatePhoto path={provider.image_url} alt={`Imagen de ${provider.name}`} />
+        <PrivatePhoto path={missingImage?.context === context && missingImage.path === provider.image_url ? null : provider.image_url} alt={`Imagen de ${provider.name}`} onDenied={denyMedia} onMissing={missingMedia} />
         <div>
           <p className="eyebrow">{provider.category || 'BENEFICIO LOCAL'}</p>
           <h1>{provider.name}</h1>

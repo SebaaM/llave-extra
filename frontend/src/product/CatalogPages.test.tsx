@@ -126,7 +126,7 @@ describe('catálogo público', () => {
     await screen.findByText('Local 3-0')
     expect(container.querySelector('.network-board')).toBe(board)
     expect(container.querySelectorAll('.network-slot')).toHaveLength(12)
-    expect(within(board as HTMLElement).getAllByRole('link')).toHaveLength(6)
+    expect(within(board as HTMLElement).getAllByRole('button')).toHaveLength(6)
     await waitFor(() => expect(screen.getByText('Página 3 de 3 · 30 prestadores')).toBeTruthy())
   })
 
@@ -225,7 +225,7 @@ describe('catálogo público', () => {
     await screen.findByText('Kuar')
     await waitFor(() => expect(scheduled).toHaveLength(1))
     const section = container.querySelector('.network-section') as HTMLElement
-    const node = screen.getByRole('link', { name: /Kuar: Beneficio vigente/ })
+    const node = screen.getByRole('button', { name: /Kuar: Beneficio vigente/ })
     if (order === 'hover después del foco') {
       node.focus()
       fireEvent.focus(node)
