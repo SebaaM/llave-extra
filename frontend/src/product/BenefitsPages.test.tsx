@@ -16,6 +16,69 @@ beforeEach(() => {
 afterEach(() => { cleanup(); invalidatePrivateState(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('postales privadas', () => {
+  it.each([200, 403, 404, 503])('permite recuperar explícitamente una selección denegada solo tras revalidación privada %s', async status => {
+    let finish!: (response: Response) => void
+    const revoked = vi.fn()
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input); calls.push(url)
+      return url.endsWith('/media/') ? Promise.resolve(json({}, 403)) : new Promise<Response>(resolve => { finish = resolve })
+    }))
+    const { rerender } = render(<FolderPage {...props} onAccessRevoked={revoked} />)
+    await waitFor(() => expect(revoked).toHaveBeenCalledTimes(1))
+    // El padre puede limpiar y actualizar props sin desmontar la misma carpeta.
+    rerender(<FolderPage {...props} providers={[]} onAccessRevoked={revoked} />)
+    rerender(<FolderPage {...props} providers={[{ ...provider, name: 'Datos del padre', image_url: null }]} onAccessRevoked={revoked} />)
+    expect(screen.queryByText('Datos del padre')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar recomendaciones' }))
+    await waitFor(() => expect(finish).toBeTypeOf('function'))
+    expect(screen.queryByText(provider.name)).toBeNull()
+    expect(screen.queryByText('Red privada')).toBeNull()
+    await act(async () => finish(json(status === 200 ? [{ ...provider, name: 'Selección vigente', image_url: null }] : {}, status)))
+    if (status === 200) await screen.findByRole('heading', { name: 'Selección vigente' })
+    else {
+      expect(screen.queryByText('Selección vigente')).toBeNull()
+      expect(screen.queryByText('Red privada')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Reintentar recomendaciones' })).toBeTruthy()
+    }
+    expect(calls.filter(url => url.endsWith('/providers/'))).toHaveLength(1)
+    expect(calls.filter(url => url.endsWith('/media/'))).toHaveLength(1)
+    expect(calls.some(url => url.includes('/catalog/'))).toBe(false)
+    expect(revoked).toHaveBeenCalledTimes([403, 404].includes(status) ? 2 : 1)
+  })
+  it('conserva el selector para salir de una carpeta denegada sin restaurar sus metadatos', async () => {
+    const select = vi.fn()
+    const folders = [...props.folders, { collaborator_id: 'b', granted_at: '' }]
+    vi.stubGlobal('fetch', vi.fn(async () => json({}, 403)))
+    const { rerender } = render(<FolderPage {...props} folders={folders} select={select} />)
+    await screen.findByText('El acceso a estas recomendaciones ya no está disponible.')
+    fireEvent.change(screen.getByLabelText('Carpeta'), { target: { value: 'b' } })
+    expect(select).toHaveBeenCalledWith('b')
+    expect(screen.queryByText(provider.name)).toBeNull()
+    rerender(<FolderPage {...props} folders={folders} selected="b" providers={[{ ...provider, name: 'Local de B', image_url: null }]} />)
+    expect(screen.getByRole('heading', { name: 'Local de B' })).toBeTruthy()
+    expect(screen.queryByText(provider.name)).toBeNull()
+  })
+  it('no restaura el reintento de una denegación de otra sesión', async () => {
+    let finish!: (response: Response) => void
+    const revoked = vi.fn()
+    const changedA = vi.fn()
+    const changedB = vi.fn()
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => String(input).endsWith('/media/') ? Promise.resolve(json({}, 403)) : new Promise<Response>(resolve => { finish = resolve })))
+    const { rerender } = render(<FolderPage {...props} onAccessRevoked={revoked} onProvidersChange={changedA} />)
+    await waitFor(() => expect(revoked).toHaveBeenCalledTimes(1))
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar recomendaciones' }))
+    await waitFor(() => expect(finish).toBeTypeOf('function'))
+    invalidatePrivateState()
+    setAccessToken('sesion-b')
+    rerender(<FolderPage {...props} providers={[]} onAccessRevoked={revoked} onProvidersChange={changedB} />)
+    await act(async () => finish(json([provider])))
+    expect(screen.queryByText(provider.name)).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(revoked).toHaveBeenCalledTimes(1)
+    expect(changedA.mock.calls).toEqual([[[]], [[]]])
+    expect(changedB).not.toHaveBeenCalled()
+  })
   it.each([401, 403])('retira metadatos al denegar un medio con %s', async status => {
     const revoked = vi.fn()
     vi.stubGlobal('fetch', vi.fn(async () => json({}, status)))

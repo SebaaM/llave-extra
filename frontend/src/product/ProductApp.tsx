@@ -43,6 +43,7 @@ export default function ProductApp() {
   const selectedFolderRef = useRef('')
   const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
   const site = useSiteSettings()
+  const renderedSessionVersion = currentSessionVersion()
 
   const stillCurrent = useCallback(
     (version: number, identity: number | null) => version === currentSessionVersion()
@@ -124,6 +125,16 @@ export default function ProductApp() {
     setSelectedProvider(null)
     setPageError('')
   }, [])
+
+  const updateFolderProviders = useCallback((folderId: string, version: number, identity: number, next: Provider[]) => {
+    if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
+    // La revalidación de medios invalida también la fuente compartida, para que
+    // remontar la página no pueda restaurar la lista anterior ni un GET tardío.
+    providersRequestRef.current += 1
+    detailRequestRef.current += 1
+    setProviders(next)
+    setSelectedProvider(null)
+  }, [stillCurrent])
 
   const clearAccount = useCallback(() => {
     identityRef.current = null
@@ -387,7 +398,7 @@ export default function ProductApp() {
     }
     if (path === '/recomendaciones') {
       if (selectedProvider) return <ProviderDetail folderId={selectedFolder} provider={selectedProvider} onAccessRevoked={() => void revokeProviderView()} />
-      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} />
+      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, next)} />
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Tu primera carpeta empieza con un QR.</h1><p>Pedile a un colaborador el QR de referencia para abrir sus recomendaciones privadas. Ese código da acceso a una carpeta y no acredita una visita.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />

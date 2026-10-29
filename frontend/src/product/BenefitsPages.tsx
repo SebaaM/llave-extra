@@ -15,10 +15,11 @@ type FolderPageProps = {
   providers: Provider[]
   onOpen: (id: string) => void
   onAccessRevoked?: () => void
+  onProvidersChange?: (providers: Provider[]) => void
 }
 
-export function FolderPage({ folders, selected, select, providers, onOpen, onAccessRevoked }: FolderPageProps) {
-  return <FolderContent key={`${selected}:${currentSessionVersion()}`} folders={folders} selected={selected} select={select} providers={providers} onOpen={onOpen} onAccessRevoked={onAccessRevoked} />
+export function FolderPage(props: FolderPageProps) {
+  return <FolderContent key={`${props.selected}:${currentSessionVersion()}`} {...props} />
 }
 
 function FolderPhoto({ provider, onDenied, onMissing }: { provider: Provider; onDenied: () => void; onMissing: (path: string) => void }) {
@@ -27,16 +28,18 @@ function FolderPhoto({ provider, onDenied, onMissing }: { provider: Provider; on
   return <PrivatePhoto path={path} alt={`Imagen de ${provider.name}`} onDenied={onDenied} onMissing={missing} />
 }
 
-function FolderContent({ folders, selected, select, providers: initialProviders, onOpen, onAccessRevoked }: FolderPageProps) {
+function FolderContent({ folders, selected, select, providers: initialProviders, onOpen, onAccessRevoked, onProvidersChange }: FolderPageProps) {
   const version = currentSessionVersion()
   const [revision, setRevision] = useState(0)
   const [result, setResult] = useState<{ state: 'initial' | 'loading' | 'ready' | 'denied' | 'error'; providers: Provider[]; error: string }>({ state: 'initial', providers: [], error: '' })
   const [missingPaths, setMissingPaths] = useState<string[]>([])
   const revokedRef = useRef(onAccessRevoked)
+  const providersChangeRef = useRef(onProvidersChange)
   const activeRef = useRef(true)
   const blockedRef = useRef(false)
   const controllerRef = useRef<AbortController | null>(null)
   useEffect(() => { revokedRef.current = onAccessRevoked }, [onAccessRevoked])
+  useEffect(() => { providersChangeRef.current = onProvidersChange }, [onProvidersChange])
   useEffect(() => {
     activeRef.current = true
     return () => { activeRef.current = false; controllerRef.current?.abort() }
@@ -46,6 +49,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     blockedRef.current = true
     controllerRef.current?.abort()
     setResult({ state: 'denied', providers: [], error: '' })
+    providersChangeRef.current?.([])
     revokedRef.current?.()
   }, [version])
   const missingMedia = useCallback((path: string) => {
@@ -54,6 +58,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     blockedRef.current = true
     setMissingPaths(previous => [...previous, path])
     setResult({ state: 'loading', providers: [], error: '' })
+    providersChangeRef.current?.([])
     setRevision(value => value + 1)
   }, [version])
   useEffect(() => {
@@ -64,6 +69,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
       if (controller.signal.aborted || version !== currentSessionVersion()) return
       blockedRef.current = false
       setResult({ state: 'ready', providers, error: '' })
+      providersChangeRef.current?.(providers)
     }).catch(error => {
       if (controller.signal.aborted || version !== currentSessionVersion()) return
       blockedRef.current = false
@@ -81,9 +87,23 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     const searchable = `${provider.name} ${provider.category} ${provider.description}`.toLocaleLowerCase()
     return matchesCategory && searchable.includes(query.toLocaleLowerCase())
   })
+  const folderPicker = folders.length > 1 && <label className="folder-picker">
+    Carpeta
+    <select value={selected} onChange={event => select(event.target.value)}>
+      {folders.map(folder => <option key={folder.collaborator_id} value={folder.collaborator_id}>Carpeta · {folder.collaborator_id.slice(0, 8)}</option>)}
+    </select>
+  </label>
 
   if (['loading', 'denied', 'error'].includes(result.state)) return <main id="contenido" className="private-benefits"><div className="content-width">
-    {result.state === 'error' ? <div role="alert"><p>{result.error}</p><button className="button button-dark" onClick={() => { blockedRef.current = true; setResult({ state: 'loading', providers: [], error: '' }); setRevision(value => value + 1) }}>Reintentar recomendaciones</button></div> : <p role="status">{result.state === 'loading' ? 'Consultando recomendaciones vigentes…' : 'El acceso a estas recomendaciones ya no está disponible.'}</p>}
+    {result.state === 'error' ? <p role="alert">{result.error}</p> : <p role="status">{result.state === 'loading' ? 'Consultando recomendaciones vigentes…' : 'El acceso a estas recomendaciones ya no está disponible.'}</p>}
+    {result.state !== 'loading' && <button className="button button-dark" onClick={() => {
+      if (!activeRef.current || version !== currentSessionVersion()) return
+      blockedRef.current = true
+      setResult({ state: 'loading', providers: [], error: '' })
+      providersChangeRef.current?.([])
+      setRevision(value => value + 1)
+    }}>Reintentar recomendaciones</button>}
+    {folderPicker}
   </div></main>
 
   return <main id="contenido" className="private-benefits client-recommendations">
@@ -92,12 +112,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
       <h1>Recomendaciones locales.</h1>
       <p className="private-lead">Explorá la selección disponible en tus carpetas y revisá las condiciones de cada beneficio. El acceso depende de la referencia QR activa.</p>
       {selected && <p className="client-folder-label">Carpeta · {selected.slice(0, 8)}</p>}</header>
-      {folders.length > 1 && <label className="folder-picker">
-        Carpeta
-        <select value={selected} onChange={event => select(event.target.value)}>
-          {folders.map(folder => <option key={folder.collaborator_id} value={folder.collaborator_id}>Carpeta · {folder.collaborator_id.slice(0, 8)}</option>)}
-        </select>
-      </label>}
+      {folderPicker}
       {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={denyMedia} />}
       <div className="search-row">
         <label htmlFor="provider-search">Buscar recomendaciones</label>

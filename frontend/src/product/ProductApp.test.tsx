@@ -40,6 +40,97 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('recorridos F2 del Cliente', () => {
+  it.each([false, true])('no restaura proveedores retirados al remontar recomendaciones durante GET demorado (revalidación terminada: %s)', async completed => {
+    let finishMedia!: (response: Response) => void
+    let finishRevalidation!: (response: Response) => void
+    let finishReturn!: (response: Response) => void
+    let lists = 0
+    const removed = { id: 'p1', slug: 'p1', name: 'Proveedor retirado', category: 'Categoría retirada', description: 'Descripción retirada', address: '', hours: '', contact: '', map_url: '', website: '', image_url: '/api/v1/folders/a/providers/p1/media/', status: 'ACTIVE', demo: true }
+    const current = { ...removed, id: 'p2', name: 'Proveedor vigente', category: 'Paseos', description: 'Descripción vigente', image_url: null }
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-demo' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(tourist))
+      if (url.endsWith('/me/folders/')) return Promise.resolve(json({ folders: [{ collaborator_id: 'a', granted_at: '' }] }))
+      if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
+      if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
+      if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.endsWith('/media/')) return new Promise<Response>(resolve => { finishMedia = resolve })
+      if (url.endsWith('/folders/a/providers/')) {
+        lists += 1
+        if (lists === 1) return Promise.resolve(json([removed, current]))
+        if (lists === 2) return new Promise<Response>(resolve => { finishRevalidation = resolve })
+        return new Promise<Response>(resolve => { finishReturn = resolve })
+      }
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/recomendaciones')
+    render(<ProductApp />)
+    await screen.findByRole('heading', { name: removed.name })
+    await waitFor(() => expect(finishMedia).toBeTypeOf('function'))
+    await act(async () => finishMedia(json({}, 404)))
+    await waitFor(() => expect(finishRevalidation).toBeTypeOf('function'))
+    if (completed) {
+      await act(async () => finishRevalidation(json([current])))
+      await screen.findByRole('heading', { name: current.name })
+      expect(screen.queryByText(removed.name)).toBeNull()
+    }
+    await act(async () => { setUrl('/mi-viaje'); window.dispatchEvent(new PopStateEvent('popstate')) })
+    await act(async () => { setUrl('/recomendaciones'); window.dispatchEvent(new PopStateEvent('popstate')) })
+    await waitFor(() => expect(finishReturn).toBeTypeOf('function'))
+    expect(screen.queryByText(removed.name)).toBeNull()
+    expect(screen.queryByText(removed.description)).toBeNull()
+    expect(screen.queryByText(removed.category)).toBeNull()
+    if (!completed) await act(async () => finishRevalidation(json([removed])))
+    expect(screen.queryByText(removed.name)).toBeNull()
+    await act(async () => finishReturn(json([current])))
+    await screen.findByRole('heading', { name: current.name })
+    expect(screen.queryByText(removed.name)).toBeNull()
+  })
+
+  it('recupera por reintento privado después de denegación y recuperación 200 del padre en la misma carpeta', async () => {
+    let lists = 0
+    let folderReads = 0
+    let finishRetry!: (response: Response) => void
+    const removed = { id: 'p1', slug: 'p1', name: 'Local anterior', category: 'Café anterior', description: 'Datos anteriores', address: '', hours: '', contact: '', map_url: '', website: '', image_url: '/api/v1/folders/a/providers/p1/media/', status: 'ACTIVE', demo: true }
+    const current = { ...removed, id: 'p2', name: 'Local recuperado', category: 'Paseos', description: 'Datos vigentes', image_url: null }
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-demo' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(tourist))
+      if (url.endsWith('/me/folders/')) { folderReads += 1; return Promise.resolve(json({ folders: [{ collaborator_id: 'a', granted_at: '' }, { collaborator_id: 'b', granted_at: '' }] })) }
+      if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
+      if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
+      if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.endsWith('/media/')) return Promise.resolve(json({}, 403))
+      if (url.endsWith('/folders/a/providers/')) {
+        lists += 1
+        if (lists < 3) return Promise.resolve(json(lists === 1 ? [removed, current] : [current]))
+        return new Promise<Response>(resolve => { finishRetry = resolve })
+      }
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/recomendaciones')
+    render(<ProductApp />)
+    await screen.findByText('El acceso a estas recomendaciones ya no está disponible.')
+    await waitFor(() => expect(lists).toBe(2))
+    expect(folderReads).toBe(2)
+    expect(screen.getByLabelText('Carpeta')).toBeTruthy()
+    expect(screen.queryByText(removed.name)).toBeNull()
+    expect(screen.queryByText(current.name)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar recomendaciones' }))
+    await waitFor(() => expect(finishRetry).toBeTypeOf('function'))
+    expect(screen.queryByText(removed.name)).toBeNull()
+    await act(async () => finishRetry(json([current])))
+    await screen.findByRole('heading', { name: current.name })
+    expect(screen.queryByText(removed.name)).toBeNull()
+    expect(lists).toBe(3)
+  })
+
   it('mantiene el último detalle elegido cuando el anterior responde tarde', async () => {
     let finishFirst!: (response: Response) => void
     const providers = ['Primera elección', 'Última elección'].map((name, index) => ({
