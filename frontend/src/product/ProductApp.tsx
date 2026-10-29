@@ -5,6 +5,7 @@ import { messageOf } from './shared'
 import { consumptionToken, referralToken, setReferralToken, verifyToken, setVerifyToken } from './qr-intent'
 import { ProductShell, ButtonLink } from './Layout'
 import { Auth } from './PublicPages'
+import { AccountPage } from './AccountPage'
 import { HomePage } from './HomePage'
 import { ShopPage, ShopDetail } from './shop/ShopPage'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
@@ -412,7 +413,11 @@ export default function ProductApp() {
       })
     }} />
     if (path === '/perfil') {
-      return <main id="contenido" className="product-gate content-width"><p className="eyebrow">MI CUENTA</p><h1>{user.email}</h1><p>Email {user.email_verified ? 'verificado' : 'pendiente de verificación'}</p>{!user.email_verified && <form onSubmit={async event => { event.preventDefault(); try { await api('/api/v1/auth/resend-verification/', { method: 'POST', auth: false, body: { email: user.email } }); setNotice('Si corresponde, recibirás un email para verificar tu cuenta.') } catch (error) { setPageError(messageOf(error)) } }}><button className="button button-orange">Reenviar email de verificación</button></form>}<p>{notice}</p></main>
+      return <AccountPage key={`${user.id}:${renderedSessionVersion}`} user={user} notice={notice} onResend={async () => {
+        const version = currentSessionVersion(), identity = identityRef.current
+        await api('/api/v1/auth/resend-verification/', { method: 'POST', auth: false, body: { email: user.email } })
+        if (stillCurrent(version, identity)) setNotice('Si corresponde, recibirás un email para verificar tu cuenta.')
+      }} />
     }
     return <main id="contenido" className="product-gate content-width"><h1>Esta sección no está disponible.</h1><a href="/">Volver a inicio</a></main>
   }
@@ -421,5 +426,5 @@ export default function ProductApp() {
   if (inAdmin) return <AdminWorkspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} search={search} />
   const inWorkspace = user && authReady && ((user.role === 'PROVIDER' && (path === '/prestador' || path.startsWith('/prestador/'))) || (user.role === 'COLLABORATOR' && (path === '/colaborador' || path.startsWith('/colaborador/'))))
   if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} />
-  return <ProductShell path={path} user={shellUser} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
+  return <ProductShell path={path} user={shellUser} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && path !== '/perfil' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
 }

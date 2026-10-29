@@ -186,6 +186,8 @@ describe('recorridos F2 del Cliente', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Ver Faro del Beagle' }))
     await screen.findByRole('heading', { name: 'Faro del Beagle' })
     expect(window.location.pathname).toBe('/tienda/faro-del-beagle')
+    fireEvent.click(screen.getByRole('button', { name: 'Ampliar ilustración' }))
+    expect(screen.getByRole('button', { name: 'Reducir ilustración' }).getAttribute('aria-expanded')).toBe('true')
     expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
   })
 

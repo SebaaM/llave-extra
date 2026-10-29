@@ -493,3 +493,26 @@
   .product-shell .client-network-preview-copy { padding: 20px; }
   .product-shell .client-network-preview :is(.catalog-photo, .product-provider-image) { min-height: 0; max-height: 240px; }
 }
+.product-shell .client-auth-page { background: var(--client-sand); }
+.product-shell .client-auth-page .auth-art { background: var(--client-petrol); }
+.product-shell .client-auth-page .auth-art > div { border: 1px dashed #fcf8ef99; border-radius: 50%; padding: 24px; }
+.product-shell .client-auth-page .auth-panel { min-width: 0; }
+.product-shell .client-auth-page :is(h1, p) { overflow-wrap: anywhere; }
+.product-shell .client-auth-page input { min-width: 0; width: 100%; min-height: 48px; }
+.product-shell .client-auth-page input:focus-visible { outline: 3px solid var(--client-petrol); outline-offset: 3px; }
+.product-shell .client-auth-page input[aria-invalid="true"] { border: 2px solid #9c3027; }
+.product-shell .client-password-control { display: flex; flex-wrap: wrap; gap: 8px; }
+.product-shell .client-password-control input { flex: 1 1 220px; }
+.product-shell .client-password-control button { min-height: 44px; min-width: 44px; padding: 10px 12px; border: 1px solid var(--client-border); border-radius: 8px; background: white; color: var(--client-petrol); font: inherit; font-size: .8rem; cursor: pointer; }
+.product-shell .client-account-page { min-height: 540px; padding-block: var(--client-space-12); }
+.product-shell .client-account-passport { min-width: 0; max-width: 800px; padding: var(--client-space-8); border: 1px solid var(--client-border); border-top: 8px solid var(--client-petrol); border-radius: var(--client-radius); background: var(--client-sand); color: var(--client-ink); }
+.product-shell .client-account-passport h1 { font: 800 clamp(1.5rem, 4vw, 2.5rem)/1.3 Montserrat, sans-serif; }
+.product-shell .client-account-passport :is(h1, p) { overflow-wrap: anywhere; }
+.product-shell .client-account-passport p { line-height: 1.75; }
+.product-shell .client-account-mark { display: inline-grid; place-items: center; width: 56px; height: 56px; border: 1px dashed var(--client-petrol); border-radius: 50%; color: var(--client-petrol); font-size: 2rem; margin-bottom: var(--client-space-4); }
+.product-shell .client-account-verification { font-weight: 700; }
+.product-shell .client-account-passport .button { min-height: 44px; max-width: 100%; white-space: normal; text-align: center; margin: 8px 8px 8px 0; }
+@media (max-width: 390px) {
+  .product-shell .client-account-passport { padding: var(--client-space-4); }
+  .product-shell .client-password-control button { width: 100%; }
+}
