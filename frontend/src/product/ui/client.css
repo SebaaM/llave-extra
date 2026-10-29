@@ -17,6 +17,26 @@
   background: var(--client-sand);
 }
 
+.product-shell .client-qr-page { align-items: start; }
+.product-shell .client-qr-page :is(.qr-copy, .qr-form) { min-width: 0; overflow-wrap: anywhere; }
+.product-shell .client-qr-steps { display: grid; gap: var(--client-space-3); margin: var(--client-space-6) 0; padding: 0; list-style: none; }
+.product-shell .client-qr-steps li { display: grid; gap: var(--client-space-1); padding: var(--client-space-4); border: 1px solid var(--client-border); border-radius: var(--client-radius); background: white; }
+.product-shell .client-qr-steps li[aria-current="step"] { border-left: 4px solid var(--client-petrol); }
+.product-shell .client-qr-steps span { color: var(--client-muted); font-size: .9rem; }
+.product-shell .client-qr-page :is(input, select) { max-width: 100%; min-width: 0; }
+.product-shell .client-qr-page select { width: 100%; min-height: 48px; padding: var(--client-space-2) var(--client-space-3); border: 1px solid var(--client-border); border-radius: 5px; background: white; color: var(--client-ink); }
+.product-shell .client-qr-page .consumption-mode label { min-height: 44px; }
+.product-shell .client-qr-page a { display: inline-flex; align-items: center; min-height: 44px; max-width: 100%; }
+.product-shell .client-qr-page input:disabled, .product-shell .client-qr-page select:disabled { opacity: .65; cursor: wait; }
+.product-shell .client-qr-page :is(button, input, select, a):focus-visible { outline: 3px solid var(--client-petrol); outline-offset: 4px; }
+.product-shell .client-visit-result { display: grid; justify-items: start; gap: var(--client-space-4); color: var(--client-ink); }
+.product-shell .client-visit-result h2, .product-shell .client-visit-result p, .product-shell .client-visit-result dl { margin: 0; }
+.product-shell .client-visit-result dd { margin: var(--client-space-2) 0 0; font-size: 1.5rem; font-weight: 700; }
+.product-shell .client-result-award { font-size: 1.25rem; font-weight: 700; }
+.product-shell .client-result-stamp { display: grid; place-items: center; width: 96px; height: 96px; border: 3px double var(--client-petrol); border-radius: 50%; color: var(--client-petrol); font-size: 3rem; transform: rotate(-8deg); animation: client-confirm-stamp 400ms ease-out; }
+@keyframes client-confirm-stamp { from { opacity: 0; transform: scale(1.2) rotate(-15deg); } to { opacity: 1; transform: scale(1) rotate(-8deg); } }
+@media (prefers-reduced-motion: reduce) { .product-shell .client-result-stamp { animation: none; } }
+
 .product-shell .client-trip { background: var(--client-sand); }
 .product-shell .client-trip :is(.trip-heading > div, .trip-stats > section, .trip-history-head > div) { min-width: 0; overflow-wrap: anywhere; }
 .product-shell .client-trip :is(.trip-balance, .trip-progress) { border-radius: var(--client-radius); }

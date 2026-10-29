@@ -4,6 +4,7 @@ export type Provider = { id: string; slug: string; name: string; category: strin
 export type Benefit = { id: string; title: string; description: string; conditions: string; valid_from: string | null; valid_until: string | null; image_url: string | null; status: string; demo: boolean }
 // Nombre actual del comercio en lectura propia; puede faltar en respuestas anteriores.
 export type Consumption = { id: string; provider_id: string; provider_name?: string | null; collaborator_id: string | null; award: number; state: string; created_at: string }
+export type ConsumptionResult = Consumption & { balance: number }
 export type Wallet = { balance: number; redemptions_frozen: boolean }
 export type Progress = { total: number; target: number; completed: boolean }
 

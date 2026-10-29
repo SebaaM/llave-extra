@@ -385,7 +385,10 @@ export default function ProductApp() {
         }}
       />
     }
-    if (path === '/referencia') return <QrPage signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} onRedeemed={() => void loadFolders()} />
+    if (path === '/referencia') return <QrPage key={`${user?.id}:${renderedSessionVersion}`} signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} onRedeemed={() => {
+      const version = currentSessionVersion(), identity = identityRef.current
+      void loadFolders().catch(() => { if (stillCurrent(version, identity)) setNotice('La referencia se vinculó, pero no pudimos actualizar tus carpetas. Volvé a abrir Recomendaciones para actualizarlas.') })
+    }} />
     if (!user && path === '/consumo') {
       return <main id="contenido" className="product-gate content-width"><h1>Ingresá para validar tu visita.</h1><p>El QR del prestador quedó disponible mientras iniciás sesión.</p><ProductLink className="button button-orange" href="/ingresar">Ingresar</ProductLink></main>
     }
@@ -402,7 +405,12 @@ export default function ProductApp() {
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Tu primera carpeta empieza con un QR.</h1><p>Pedile a un colaborador el QR de referencia para abrir sus recomendaciones privadas. Ese código da acceso a una carpeta y no acredita una visita.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />
-    if (path === '/consumo') return <ConsumePage folders={folders} onComplete={() => { void Promise.all([loadTrip(), loadFolders()]).catch(error => setPageError(messageOf(error))) }} />
+    if (path === '/consumo') return <ConsumePage key={`${user.id}:${renderedSessionVersion}`} folders={folders} onComplete={() => {
+      const version = currentSessionVersion(), identity = identityRef.current
+      void Promise.allSettled([loadTrip(), loadFolders()]).then(results => {
+        if (stillCurrent(version, identity) && results.some(result => result.status === 'rejected')) setNotice('El resultado del consumo ya fue confirmado. No pudimos actualizar Mi viaje y tus carpetas; abrí Mi viaje y usá Actualizar. No hace falta volver a validar la visita.')
+      })
+    }} />
     if (path === '/perfil') {
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">MI CUENTA</p><h1>{user.email}</h1><p>Email {user.email_verified ? 'verificado' : 'pendiente de verificación'}</p>{!user.email_verified && <form onSubmit={async event => { event.preventDefault(); try { await api('/api/v1/auth/resend-verification/', { method: 'POST', auth: false, body: { email: user.email } }); setNotice('Si corresponde, recibirás un email para verificar tu cuenta.') } catch (error) { setPageError(messageOf(error)) } }}><button className="button button-orange">Reenviar email de verificación</button></form>}<p>{notice}</p></main>
     }

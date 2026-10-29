@@ -479,7 +479,78 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.queryByRole('heading', { level: 1, name: 'Prestador de carpeta B' })).toBeNull()
   })
 
-  it('reintenta la misma validación con su clave idempotente y actualiza Mi viaje desde la API', async () => {
+  it('conserva la confirmación de consumo cuando falla la lectura posterior de Mi viaje', async () => {
+    let confirmed = false
+    let posts = 0
+    let finishFolders!: (response: Response) => void
+    const folderList = { folders: [{ collaborator_id: 'folder-a', granted_at: '' }] }
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
+      if (url.endsWith('/auth/me/')) return json(tourist)
+      if (url.endsWith('/me/folders/')) return confirmed ? new Promise<Response>(resolve => { finishFolders = resolve }) : json(folderList)
+      if (url.endsWith('/me/wallet/')) return confirmed ? json({}, 503) : json({ balance: 10, redemptions_frozen: false })
+      if (url.endsWith('/me/progress/')) return json({ total: 0, target: 5, completed: false })
+      if (url.endsWith('/me/consumptions/')) return json([])
+      if (url.endsWith('/consumptions/')) {
+        confirmed = true; posts += 1
+        return json({ id: 'visit', provider_id: 'provider', collaborator_id: null, award: 7, balance: 17, state: 'VALID', created_at: '2026-10-28T12:00:00Z' }, 201)
+      }
+      return json({}, 404)
+    }))
+    const ProductApp = await prepareApp('/consumo', '#token=synthetic-provider-qr')
+    render(<ProductApp />)
+    fireEvent.change(await screen.findByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
+    await screen.findByRole('heading', { name: 'Visita verificada' })
+    await waitFor(() => expect(finishFolders).toBeTypeOf('function'))
+    await act(async () => finishFolders(json(folderList)))
+    await screen.findByText(/El resultado del consumo ya fue confirmado/)
+    expect(screen.getByText('7 créditos acreditados')).toBeTruthy()
+    expect(screen.getByText('17 créditos')).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'No pudimos cargar esta información.' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Validar visita' })).toBeNull()
+    expect(posts).toBe(1)
+  })
+
+  it('descarta el POST de A al ingresar B sin recargar ni publicar el resultado viejo', async () => {
+    let accountB = false
+    let finishPost!: (response: Response) => void
+    let tripReadsB = 0
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-a' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(accountB ? { ...tourist, id: 805, email: 'b@example.test' } : tourist))
+      if (url.endsWith('/auth/login/')) { accountB = true; return Promise.resolve(json({ access: 'access-b' })) }
+      if (url.endsWith('/me/folders/')) return Promise.resolve(json({ folders: [] }))
+      if (url.endsWith('/me/wallet/')) { if (accountB) tripReadsB += 1; return Promise.resolve(json({ balance: accountB ? 22 : 777, redemptions_frozen: false })) }
+      if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 0, target: 5, completed: false }))
+      if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
+      if (url.endsWith('/consumptions/')) return new Promise<Response>(resolve => { finishPost = resolve })
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/consumo', '#token=synthetic-account-a-qr')
+    render(<ProductApp />)
+    fireEvent.change(await screen.findByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
+    await waitFor(() => expect(finishPost).toBeTypeOf('function'))
+    await act(async () => { setUrl('/ingresar'); window.dispatchEvent(new PopStateEvent('popstate')) })
+    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'b@example.test' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await screen.findByLabelText('Lo descubrí por mi cuenta')
+    await waitFor(() => expect(tripReadsB).toBeGreaterThan(0))
+    const readsBeforeLatePost = tripReadsB
+    await act(async () => finishPost(json({ id: 'late-a', provider_id: 'provider', collaborator_id: null, award: 777, balance: 1554, state: 'VALID', created_at: '' }, 201)))
+    expect(screen.queryByRole('heading', { name: 'Visita verificada' })).toBeNull()
+    expect(screen.queryByText(/1554|1.554/)).toBeNull()
+    expect((screen.getByLabelText('PIN del prestador') as HTMLInputElement).value).toBe('')
+    expect(tripReadsB).toBe(readsBeforeLatePost)
+  })
+
+  it.each(['503', 'timeout'])('reintenta la validación tras %s con su clave y cuerpo originales y actualiza Mi viaje desde la API', async failure => {
     const consumptionCalls: Array<{ url: string; init?: RequestInit }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input)
@@ -492,7 +563,11 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/consumptions/')) return json([{ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }])
       if (url.endsWith('/consumptions/')) {
         consumptionCalls.push({ url, init })
-        return consumptionCalls.length === 1 ? json({ detail: 'Servicio no disponible' }, 503) : json({ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, balance: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201)
+        if (consumptionCalls.length === 1) {
+          if (failure === 'timeout') throw new DOMException('Timeout sintético del transporte', 'TimeoutError')
+          return json({ detail: 'Servicio no disponible' }, 503)
+        }
+        return json({ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, balance: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201)
       }
       return json({ detail: 'No encontrado' }, 404)
     }))
@@ -504,11 +579,12 @@ describe('recorridos F2 del Cliente', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await screen.findByRole('alert')
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
-    await screen.findByText('Visita enviada para validación.')
+    await screen.findByRole('heading', { name: 'Visita verificada' })
     expect(consumptionCalls).toHaveLength(2)
     const keys = consumptionCalls.map(call => new Headers(call.init?.headers).get('Idempotency-Key'))
     expect(keys[0]).toBeTruthy()
     expect(keys[1]).toBe(keys[0])
+    expect(consumptionCalls[1].init?.body).toBe(consumptionCalls[0].init?.body)
     expect(JSON.parse(String(consumptionCalls[0].init?.body))).toEqual({ folder_id: 'folder-a', qr_token: 'qr-consumo-prueba', pin: '123456' })
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))
@@ -530,7 +606,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return json({ balance: 450, redemptions_frozen: false })
       if (url.endsWith('/me/progress/')) return json({ total: 1, target: 6, completed: false })
       if (url.endsWith('/me/consumptions/')) return json([{ id: 'visit-direct', provider_id: 'provider-1', collaborator_id: null, award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }])
-      if (url.endsWith('/consumptions/')) { body = JSON.parse(String(init?.body)); return json({ id: 'visit-direct', provider_id: 'provider-1', collaborator_id: null, award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201) }
+      if (url.endsWith('/consumptions/')) { body = JSON.parse(String(init?.body)); return json({ id: 'visit-direct', provider_id: 'provider-1', collaborator_id: null, award: 450, balance: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201) }
       return json({ detail: 'No encontrado' }, 404)
     }))
     const ProductApp = await prepareApp('/consumo', '#token=qr-directo-prueba')
@@ -539,7 +615,7 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.getByLabelText('Lo descubrí por mi cuenta')).toBeTruthy()
     fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '123456' } })
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
-    await screen.findByText('Visita enviada para validación.')
+    await screen.findByRole('heading', { name: 'Visita verificada' })
     expect(body).toEqual({ qr_token: 'qr-directo-prueba', pin: '123456' })
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))
