@@ -6,13 +6,13 @@ import type { SiteSettings } from './admin/types'
 import { defaultSiteSettings } from './useSiteSettings'
 export function Brand({ name = 'Llave Extra' }: { name?: string }) { return <a href="/" className="product-brand"><img src="/logo-llave-extra.png" alt={name} width="145" height="81" /></a> }
 
-function Header({ user, settings, path }: { user: User | null; settings: SiteSettings; path: string }) {
+function Header({ user, settings, path, hasRecommendations }: { user: User | null; settings: SiteSettings; path: string; hasRecommendations: boolean }) {
   return <header className="product-header">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
     <div className="product-header-inner">
       <Brand name={settings.site_name} />
       {user?.role === 'TOURIST'
-        ? <ClientNavigation key={user.id} user={user} path={path} />
+        ? <ClientNavigation key={user.id} user={user} path={path} hasRecommendations={hasRecommendations} />
         : <nav aria-label="Navegación principal">
           <a href="/beneficios">Beneficios</a>
           <a href="/tienda">Tienda</a>
@@ -35,6 +35,6 @@ function Header({ user, settings, path }: { user: User | null; settings: SiteSet
 
 function Footer({ settings }: { settings: SiteSettings }) { return <footer className="product-footer"><Brand name={settings.site_name} /><p>{settings.footer_text}</p><div className="product-footer-links">{settings.contact_email && <a href={`mailto:${settings.contact_email}`}>{settings.contact_email}</a>}{settings.whatsapp_url && <a href={settings.whatsapp_url} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{settings.instagram_url && <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer">Instagram</a>}<a href="/creditos-imagenes">Créditos de imágenes y mapa</a></div></footer> }
 
-export function ProductShell({ user, path, children, settings = defaultSiteSettings, settingsError = false, retrySettings }: { user: User | null; path: string; children: ReactNode; settings?: SiteSettings; settingsError?: boolean; retrySettings?: () => void }) { return <div className="product-shell"><Header user={user} path={path} settings={settings} />{settingsError && <div className="product-notice" role="status">No pudimos actualizar los textos y contactos del sitio. <button onClick={retrySettings}>Volver a intentar</button></div>}<div className="client-page-content" role="region" aria-label="Contenido de la página" tabIndex={-1}>{children}</div><Footer settings={settings} /></div> }
+export function ProductShell({ user, path, children, hasRecommendations = false, settings = defaultSiteSettings, settingsError = false, retrySettings }: { user: User | null; path: string; children: ReactNode; hasRecommendations?: boolean; settings?: SiteSettings; settingsError?: boolean; retrySettings?: () => void }) { return <div className="product-shell"><Header user={user} path={path} settings={settings} hasRecommendations={hasRecommendations} />{settingsError && <div className="product-notice" role="status">No pudimos actualizar los textos y contactos del sitio. <button onClick={retrySettings}>Volver a intentar</button></div>}<div className="client-page-content" role="region" aria-label="Contenido de la página" tabIndex={-1}>{children}</div><Footer settings={settings} /></div> }
 
 export function ButtonLink({ href, children, tone = 'orange' }: { href: string; children: ReactNode; tone?: 'orange' | 'dark' | 'white' }) { return <a href={href} className={`button button-${tone}`}>{children}</a> }

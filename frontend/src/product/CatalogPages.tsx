@@ -31,7 +31,7 @@ export function PublicPhoto({ path, alt, name, className = '' }: { path: string 
 
 export function CatalogState({ enabled, loading, error, retry }: { enabled: boolean | null; loading: boolean; error: string; retry: () => void }) {
   if (loading) return <p className="catalog-state" role="status">Consultando beneficios vigentes…</p>
-  if (enabled === false) return <div className="catalog-state"><h2>El catálogo general no está disponible ahora.</h2><p>Si tenés el QR de un colaborador, podés entrar a sus recomendaciones privadas.</p><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></div>
+  if (enabled === false) return <div className="catalog-state"><h2>El catálogo general no está disponible ahora.</h2><p>Si recibiste un QR de recomendaciones, podés abrir los beneficios que te compartieron.</p><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></div>
   if (error) return <div className="catalog-state" role="alert"><h2>No pudimos cargar los beneficios.</h2><p>{error}</p><button className="button button-orange" onClick={retry}>Volver a intentar</button></div>
   return null
 }
@@ -67,7 +67,7 @@ export function CatalogPage({ search }: { search: string }) {
       setDraft({ context: searchContext, value })
       apply({ search: value, page: 1 })
     }}>
-      <label htmlFor="catalog-search">Buscar beneficio o prestador</label>
+      <label htmlFor="catalog-search">Buscar beneficio o negocio</label>
       <div><input id="catalog-search" name="search" value={searchValue} onChange={event => setDraft({ context: searchContext, value: event.target.value })} placeholder="¿Qué te gustaría descubrir?" type="search" /><button className="button button-dark">Buscar</button></div>
     </form>
     <CategoryChips categories={categories.categories} value={query.category} onChange={category => apply({ category, page: 1 })} />
@@ -151,7 +151,7 @@ export function BenefitDetail({ id }: { id: string }) {
       <div className="client-detail-sections">
         <section aria-labelledby="benefit-use"><span className="client-detail-number" aria-hidden="true">01</span><h2 id="benefit-use">Cómo usarlo</h2>
           <p>Consultá las condiciones de esta propuesta antes de visitar el local.</p>
-          <p>Para acreditar una visita, escaneá en el local el QR del prestador e ingresá su PIN. La validación requiere cuenta y email verificado.</p>
+          <p>Para acreditar una visita, escaneá en el local el QR del negocio e ingresá su PIN. La validación requiere cuenta y email verificado.</p>
         </section>
         <section aria-labelledby="benefit-location"><span className="client-detail-number" aria-hidden="true">02</span><h2 id="benefit-location">Dónde encontrarlo</h2>
           <p><strong>{benefit.provider.name}</strong></p>
@@ -159,8 +159,8 @@ export function BenefitDetail({ id }: { id: string }) {
           {benefit.provider.hours && <p><strong>Horarios:</strong> {benefit.provider.hours}</p>}
           {benefit.provider.contact && <p><strong>Contacto:</strong> {benefit.provider.contact}</p>}
           <div className="client-location-links">
-            {safeExternal(benefit.provider.map_url) && <a href={safeExternal(benefit.provider.map_url)!} target="_blank" rel="noopener noreferrer">Ver mapa del prestador ↗</a>}
-            {safeExternal(benefit.provider.website) && <a href={safeExternal(benefit.provider.website)!} target="_blank" rel="noopener noreferrer">Sitio del prestador ↗</a>}
+            {safeExternal(benefit.provider.map_url) && <a href={safeExternal(benefit.provider.map_url)!} target="_blank" rel="noopener noreferrer">Ver mapa del negocio ↗</a>}
+            {safeExternal(benefit.provider.website) && <a href={safeExternal(benefit.provider.website)!} target="_blank" rel="noopener noreferrer">Sitio del negocio ↗</a>}
           </div>
         </section>
       </div>

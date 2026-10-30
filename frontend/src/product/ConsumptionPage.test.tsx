@@ -10,17 +10,34 @@ vi.mock('./api', async importOriginal => ({ ...await importOriginal<typeof impor
 const request = vi.mocked(api)
 const result = { id: 'visit', provider_id: 'provider', collaborator_id: null, award: 450, balance: 1700, state: 'VALID', created_at: '2026-10-28T12:00:00Z' }
 const folders = [{ collaborator_id: 'folder-a', granted_at: '' }, { collaborator_id: 'folder-b', granted_at: '' }]
-const submit = () => fireEvent.submit(screen.getByLabelText('PIN del prestador').closest('form')!)
+const submit = () => fireEvent.submit(screen.getByLabelText('PIN del negocio').closest('form')!)
 function setup() { const onComplete = vi.fn(); render(<ConsumePage folders={folders} onComplete={onComplete} />); return onComplete }
 
 beforeEach(() => { request.mockReset(); setConsumptionToken('synthetic-qr'); setReferralToken(null) })
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
 describe('validación de visitas', () => {
+  it('ofrece enlaces de recomendaciones solo con disponibilidad autorizada también después de recibir el QR', async () => {
+    setReferralToken('synthetic-reference')
+    request.mockResolvedValue({})
+    const props = { signedIn: true, canRedeem: true, folders, onRedeemed: vi.fn() }
+    const { rerender, container } = render(<QrPage {...props} />)
+    expect(container.textContent).not.toMatch(/prestador|colaborador|carpeta|servidor/i)
+    expect(screen.queryByRole('link', { name: /Ver recomendaciones recibidas/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir recomendaciones' }))
+    await screen.findByText('Las recomendaciones se vincularon a tu cuenta.')
+    expect(screen.queryByRole('link', { name: /Explorar recomendaciones/ })).toBeNull()
+    rerender(<QrPage {...props} checkingRecommendations />)
+    expect(screen.getByText('Estamos comprobando los beneficios disponibles.')).toBeTruthy()
+    rerender(<QrPage {...props} hasRecommendations />)
+    expect(screen.getByRole('link', { name: /Explorar recomendaciones/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Ver recomendaciones recibidas/ })).toBeTruthy()
+  })
+
   it('sin QR pide escanear sin permitir un comando', () => {
     setConsumptionToken(null); setup()
-    expect(screen.getByRole('heading', { name: 'Falta el QR del prestador' })).toBeTruthy()
-    expect(screen.queryByLabelText('PIN del prestador')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Falta el QR del negocio' })).toBeTruthy()
+    expect(screen.queryByLabelText('PIN del negocio')).toBeNull()
     expect(request).not.toHaveBeenCalled()
   })
 
@@ -29,8 +46,8 @@ describe('validación de visitas', () => {
     request.mockImplementation(() => new Promise(done => { resolve = done }))
     const complete = setup()
     fireEvent.click(screen.getByLabelText('Por una recomendación privada'))
-    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000123' } })
-    const form = screen.getByLabelText('PIN del prestador').closest('form')!
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
+    const form = screen.getByLabelText('PIN del negocio').closest('form')!
     act(() => { fireEvent.submit(form); fireEvent.submit(form) })
     expect(request).toHaveBeenCalledTimes(1)
     for (const control of form.querySelectorAll<HTMLInputElement>('input, select, button')) expect(control.disabled).toBe(true)
@@ -50,7 +67,7 @@ describe('validación de visitas', () => {
       .mockRejectedValueOnce(new ApiError(409, 'Ya registraste esta visita', { detail: 'Ya registraste esta visita' }))
     setup()
     fireEvent.click(screen.getByLabelText('Por una recomendación privada'))
-    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     submit(); await screen.findByRole('alert')
     const first = request.mock.calls[0][1]
     submit(); await screen.findByText('Referencia revocada')
@@ -68,7 +85,7 @@ describe('validación de visitas', () => {
     request.mockResolvedValue(result)
     setup()
     const keyboard = userEvent.setup()
-    const pin = screen.getByLabelText('PIN del prestador')
+    const pin = screen.getByLabelText('PIN del negocio')
     fireEvent.change(pin, { target: { value: '123' } }); submit()
     expect(request).not.toHaveBeenCalled()
     await keyboard.clear(pin); await keyboard.click(pin); await keyboard.paste('000123456789')
@@ -79,7 +96,7 @@ describe('validación de visitas', () => {
 
   it.each([{ ...result, award: 0 }, { ...result, state: 'ANNULLED' }, { ...result, state: 'PENDING' }])('diferencia resultado sin premio o sin VALID: $state / $award', async value => {
     request.mockResolvedValue(value); setup()
-    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     submit(); await screen.findByRole('status')
     if (value.state === 'VALID') {
       expect(screen.getByText('0 créditos acreditados')).toBeTruthy()
@@ -96,12 +113,12 @@ describe('validación de visitas', () => {
     request.mockRejectedValue(new DOMException('Timeout', 'TimeoutError'))
     setup()
     fireEvent.click(screen.getByLabelText('Por una recomendación privada'))
-    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     submit(); await screen.findByRole('alert')
     const original = request.mock.calls[0][1]
-    if (field === 'pin') fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000124' } })
+    if (field === 'pin') fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000124' } })
     if (field === 'qr') setConsumptionToken('new-synthetic-qr')
-    if (field === 'folder') fireEvent.change(screen.getByLabelText('Carpeta relacionada'), { target: { value: 'folder-b' } })
+    if (field === 'folder') fireEvent.change(screen.getByLabelText('Recomendaciones recibidas'), { target: { value: 'folder-b' } })
     submit(); await screen.findByRole('alert')
     expect(request.mock.calls[1][1]?.idempotencyKey).not.toBe(original?.idempotencyKey)
     expect(request.mock.calls[1][1]?.body).not.toEqual(original?.body)
@@ -111,7 +128,7 @@ describe('validación de visitas', () => {
     let resolve!: (value: unknown) => void
     request.mockImplementation(() => new Promise(done => { resolve = done }))
     const complete = setup()
-    fireEvent.change(screen.getByLabelText('PIN del prestador'), { target: { value: '000123' } })
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     submit()
     if (unmount) cleanup()
     else invalidatePrivateState()
@@ -132,7 +149,7 @@ describe('validación de visitas', () => {
     view.rerender(<QrPage signedIn canRedeem folders={[]} onRedeemed={done} />)
     request.mockResolvedValue({})
     fireEvent.click(screen.getByRole('button', { name: 'Abrir recomendaciones' }))
-    await screen.findByText('La referencia se vinculó a tu cuenta.')
+    await screen.findByText('Las recomendaciones se vincularon a tu cuenta.')
     expect(referralToken).toBeNull()
     expect(screen.getByText('Este QR abre recomendaciones; no acredita visitas ni créditos.')).toBeTruthy()
     expect(request).toHaveBeenCalledWith('/api/v1/referrals/redeem/', { method: 'POST', body: { token: 'synthetic-reference' } })
@@ -144,18 +161,18 @@ describe('validación de visitas', () => {
     request.mockRejectedValueOnce(new ApiError(403, 'Referencia revocada', { detail: 'Referencia revocada' }))
     const done = vi.fn()
     render(<QrPage signedIn canRedeem folders={[]} onRedeemed={done} />)
-    const form = screen.getByLabelText('Código de referencia').closest('form')!
+    const form = screen.getByLabelText('Código de recomendaciones').closest('form')!
     fireEvent.submit(form); await screen.findByRole('alert')
     expect(referralToken).toBe('synthetic-reference')
     let resolve!: (value: unknown) => void
     request.mockImplementation(() => new Promise(finish => { resolve = finish }))
     act(() => { fireEvent.submit(form); fireEvent.submit(form) })
     expect(request).toHaveBeenCalledTimes(2)
-    expect((screen.getByLabelText('Código de referencia') as HTMLInputElement).disabled).toBe(true)
+    expect((screen.getByLabelText('Código de recomendaciones') as HTMLInputElement).disabled).toBe(true)
     invalidatePrivateState(); setReferralToken('another-session-reference')
     await act(async () => resolve({}))
     expect(referralToken).toBe('another-session-reference')
     expect(done).not.toHaveBeenCalled()
-    expect(screen.queryByText('La referencia se vinculó a tu cuenta.')).toBeNull()
+    expect(screen.queryByText('Las recomendaciones se vincularon a tu cuenta.')).toBeNull()
   })
 })

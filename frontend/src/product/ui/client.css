@@ -224,10 +224,6 @@
   .product-shell .client-journey-steps button { transition: none; }
 }
 
-.product-shell:has(.client-navigation) {
-  padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px));
-}
-
 .product-shell :is(a, button, summary):focus-visible {
   outline: 3px solid var(--client-petrol);
   outline-offset: 4px;
@@ -252,23 +248,15 @@
 
 .product-shell .client-navigation-group {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--client-space-3);
 }
 
 .product-shell .client-navigation {
-  position: fixed;
-  z-index: 40;
-  inset: auto 0 0;
-  width: min(100%, 720px);
-  margin-inline: auto;
-  padding: var(--client-space-2) max(var(--client-space-2), env(safe-area-inset-right, 0px)) calc(var(--client-space-2) + env(safe-area-inset-bottom, 0px)) max(var(--client-space-2), env(safe-area-inset-left, 0px));
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--client-space-1);
-  background: var(--client-sand);
-  border: 1px solid var(--client-border);
-  border-bottom: 0;
-  border-radius: var(--client-radius) var(--client-radius) 0 0;
-  box-shadow: 0 -4px 24px #16464a14;
 }
 
 .product-shell .client-navigation a {
@@ -276,7 +264,7 @@
   min-height: 52px;
   justify-content: center;
   text-align: center;
-  padding: var(--client-space-3) var(--client-space-1);
+  padding: var(--client-space-3);
   border-radius: 10px;
   color: var(--client-petrol);
   font-size: .75rem;
@@ -391,6 +379,24 @@
 @keyframes client-loading { from { opacity: .65; } to { opacity: 1; } }
 
 @media (max-width: 680px) {
+  .product-shell:has(.client-navigation) { padding-bottom: calc(8rem + env(safe-area-inset-bottom, 0px)); }
+  .product-shell .client-navigation {
+    position: fixed;
+    z-index: 40;
+    inset: auto 0 0;
+    width: 100%;
+    margin-inline: auto;
+    padding: var(--client-space-2) max(var(--client-space-2), env(safe-area-inset-right, 0px)) calc(var(--client-space-2) + env(safe-area-inset-bottom, 0px)) max(var(--client-space-2), env(safe-area-inset-left, 0px));
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    background: var(--client-sand);
+    border: 1px solid var(--client-border);
+    border-bottom: 0;
+    border-radius: var(--client-radius) var(--client-radius) 0 0;
+    box-shadow: 0 -4px 24px #16464a14;
+  }
+  .product-shell .client-navigation a { padding-inline: var(--client-space-1); }
   .product-shell .product-header-inner { display: flex; width: calc(100% - 32px); flex-direction: row; gap: var(--client-space-3); }
   .product-shell .product-header .product-brand img { width: 112px; }
   .product-shell .product-header-actions { width: 100%; justify-content: space-between; gap: var(--client-space-2); }
@@ -464,10 +470,7 @@
   .product-shell .client-benefit-card:hover { transform: none; }
 }
 
-.product-shell .client-network-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-.product-shell :is(.client-network-switch, .client-network-preview-actions) button { min-height: 44px; min-width: 44px; border: 1px solid var(--client-petrol); border-radius: 10px; padding: 10px 16px; background: white; color: var(--client-petrol); font: inherit; font-weight: 700; cursor: pointer; }
-.product-shell .client-network-switch button[aria-pressed="true"] { background: var(--client-petrol); color: white; }
-.product-shell .client-network-switch p { font-size: .85rem; margin: 0; }
+.product-shell .client-network-preview-actions button { min-height: 44px; min-width: 44px; border: 1px solid var(--client-petrol); border-radius: 10px; padding: 10px 16px; background: white; color: var(--client-petrol); font: inherit; font-weight: 700; cursor: pointer; }
 .product-shell .network-scene[hidden] { display: none; }
 .product-shell .network-slot button[aria-pressed="true"] { outline: 3px solid var(--client-petrol); outline-offset: 3px; box-shadow: 0 0 0 7px white; }
 .product-shell .network-section :is(button, a):focus-visible,

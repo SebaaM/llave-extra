@@ -21,7 +21,7 @@ import { AdminWorkspace } from './admin/AdminWorkspace'
 import { checkAdminNavigation } from './admin/hooks'
 import { useSiteSettings } from './useSiteSettings'
 
-const logoutNotice = 'La sesión se quitó de este dispositivo, pero no pudimos confirmar su revocación en el servidor. Iniciá sesión de nuevo solo si querés continuar.'
+const logoutNotice = 'La sesión se quitó de este dispositivo, pero no pudimos confirmar su cierre completo. Iniciá sesión de nuevo solo si querés continuar.'
 
 export default function ProductApp() {
   const [path, setPath] = useState(window.location.pathname)
@@ -30,6 +30,10 @@ export default function ProductApp() {
   const [authReady, setAuthReady] = useState(false)
   const [notice, setNotice] = useState(() => hasPendingLogout() ? logoutNotice : '')
   const [folders, setFolders] = useState<Folder[]>([])
+  const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
+  const recommendationsGeneration = useRef(0)
+  const recommendationsEpoch = useRef<Record<string, number>>({})
+  const recommendationsController = useRef<AbortController | null>(null)
   const [selectedFolder, setSelectedFolder] = useState('')
   const [providers, setProviders] = useState<Provider[]>([])
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
@@ -54,6 +58,10 @@ export default function ProductApp() {
   )
 
   const clearPrivateData = useCallback(() => {
+    recommendationsGeneration.current += 1
+    recommendationsController.current?.abort()
+    recommendationsEpoch.current = {}
+    setRecommendations({})
     providersRequestRef.current += 1
     detailRequestRef.current += 1
     setFolders([])
@@ -85,8 +93,13 @@ export default function ProductApp() {
   const loadFolders = useCallback(async () => {
     const version = currentSessionVersion()
     const identity = identityRef.current
+    const generation = ++recommendationsGeneration.current
+    recommendationsController.current?.abort()
+    const controller = new AbortController()
+    recommendationsController.current = controller
+    setRecommendations({})
     const result = await api<{ folders: Folder[] }>('/api/v1/me/folders/')
-    if (!stillCurrent(version, identity)) return
+    if (!stillCurrent(version, identity) || generation !== recommendationsGeneration.current) return
     const nextSelected = result.folders.some(folder => folder.collaborator_id === selectedFolderRef.current)
       ? selectedFolderRef.current
       : result.folders[0]?.collaborator_id ?? ''
@@ -98,7 +111,19 @@ export default function ProductApp() {
     }
     setFolders(result.folders)
     if (result.folders.length) setNotice('')
+    // Los accesos no prueban que existan selecciones vigentes. Consultar solo
+    // existencia en la primera página privada, sin guardar nodos ni medios.
+    for (const folder of result.folders) {
+      const id = folder.collaborator_id
+      const epoch = recommendationsEpoch.current[id] ?? 0
+      const current = () => !controller.signal.aborted && stillCurrent(version, identity) && generation === recommendationsGeneration.current && epoch === (recommendationsEpoch.current[id] ?? 0)
+      void api<{ count: number }>(`/api/v1/folders/${encodeURIComponent(id)}/network/?page=1`, { signal: controller.signal }).then(network => {
+        if (current()) setRecommendations(previous => ({ ...previous, [id]: network.count > 0 }))
+      }).catch(() => { if (current()) setRecommendations(previous => ({ ...previous, [id]: false })) })
+    }
   }, [stillCurrent])
+
+  useEffect(() => () => { recommendationsGeneration.current += 1; recommendationsController.current?.abort() }, [])
 
   const loadProviders = useCallback(async (folderId: string) => {
     const version = currentSessionVersion()
@@ -111,9 +136,15 @@ export default function ProductApp() {
     try {
       const result = await api<Provider[]>(`/api/v1/folders/${folderId}/providers/`)
       if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== providersRequestRef.current) return
+      recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
+      setRecommendations(previous => ({ ...previous, [folderId]: result.length > 0 }))
       setProviders(result)
     } catch (error) {
-      if (stillCurrent(version, identity) && selectedFolderRef.current === folderId && request === providersRequestRef.current) throw error
+      if (stillCurrent(version, identity) && selectedFolderRef.current === folderId && request === providersRequestRef.current) {
+        recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
+        setRecommendations(previous => ({ ...previous, [folderId]: false }))
+        throw error
+      }
     }
   }, [stillCurrent])
 
@@ -129,6 +160,8 @@ export default function ProductApp() {
 
   const updateFolderProviders = useCallback((folderId: string, version: number, identity: number, next: Provider[]) => {
     if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
+    recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
+    setRecommendations(previous => ({ ...previous, [folderId]: next.length > 0 }))
     // La revalidación de medios invalida también la fuente compartida, para que
     // remontar la página no pueda restaurar la lista anterior ni un GET tardío.
     providersRequestRef.current += 1
@@ -263,7 +296,7 @@ export default function ProductApp() {
       .then(async () => {
         if (!stillCurrent(version, identity)) return
         setReferralToken(null)
-        setNotice('La referencia se vinculó a tu cuenta.')
+        setNotice('Las recomendaciones se vincularon a tu cuenta.')
         await loadFolders()
       })
       .catch(error => {
@@ -313,6 +346,8 @@ export default function ProductApp() {
     const version = currentSessionVersion()
     const identity = identityRef.current
     const revokedFolder = selectedFolderRef.current
+    recommendationsEpoch.current[revokedFolder] = (recommendationsEpoch.current[revokedFolder] ?? 0) + 1
+    setRecommendations(previous => ({ ...previous, [revokedFolder]: false }))
     providersRequestRef.current += 1
     detailRequestRef.current += 1
     setSelectedProvider(null)
@@ -331,6 +366,8 @@ export default function ProductApp() {
   const isAuth = ['/registro', '/ingresar', '/recuperar', '/restablecer-clave'].includes(path)
   const redirectToRole = user && user.role !== 'TOURIST'
   const shellUser = authReady ? user : null
+  const hasRecommendations = folders.some(folder => recommendations[folder.collaborator_id])
+  const checkingRecommendations = folders.some(folder => recommendations[folder.collaborator_id] === undefined)
 
   const onLogin = (current: User) => {
     clearPrivateData()
@@ -386,12 +423,12 @@ export default function ProductApp() {
         }}
       />
     }
-    if (path === '/referencia') return <QrPage key={`${user?.id}:${renderedSessionVersion}`} signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} onRedeemed={() => {
+    if (path === '/referencia') return <QrPage key={`${user?.id}:${renderedSessionVersion}`} signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} hasRecommendations={hasRecommendations} checkingRecommendations={checkingRecommendations} onRedeemed={() => {
       const version = currentSessionVersion(), identity = identityRef.current
-      void loadFolders().catch(() => { if (stillCurrent(version, identity)) setNotice('La referencia se vinculó, pero no pudimos actualizar tus carpetas. Volvé a abrir Recomendaciones para actualizarlas.') })
+      void loadFolders().catch(() => { if (stillCurrent(version, identity)) setNotice('Las recomendaciones se vincularon, pero no pudimos actualizarlas. Volvé a abrir Recomendaciones para intentarlo de nuevo.') })
     }} />
     if (!user && path === '/consumo') {
-      return <main id="contenido" className="product-gate content-width"><h1>Ingresá para validar tu visita.</h1><p>El QR del prestador quedó disponible mientras iniciás sesión.</p><ProductLink className="button button-orange" href="/ingresar">Ingresar</ProductLink></main>
+      return <main id="contenido" className="product-gate content-width"><h1>Ingresá para validar tu visita.</h1><p>El QR del negocio quedó disponible mientras iniciás sesión.</p><ProductLink className="button button-orange" href="/ingresar">Ingresar</ProductLink></main>
     }
     if (!user) {
       return <main id="contenido" className="product-gate content-width"><h1>Ingresá para continuar</h1><p>Así podemos mostrarte solo las recomendaciones autorizadas para tu cuenta.</p><div className="product-hero-actions"><ButtonLink href="/ingresar">Ingresar</ButtonLink><ButtonLink href="/registro" tone="dark">Crear mi cuenta</ButtonLink></div></main>
@@ -403,13 +440,13 @@ export default function ProductApp() {
     if (path === '/recomendaciones') {
       if (selectedProvider) return <ProviderDetail folderId={selectedFolder} provider={selectedProvider} onAccessRevoked={() => void revokeProviderView()} />
       if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, next)} />
-      return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Tu primera carpeta empieza con un QR.</h1><p>Pedile a un colaborador el QR de referencia para abrir sus recomendaciones privadas. Ese código da acceso a una carpeta y no acredita una visita.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
+      return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Las recomendaciones llegan con un QR.</h1><p>Si recibiste un QR de recomendaciones, abrilo para explorar los beneficios que te compartieron. También podés descubrir negocios y registrar visitas por tu cuenta.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />
     if (path === '/consumo') return <ConsumePage key={`${user.id}:${renderedSessionVersion}`} folders={folders} onComplete={() => {
       const version = currentSessionVersion(), identity = identityRef.current
       void Promise.allSettled([loadTrip(), loadFolders()]).then(results => {
-        if (stillCurrent(version, identity) && results.some(result => result.status === 'rejected')) setNotice('El resultado del consumo ya fue confirmado. No pudimos actualizar Mi viaje y tus carpetas; abrí Mi viaje y usá Actualizar. No hace falta volver a validar la visita.')
+        if (stillCurrent(version, identity) && results.some(result => result.status === 'rejected')) setNotice('El resultado del consumo ya fue confirmado. No pudimos actualizar Mi viaje y tus recomendaciones; abrí Mi viaje y usá Actualizar. No hace falta volver a validar la visita.')
       })
     }} />
     if (path === '/perfil') {
@@ -426,5 +463,5 @@ export default function ProductApp() {
   if (inAdmin) return <AdminWorkspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} search={search} />
   const inWorkspace = user && authReady && ((user.role === 'PROVIDER' && (path === '/prestador' || path.startsWith('/prestador/'))) || (user.role === 'COLLABORATOR' && (path === '/colaborador' || path.startsWith('/colaborador/'))))
   if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} />
-  return <ProductShell path={path} user={shellUser} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && path !== '/perfil' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
+  return <ProductShell path={path} user={shellUser} hasRecommendations={hasRecommendations} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && path !== '/perfil' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
 }

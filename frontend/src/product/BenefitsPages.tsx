@@ -88,9 +88,9 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     return matchesCategory && searchable.includes(query.toLocaleLowerCase())
   })
   const folderPicker = folders.length > 1 && <label className="folder-picker">
-    Carpeta
+    Selección recibida
     <select value={selected} onChange={event => select(event.target.value)}>
-      {folders.map(folder => <option key={folder.collaborator_id} value={folder.collaborator_id}>Carpeta · {folder.collaborator_id.slice(0, 8)}</option>)}
+      {folders.map((folder, index) => <option key={folder.collaborator_id} value={folder.collaborator_id}>Selección recibida {index + 1}</option>)}
     </select>
   </label>
 
@@ -108,10 +108,10 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
 
   return <main id="contenido" className="private-benefits client-recommendations">
     <div className="content-width">
-      <header className="client-private-heading"><p className="eyebrow">TU SELECCIÓN PRIVADA</p>
+      <header className="client-private-heading"><p className="eyebrow">RECOMENDACIONES RECIBIDAS</p>
       <h1>Recomendaciones locales.</h1>
-      <p className="private-lead">Explorá la selección disponible en tus carpetas y revisá las condiciones de cada beneficio. El acceso depende de la referencia QR activa.</p>
-      {selected && <p className="client-folder-label">Carpeta · {selected.slice(0, 8)}</p>}</header>
+      <p className="private-lead">Explorá los beneficios que te recomendaron y revisá sus condiciones. Están disponibles mientras el QR con el que los recibiste siga activo.</p>
+      </header>
       {folderPicker}
       {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={denyMedia} />}
       <div className="search-row">
@@ -135,7 +135,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
             <button className="button button-dark" onClick={() => onOpen(provider.id)}>Ver beneficios</button>
           </div>
         </article>)}
-      </div> : <EmptyState title={providers.length ? 'No encontramos coincidencias.' : 'Todavía no hay recomendaciones en esta carpeta.'} description={providers.length ? 'Probá con otra búsqueda o categoría.' : 'Cuando haya beneficios vigentes disponibles, los vas a encontrar acá.'}>{providers.length > 0 && <button className="button button-dark" onClick={() => { setQuery(''); setCategory('') }}>Limpiar filtros</button>}</EmptyState>}
+      </div> : <EmptyState title={providers.length ? 'No encontramos coincidencias.' : 'Todavía no hay beneficios disponibles en esta selección.'} description={providers.length ? 'Probá con otra búsqueda o categoría.' : 'Cuando haya beneficios vigentes disponibles, los vas a encontrar acá.'}>{providers.length > 0 && <button className="button button-dark" onClick={() => { setQuery(''); setCategory('') }}>Limpiar filtros</button>}</EmptyState>}
     </div>
   </main>
 }
@@ -207,7 +207,7 @@ export function ProviderDetail({ folderId, provider, onAccessRevoked }: Provider
           {provider.address && <p><strong>Dirección:</strong> {provider.address}</p>}
           {provider.hours && <p><strong>Horarios:</strong> {provider.hours}</p>}
           {provider.contact && <p><strong>Contacto:</strong> {provider.contact}</p>}
-          {safeExternal(provider.website) && <p><a href={safeExternal(provider.website)!} target="_blank" rel="noopener noreferrer">Sitio web del prestador</a></p>}
+          {safeExternal(provider.website) && <p><a href={safeExternal(provider.website)!} target="_blank" rel="noopener noreferrer">Sitio web del negocio</a></p>}
           <div className="benefit-cards">
             <h2>Beneficios y condiciones</h2>
             {loading && <p role="status">Cargando beneficios…</p>}
@@ -220,7 +220,7 @@ export function ProviderDetail({ folderId, provider, onAccessRevoked }: Provider
               {(benefit.valid_from || benefit.valid_until) && <p>Vigencia: {benefit.valid_from ?? 'sin fecha de inicio'} — {benefit.valid_until ?? 'sin fecha de cierre'}</p>}
             </article>)}
           </div>
-          <p className="form-help">En el local, escaneá el QR del prestador e ingresá el PIN que te facilite para validar tu visita.</p>
+          <p className="form-help">En el local, escaneá el QR del negocio e ingresá el PIN que te facilite para validar tu visita.</p>
         </div>
       </div>
     </div>

@@ -23,7 +23,7 @@ export function NetworkPreview({ item, folderId, onOpenProvider, onClose, onDeni
       <p>{item.benefit_title}</p>
       <div className="client-network-preview-actions">
         {folderId
-          ? <button className="button button-dark" disabled={!onOpenProvider} onClick={() => onOpenProvider?.(item.provider.id)}>Ver beneficios de este prestador</button>
+          ? <button className="button button-dark" disabled={!onOpenProvider} onClick={() => onOpenProvider?.(item.provider.id)}>Ver beneficios de este negocio</button>
           : <ProductLink className="button button-dark" href={`/beneficios/${encodeURIComponent(item.benefit_id)}`}>Ver beneficio y condiciones</ProductLink>}
         <button onClick={onClose}>Cerrar vista previa</button>
       </div>

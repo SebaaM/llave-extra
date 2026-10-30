@@ -52,7 +52,7 @@ describe('postales privadas', () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({}, 403)))
     const { rerender } = render(<FolderPage {...props} folders={folders} select={select} />)
     await screen.findByText('El acceso a estas recomendaciones ya no está disponible.')
-    fireEvent.change(screen.getByLabelText('Carpeta'), { target: { value: 'b' } })
+    fireEvent.change(screen.getByLabelText('Selección recibida'), { target: { value: 'b' } })
     expect(select).toHaveBeenCalledWith('b')
     expect(screen.queryByText(provider.name)).toBeNull()
     rerender(<FolderPage {...props} folders={folders} selected="b" providers={[{ ...provider, name: 'Local de B', image_url: null }]} />)

@@ -10,6 +10,12 @@ const provider = { id: 'p1', slug: 'local', name: 'Local seguro', category: 'Pas
 const item = { provider, benefit_id: 'b1', benefit_title: 'Paseo vigente' }
 const presentation = { title: 'Red elegida', layout: 'ORBIT', theme: 'OCEAN', background: 'HARBOR', page_size: 8, interval_seconds: 10, city: 'Ushuaia' }
 const page = (results = [item], extra = {}) => ({ count: 16, next: 'next', previous: null, results, presentation, ...extra })
+function viewport(mobile = false) {
+  const listeners = new Set<() => void>()
+  const media = { matches: mobile, addEventListener: vi.fn((_event: string, listener: () => void) => listeners.add(listener)), removeEventListener: vi.fn((_event: string, listener: () => void) => listeners.delete(listener)) }
+  vi.stubGlobal('matchMedia', vi.fn((query: string) => query === '(max-width: 680px)' ? media : { matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+  return { media, resize(value: boolean) { act(() => { media.matches = value; listeners.forEach(listener => listener()) }) } }
+}
 
 beforeEach(() => {
   setAccessToken('sesion-a')
@@ -36,7 +42,8 @@ describe('vista previa de la red', () => {
     expect(document.activeElement).toBe(node)
   })
 
-  it('alterna Red y Lista conservando exactamente la página y sus resultados', async () => {
+  it('adapta Red y Lista al ancho conservando página, resultados y foco sin selector manual', async () => {
+    const screenSize = viewport()
     const fetcher = vi.fn(async (input: URL | RequestInfo) => new URL(String(input)).searchParams.get('page') === '2'
       ? json(page([{ ...item, provider: { ...provider, name: 'Último local' } }], { next: null, previous: 'prev' })) : json(page()))
     vi.stubGlobal('fetch', fetcher)
@@ -44,15 +51,46 @@ describe('vista previa de la red', () => {
     await screen.findByText('Local seguro')
     fireEvent.click(screen.getByRole('button', { name: 'Página siguiente' }))
     await screen.findByText('Último local')
-    fireEvent.click(screen.getByRole('button', { name: 'Lista' }))
-    const list = screen.getByRole('list', { name: 'Prestadores de esta página' })
+    expect(screen.queryByRole('group', { name: 'Vista de la red' })).toBeNull()
+    screen.getByRole('button', { name: 'Último local: Paseo vigente' }).focus()
+    screenSize.resize(true)
+    const list = screen.getByRole('list', { name: 'Negocios de esta página' })
     expect(within(list).getAllByRole('button')).toHaveLength(1)
     expect(within(list).getByText('Último local')).toBeTruthy()
     expect(screen.queryByText('Local seguro')).toBeNull()
-    expect(screen.getByText('Página 2 de 2 · 16 prestadores')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Red' }))
+    expect(document.activeElement).toBe(within(list).getByRole('button'))
+    expect(screen.getByText('Página 2 de 2 · 16 negocios')).toBeTruthy()
+    screenSize.resize(false)
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(screen.getByRole('button', { name: 'Último local: Paseo vigente' })).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Último local: Paseo vigente' }))
+  })
+
+  it('inicia en lista móvil y retira su escucha al desmontarse', async () => {
+    const screenSize = viewport(true)
+    vi.stubGlobal('fetch', vi.fn(async () => json(page())))
+    const { unmount, container } = render(<NetworkCanvas />)
+    await screen.findByRole('list', { name: 'Negocios de esta página' })
+    expect(screen.getAllByRole('button', { name: 'Local seguro: Paseo vigente' })).toHaveLength(1)
+    expect(container.textContent).not.toMatch(/prestador|colaborador|carpeta|servidor/i)
+    unmount()
+    expect(screenSize.media.removeEventListener).toHaveBeenCalledWith('change', screenSize.media.addEventListener.mock.calls[0][1])
+  })
+
+  it('conserva la ficha seleccionada y devuelve foco al nodo vigente después de cambiar ancho', async () => {
+    const screenSize = viewport()
+    const fetcher = vi.fn(async () => json(page()))
+    vi.stubGlobal('fetch', fetcher)
+    render(<NetworkCanvas />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Local seguro: Paseo vigente' }))
+    const heading = screen.getByRole('heading', { name: 'Local seguro' })
+    screenSize.resize(true)
+    expect(document.activeElement).toBe(heading)
+    expect(screen.getByRole('region', { name: 'Vista previa de Local seguro' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar vista previa' }))
+    const list = screen.getByRole('list', { name: 'Negocios de esta página' })
+    expect(document.activeElement).toBe(within(list).getByRole('button'))
+    expect(fetcher).toHaveBeenCalledTimes(1)
   })
 
   it('retira selección al cambiar página y no la restaura con una respuesta tardía', async () => {
@@ -77,7 +115,7 @@ describe('vista previa de la red', () => {
     render(<NetworkCanvas folderId="carpeta-a" onOpenProvider={open} />)
     fireEvent.click(await screen.findByRole('button', { name: 'Local seguro: Paseo vigente' }))
     expect(open).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Ver beneficios de este prestador' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ver beneficios de este negocio' }))
     expect(open).toHaveBeenCalledWith('p1')
     expect(requests).toHaveLength(1)
     expect(requests.every(url => url.includes('/folders/carpeta-a/network/'))).toBe(true)
@@ -143,7 +181,7 @@ describe('vista previa de la red', () => {
     await screen.findByRole('alert')
     failure = false
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
-    await screen.findByText('Pronto habrá prestadores vigentes para mostrar.')
+    await screen.findByText('Pronto habrá negocios con beneficios para mostrar.')
     expect((screen.getByRole('button', { name: 'Página siguiente' }) as HTMLButtonElement).disabled).toBe(true)
   })
 

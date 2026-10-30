@@ -5,11 +5,25 @@ import type { User } from '../api'
 import { ProductShell } from '../Layout'
 
 const tourist: User = { id: 41, email: 'cliente@example.test', role: 'TOURIST', email_verified: true }
-const shell = (user: User | null, path = '/beneficios') => <ProductShell user={user} path={path}><main id="contenido"><h1>Contenido de prueba</h1></main></ProductShell>
+const shell = (user: User | null, path = '/beneficios', hasRecommendations = true) => <ProductShell user={user} path={path} hasRecommendations={hasRecommendations}><main id="contenido"><h1>Contenido de prueba</h1></main></ProductShell>
 
 afterEach(cleanup)
 
 describe('navegación del Cliente', () => {
+  it('ofrece Recomendaciones solo cuando hay selecciones recibidas disponibles', () => {
+    const { rerender } = render(shell(tourist, '/beneficios', false))
+    expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
+    rerender(shell(tourist, '/beneficios', true))
+    expect(screen.getAllByRole('link', { name: 'Recomendaciones' })).toHaveLength(1)
+    rerender(shell(tourist, '/beneficios', false))
+    expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
+  })
+
+  it('oculta Recomendaciones si el shell no recibió disponibilidad explícita', () => {
+    render(<ProductShell user={tourist} path="/beneficios"><h1>Beneficios</h1></ProductShell>)
+    expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
+  })
+
   it('presenta una sola navegación de tres destinos para el Cliente', () => {
     render(shell(tourist))
     const navigation = screen.getByRole('navigation', { name: 'Tu viaje' })
