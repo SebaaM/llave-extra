@@ -13,13 +13,25 @@ type FolderPageProps = {
   selected: string
   select: (value: string) => void
   providers: Provider[]
+  generation?: number
   onOpen: (id: string) => void
   onAccessRevoked?: () => void
   onProvidersChange?: (providers: Provider[]) => void
+  onAvailabilityChange?: (available: boolean) => void
 }
 
 export function FolderPage(props: FolderPageProps) {
-  return <FolderContent key={`${props.selected}:${currentSessionVersion()}`} {...props} />
+  return <FolderSession key={`${props.selected}:${currentSessionVersion()}`} {...props} />
+}
+
+function FolderSession(props: FolderPageProps) {
+  // Una nueva lectura descarta datos y peticiones locales; la denegación sigue
+  // requiriendo un reintento explícito dentro de la misma carpeta y sesión.
+  const [denied, setDenied] = useState(false)
+  return <FolderContent key={props.generation ?? 0} {...props} initiallyDenied={denied} onRetry={() => setDenied(false)} onAccessRevoked={() => {
+    setDenied(true)
+    props.onAccessRevoked?.()
+  }} />
 }
 
 function FolderPhoto({ provider, onDenied, onMissing }: { provider: Provider; onDenied: () => void; onMissing: (path: string) => void }) {
@@ -28,18 +40,20 @@ function FolderPhoto({ provider, onDenied, onMissing }: { provider: Provider; on
   return <PrivatePhoto path={path} alt={`Imagen de ${provider.name}`} onDenied={onDenied} onMissing={missing} />
 }
 
-function FolderContent({ folders, selected, select, providers: initialProviders, onOpen, onAccessRevoked, onProvidersChange }: FolderPageProps) {
+function FolderContent({ folders, selected, select, providers: initialProviders, onOpen, onAccessRevoked, onProvidersChange, onAvailabilityChange, initiallyDenied, onRetry }: FolderPageProps & { initiallyDenied: boolean; onRetry: () => void }) {
   const version = currentSessionVersion()
   const [revision, setRevision] = useState(0)
-  const [result, setResult] = useState<{ state: 'initial' | 'loading' | 'ready' | 'denied' | 'error'; providers: Provider[]; error: string }>({ state: 'initial', providers: [], error: '' })
+  const [result, setResult] = useState<{ state: 'initial' | 'loading' | 'ready' | 'denied' | 'error'; providers: Provider[]; error: string }>({ state: initiallyDenied ? 'denied' : 'initial', providers: [], error: '' })
   const [missingPaths, setMissingPaths] = useState<string[]>([])
   const revokedRef = useRef(onAccessRevoked)
   const providersChangeRef = useRef(onProvidersChange)
+  const availabilityRef = useRef(onAvailabilityChange)
   const activeRef = useRef(true)
   const blockedRef = useRef(false)
   const controllerRef = useRef<AbortController | null>(null)
   useEffect(() => { revokedRef.current = onAccessRevoked }, [onAccessRevoked])
   useEffect(() => { providersChangeRef.current = onProvidersChange }, [onProvidersChange])
+  useEffect(() => { availabilityRef.current = onAvailabilityChange }, [onAvailabilityChange])
   useEffect(() => {
     activeRef.current = true
     return () => { activeRef.current = false; controllerRef.current?.abort() }
@@ -60,6 +74,17 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     setResult({ state: 'loading', providers: [], error: '' })
     providersChangeRef.current?.([])
     setRevision(value => value + 1)
+  }, [version])
+  const networkAvailability = useCallback((available: boolean) => {
+    if (!activeRef.current || version !== currentSessionVersion() || blockedRef.current) return
+    if (!available) {
+      // count total cero es una selección vacía autorizada, no un QR denegado.
+      // Retirar también las tarjetas y abortar su revalidación de medios.
+      controllerRef.current?.abort()
+      setResult({ state: 'ready', providers: [], error: '' })
+      setMissingPaths([])
+    }
+    availabilityRef.current?.(available)
   }, [version])
   useEffect(() => {
     if (revision === 0) return
@@ -101,6 +126,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     {result.state === 'error' ? <p role="alert">{result.error}</p> : <p role="status">{result.state === 'loading' ? 'Consultando recomendaciones vigentes…' : 'El acceso a estas recomendaciones ya no está disponible.'}</p>}
     {result.state !== 'loading' && <button className="button button-dark" onClick={() => {
       if (!activeRef.current || version !== currentSessionVersion()) return
+      onRetry()
       blockedRef.current = true
       setResult({ state: 'loading', providers: [], error: '' })
       providersChangeRef.current?.([])
@@ -116,7 +142,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
       <p className="private-lead">Explorá los beneficios que te recomendaron y revisá sus condiciones. Están disponibles mientras el QR con el que los recibiste siga activo.</p>
       </header>
       {folderPicker}
-      {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={denyMedia} />}
+      {selected && <NetworkCanvas key={selected} folderId={selected} onOpenProvider={onOpen} onAccessRevoked={denyMedia} onAvailabilityChange={networkAvailability} />}
       <div className="search-row">
         <label htmlFor="provider-search">Buscar recomendaciones</label>
         <input id="provider-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nombre, categoría o descripción" />

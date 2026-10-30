@@ -138,15 +138,25 @@ describe('vista previa de la red', () => {
   it('descarta la carpeta anterior y la sesión A al reemplazarlas', async () => {
     let finish!: (response: Response) => void
     const revoked = vi.fn()
+    const available = vi.fn()
     vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => String(input).includes('/carpeta-a/')
       ? new Promise<Response>(resolve => { finish = resolve }) : Promise.resolve(json(page([{ ...item, provider: { ...provider, name: 'Cuenta B' } }])))))
-    const view = render(<NetworkCanvas folderId="carpeta-a" onAccessRevoked={revoked} />)
+    const view = render(<NetworkCanvas folderId="carpeta-a" onAccessRevoked={revoked} onAvailabilityChange={available} />)
     invalidatePrivateState(); setAccessToken('sesion-b')
-    view.rerender(<NetworkCanvas folderId="carpeta-b" onAccessRevoked={revoked} />)
+    view.rerender(<NetworkCanvas folderId="carpeta-b" onAccessRevoked={revoked} onAvailabilityChange={available} />)
     await screen.findByText('Cuenta B')
-    await act(async () => finish(json(page())))
+    await act(async () => finish(json(page([], { count: 0 }))))
     expect(screen.queryByText('Local seguro')).toBeNull()
     expect(revoked).not.toHaveBeenCalled()
+    expect(available.mock.calls).toEqual([[true]])
+  })
+
+  it('la lectura pública no modifica la disponibilidad de recomendaciones privadas', async () => {
+    const available = vi.fn()
+    vi.stubGlobal('fetch', vi.fn(async () => json(page([], { count: 0 }))))
+    render(<NetworkCanvas onAvailabilityChange={available} />)
+    await screen.findByText('Pronto habrá negocios con beneficios para mostrar.')
+    expect(available).not.toHaveBeenCalled()
   })
 
   it.each([true, false])('revalida un medio 404, diferenciando archivo ausente de acceso retirado (%s)', async authorized => {

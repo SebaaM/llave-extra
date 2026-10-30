@@ -17,7 +17,7 @@ function NetworkPhoto({ item, folderId, onDenied, onMissing }: { item: NetworkIt
 
 const backgroundImage = { HARBOR: '/images/ushuaia-harbor.jpg', BEAGLE: '/images/ushuaia-beagle.jpg' }
 
-export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { folderId?: string; onOpenProvider?: (id: string) => void; onAccessRevoked?: () => void }) {
+export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked, onAvailabilityChange }: { folderId?: string; onOpenProvider?: (id: string) => void; onAccessRevoked?: () => void; onAvailabilityChange?: (available: boolean) => void }) {
   const [page, setPage] = useState(1)
   const [response, setResponse] = useState<{ key: string; data: NetworkPage | null; error: string }>({ key: '', data: null, error: '' })
   const [paused, setPaused] = useState(false)
@@ -43,7 +43,9 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
   const data = loading ? null : response.data
   const error = loading ? '' : response.error
   const revokedRef = useRef(onAccessRevoked)
+  const availabilityRef = useRef(onAvailabilityChange)
   useEffect(() => { revokedRef.current = onAccessRevoked }, [onAccessRevoked])
+  useEffect(() => { availabilityRef.current = onAvailabilityChange }, [onAvailabilityChange])
 
   useEffect(() => {
     const media = window.matchMedia?.('(max-width: 680px)')
@@ -64,11 +66,17 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked }: { f
   useEffect(() => {
     const controller = new AbortController()
     requestRef.current = controller
+    const availabilityChanged = availabilityRef.current
     // Las páginas públicas no envían JWT; la carpeta revalida su acceso privado.
     const request = folderId
       ? api<NetworkPage>(`/api/v1/folders/${encodeURIComponent(folderId)}/network/?page=${page}`, { signal: controller.signal })
       : publicNetwork(page, controller.signal)
-    void request.then(result => { if (!controller.signal.aborted && (!folderId || sessionVersion === currentSessionVersion())) setResponse({ key, data: result, error: '' }) }).catch(caught => {
+    void request.then(result => {
+      if (controller.signal.aborted || (folderId && sessionVersion !== currentSessionVersion())) return
+      setResponse({ key, data: result, error: '' })
+      // La ausencia de resultados en una página no prueba una selección vacía.
+      if (folderId && (result.count === 0 || result.count > 0)) availabilityChanged?.(result.count > 0)
+    }).catch(caught => {
       if (controller.signal.aborted || (folderId && sessionVersion !== currentSessionVersion())) return
       setResponse({ key, data: null, error: messageOf(caught) })
       if (folderId && caught instanceof ApiError && [401, 403, 404].includes(caught.status)) revokedRef.current?.()

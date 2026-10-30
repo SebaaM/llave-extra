@@ -7,6 +7,9 @@ const json = (body: unknown, status = 200) => new Response(body === null ? null 
 const setUrl = (path: string, hash = '') => window.history.replaceState({}, '', `${path}${hash}`)
 const tourist = { id: 804, email: 'viajera@example.test', role: 'TOURIST', email_verified: true }
 const emptyNetwork = { count: 0, next: null, previous: null, presentation: { title: 'Red local', layout: 'RADIAL', theme: 'SAND', background: 'BEAGLE', page_size: 12, interval_seconds: 10, city: 'Ushuaia' }, results: [] }
+// Las pruebas con negocios disponibles necesitan un count total positivo, aunque
+// no ejerciten nodos: un total cero ahora retira también las tarjetas hermanas.
+const availableNetwork = { ...emptyNetwork, count: 1 }
 const nativeLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
 
 beforeEach(() => {
@@ -239,7 +242,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
-      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.includes('/network/')) return Promise.resolve(json(availableNetwork))
       if (url.endsWith('/media/')) return new Promise<Response>(resolve => { finishMedia = resolve })
       if (url.endsWith('/folders/a/providers/')) {
         lists += 1
@@ -288,7 +291,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
-      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.includes('/network/')) return Promise.resolve(json(availableNetwork))
       if (url.endsWith('/media/')) return Promise.resolve(json({}, 403))
       if (url.endsWith('/folders/a/providers/')) {
         lists += 1
@@ -329,7 +332,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 5, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 1, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
-      if (url.includes('/network/')) return Promise.resolve(json(emptyNetwork))
+      if (url.includes('/network/')) return Promise.resolve(json(availableNetwork))
       if (url.endsWith('/folders/a/providers/')) return Promise.resolve(json(providers))
       if (url.endsWith('/providers/p1/')) return new Promise<Response>(resolve => { finishFirst = resolve })
       if (url.endsWith('/providers/p2/')) return Promise.resolve(json(providers[1]))
@@ -428,7 +431,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: accountB ? 22 : 777, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: accountB ? 0 : 2, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
-      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(emptyNetwork))
+      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(availableNetwork))
       if (url.endsWith('/folders/folder-a-private/providers/')) return Promise.resolve(json([{
         id: 'provider-a', slug: 'provider-a', name: 'Prestador privado de A', category: 'Café', description: 'Solo A',
         address: 'Dirección A', hours: '', contact: '', map_url: '', website: '', image_url: null, status: 'ACTIVE', demo: false,
@@ -641,7 +644,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return Promise.resolve(json({ balance: 0, redemptions_frozen: false }))
       if (url.endsWith('/me/progress/')) return Promise.resolve(json({ total: 0, target: 5, completed: false }))
       if (url.endsWith('/me/consumptions/')) return Promise.resolve(json([]))
-      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(emptyNetwork))
+      if (/\/folders\/[^/]+\/network\/\?page=1$/.test(url)) return Promise.resolve(json(availableNetwork))
       if (url.endsWith('/folders/folder-a/providers/')) return new Promise<Response>(resolve => { finishFolderA = resolve })
       if (url.endsWith('/folders/folder-b/providers/')) return Promise.resolve(json([providerB]))
       if (url.endsWith('/folders/folder-b/providers/provider-b/')) return Promise.resolve(json(providerB))

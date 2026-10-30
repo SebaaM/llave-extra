@@ -33,6 +33,7 @@ export default function ProductApp() {
   const [recommendations, setRecommendations] = useState<Record<string, boolean | 'error'>>({})
   const [folderCheckState, setFolderCheckState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [validatedFolderGeneration, setValidatedFolderGeneration] = useState(0)
+  const [renderedRecommendationsGeneration, setRenderedRecommendationsGeneration] = useState(0)
   const recommendationsGeneration = useRef(0)
   const recommendationsEpoch = useRef<Record<string, number>>({})
   const recommendationsController = useRef<AbortController | null>(null)
@@ -51,7 +52,6 @@ export default function ProductApp() {
   const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
   const site = useSiteSettings()
   const renderedSessionVersion = currentSessionVersion()
-  const renderedRecommendationsGeneration = recommendationsGeneration.current
 
   const stillCurrent = useCallback(
     (version: number, identity: number | null) => version === currentSessionVersion()
@@ -62,6 +62,7 @@ export default function ProductApp() {
 
   const clearPrivateData = useCallback(() => {
     recommendationsGeneration.current += 1
+    setRenderedRecommendationsGeneration(recommendationsGeneration.current)
     recommendationsController.current?.abort()
     recommendationsEpoch.current = {}
     setRecommendations({})
@@ -98,10 +99,15 @@ export default function ProductApp() {
     const version = currentSessionVersion()
     const identity = identityRef.current
     const generation = ++recommendationsGeneration.current
+    setRenderedRecommendationsGeneration(generation)
     recommendationsController.current?.abort()
     const controller = new AbortController()
     recommendationsController.current = controller
     setRecommendations({})
+    providersRequestRef.current += 1
+    detailRequestRef.current += 1
+    setProviders([])
+    setSelectedProvider(null)
     setFolderCheckState('loading')
     let result: { folders: Folder[] }
     try {
@@ -183,6 +189,13 @@ export default function ProductApp() {
     setProviders(next)
     setSelectedProvider(null)
   }, [stillCurrent])
+
+  const updateFolderAvailability = useCallback((folderId: string, version: number, identity: number, generation: number, available: boolean) => {
+    if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || generation !== recommendationsGeneration.current) return
+    if (!available) { updateFolderProviders(folderId, version, identity, generation, []); return }
+    recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
+    setRecommendations(previous => ({ ...previous, [folderId]: true }))
+  }, [stillCurrent, updateFolderProviders])
 
   const clearAccount = useCallback(() => {
     identityRef.current = null
@@ -451,7 +464,7 @@ export default function ProductApp() {
     }
     if (path === '/recomendaciones') {
       if (selectedProvider) return <ProviderDetail folderId={selectedFolder} provider={selectedProvider} onAccessRevoked={() => void revokeProviderView()} />
-      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, renderedRecommendationsGeneration, next)} />
+      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} generation={renderedRecommendationsGeneration} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, renderedRecommendationsGeneration, next)} onAvailabilityChange={available => updateFolderAvailability(selectedFolder, renderedSessionVersion, user.id, renderedRecommendationsGeneration, available)} />
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Las recomendaciones llegan con un QR.</h1><p>Si recibiste un QR de recomendaciones, abrilo para explorar los beneficios que te compartieron. También podés descubrir negocios y registrar visitas por tu cuenta.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />
