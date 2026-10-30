@@ -40,6 +40,47 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('recorridos F2 del Cliente', () => {
+  it('reemplaza providers descartado al confirmar un QR automático y conservar abierta la misma selección', async () => {
+    let finishRedeem!: (response: Response) => void
+    let finishFolders!: (response: Response) => void
+    let finishOld!: (response: Response) => void
+    let finishCurrent!: (response: Response) => void
+    let folderReads = 0
+    let providerReads = 0
+    const provider = { id: 'p1', slug: 'p1', name: 'Negocio anterior', category: 'Café', description: '', address: '', hours: '', contact: '', map_url: '', website: '', image_url: null, status: 'PUBLISHED', demo: true }
+    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-producto' }))
+      if (url.endsWith('/auth/refresh/')) return Promise.resolve(json({ access: 'access-demo' }))
+      if (url.endsWith('/auth/me/')) return Promise.resolve(json(tourist))
+      if (url.endsWith('/me/folders/')) return ++folderReads === 1 ? Promise.resolve(json({ folders: [{ collaborator_id: 'a', granted_at: '' }] })) : new Promise<Response>(resolve => { finishFolders = resolve })
+      if (url.endsWith('/referrals/redeem/')) return new Promise<Response>(resolve => { finishRedeem = resolve })
+      if (url.includes('/folders/a/network/')) return Promise.resolve(json({ ...emptyNetwork, count: 1 }))
+      if (url.endsWith('/folders/a/providers/')) return new Promise<Response>(resolve => { if (++providerReads === 1) finishOld = resolve; else finishCurrent = resolve })
+      return Promise.resolve(json({}, 404))
+    }))
+    const ProductApp = await prepareApp('/tienda')
+    const intents = await import('./qr-intent')
+    intents.setReferralToken('synthetic-pending-qr')
+    render(<ProductApp />)
+    await screen.findByRole('button', { name: 'Salir' })
+    await waitFor(() => expect(finishRedeem).toBeTypeOf('function'))
+    await act(async () => { setUrl('/recomendaciones'); window.dispatchEvent(new PopStateEvent('popstate')) })
+    await waitFor(() => expect(providerReads).toBe(1))
+    await act(async () => finishRedeem(json({})))
+    await waitFor(() => expect(finishFolders).toBeTypeOf('function'))
+    expect(providerReads).toBe(1)
+    await act(async () => finishFolders(json({ folders: [{ collaborator_id: 'a', granted_at: '' }] })))
+    await waitFor(() => expect(providerReads).toBe(2))
+    await act(async () => finishOld(json([provider])))
+    expect(screen.queryByRole('heading', { name: 'Negocio anterior' })).toBeNull()
+    await act(async () => finishCurrent(json([{ ...provider, id: 'p2', name: 'Negocio vigente' }])))
+    expect(screen.getByRole('heading', { name: 'Negocio vigente' })).toBeTruthy()
+    expect(window.location.pathname).toBe('/recomendaciones')
+    expect(providerReads).toBe(2)
+    expect(folderReads).toBe(2)
+  })
+
   it.each([false, true])('cerca providers anterior frente a una nueva comprobación de recomendaciones (respuesta anterior es error: %s)', async oldError => {
     let finishProviders!: (response: Response) => void
     let refreshed = false

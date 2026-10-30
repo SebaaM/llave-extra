@@ -32,6 +32,7 @@ export default function ProductApp() {
   const [folders, setFolders] = useState<Folder[]>([])
   const [recommendations, setRecommendations] = useState<Record<string, boolean | 'error'>>({})
   const [folderCheckState, setFolderCheckState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [validatedFolderGeneration, setValidatedFolderGeneration] = useState(0)
   const recommendationsGeneration = useRef(0)
   const recommendationsEpoch = useRef<Record<string, number>>({})
   const recommendationsController = useRef<AbortController | null>(null)
@@ -110,6 +111,7 @@ export default function ProductApp() {
       throw error
     }
     if (!stillCurrent(version, identity) || generation !== recommendationsGeneration.current) return
+    setValidatedFolderGeneration(generation)
     setFolderCheckState('ready')
     const nextSelected = result.folders.some(folder => folder.collaborator_id === selectedFolderRef.current)
       ? selectedFolderRef.current
@@ -249,14 +251,17 @@ export default function ProductApp() {
   }, [loadFolders, loadTrip])
 
   useEffect(() => {
-    if (user?.role !== 'TOURIST' || !selectedFolder || path !== '/recomendaciones') return
+    if (user?.role !== 'TOURIST' || !selectedFolder || path !== '/recomendaciones' || folderCheckState !== 'ready' || validatedFolderGeneration !== recommendationsGeneration.current) return
     const folderId = selectedFolder
+    let active = true
     window.queueMicrotask(() => {
+      if (!active || validatedFolderGeneration !== recommendationsGeneration.current) return
       void loadProviders(folderId).catch(error => {
         if (identityRef.current === user.id && selectedFolderRef.current === folderId) setPageError(messageOf(error))
       })
     })
-  }, [user, selectedFolder, path, loadProviders])
+    return () => { active = false }
+  }, [user, selectedFolder, path, folderCheckState, validatedFolderGeneration, loadProviders])
 
   useEffect(() => {
     if (user?.role !== 'TOURIST' || path !== '/mi-viaje') return
@@ -349,8 +354,6 @@ export default function ProductApp() {
       if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== detailRequestRef.current) return
       setPageError(messageOf(error))
       await loadFolders()
-      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== detailRequestRef.current) return
-      await loadProviders(folderId).catch(() => setProviders([]))
     }
   }
 
@@ -366,9 +369,6 @@ export default function ProductApp() {
     setProviders([])
     try {
       await loadFolders()
-      if (!stillCurrent(version, identity) || selectedFolderRef.current !== revokedFolder) return
-      const folderId = selectedFolderRef.current
-      if (folderId) await loadProviders(folderId)
     } catch (error) {
       if (stillCurrent(version, identity) && selectedFolderRef.current === revokedFolder) setPageError(messageOf(error))
     }
@@ -404,8 +404,7 @@ export default function ProductApp() {
   const retry = () => {
     setPageError('')
     if (path === '/recomendaciones') {
-      void loadFolders().then(() => selectedFolderRef.current ? loadProviders(selectedFolderRef.current) : undefined)
-        .catch(error => setPageError(messageOf(error)))
+      void loadFolders().catch(error => setPageError(messageOf(error)))
     } else {
       void loadTrip().catch(error => setPageError(messageOf(error)))
     }
