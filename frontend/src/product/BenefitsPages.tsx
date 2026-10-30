@@ -65,11 +65,14 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
     if (revision === 0) return
     const controller = new AbortController()
     controllerRef.current = controller
+    // Conservar el callback de la generación que inició la lectura; el padre
+    // podrá descartar el resultado si ya actualizó sus accesos mientras tanto.
+    const providersChanged = providersChangeRef.current
     void api<Provider[]>(`/api/v1/folders/${encodeURIComponent(selected)}/providers/`, { signal: controller.signal }).then(providers => {
       if (controller.signal.aborted || version !== currentSessionVersion()) return
       blockedRef.current = false
       setResult({ state: 'ready', providers, error: '' })
-      providersChangeRef.current?.(providers)
+      providersChanged?.(providers)
     }).catch(error => {
       if (controller.signal.aborted || version !== currentSessionVersion()) return
       blockedRef.current = false

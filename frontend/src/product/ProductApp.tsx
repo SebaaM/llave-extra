@@ -30,7 +30,8 @@ export default function ProductApp() {
   const [authReady, setAuthReady] = useState(false)
   const [notice, setNotice] = useState(() => hasPendingLogout() ? logoutNotice : '')
   const [folders, setFolders] = useState<Folder[]>([])
-  const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
+  const [recommendations, setRecommendations] = useState<Record<string, boolean | 'error'>>({})
+  const [folderCheckState, setFolderCheckState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const recommendationsGeneration = useRef(0)
   const recommendationsEpoch = useRef<Record<string, number>>({})
   const recommendationsController = useRef<AbortController | null>(null)
@@ -49,6 +50,7 @@ export default function ProductApp() {
   const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
   const site = useSiteSettings()
   const renderedSessionVersion = currentSessionVersion()
+  const renderedRecommendationsGeneration = recommendationsGeneration.current
 
   const stillCurrent = useCallback(
     (version: number, identity: number | null) => version === currentSessionVersion()
@@ -62,6 +64,7 @@ export default function ProductApp() {
     recommendationsController.current?.abort()
     recommendationsEpoch.current = {}
     setRecommendations({})
+    setFolderCheckState('idle')
     providersRequestRef.current += 1
     detailRequestRef.current += 1
     setFolders([])
@@ -98,8 +101,16 @@ export default function ProductApp() {
     const controller = new AbortController()
     recommendationsController.current = controller
     setRecommendations({})
-    const result = await api<{ folders: Folder[] }>('/api/v1/me/folders/')
+    setFolderCheckState('loading')
+    let result: { folders: Folder[] }
+    try {
+      result = await api<{ folders: Folder[] }>('/api/v1/me/folders/')
+    } catch (error) {
+      if (stillCurrent(version, identity) && generation === recommendationsGeneration.current) setFolderCheckState('error')
+      throw error
+    }
     if (!stillCurrent(version, identity) || generation !== recommendationsGeneration.current) return
+    setFolderCheckState('ready')
     const nextSelected = result.folders.some(folder => folder.collaborator_id === selectedFolderRef.current)
       ? selectedFolderRef.current
       : result.folders[0]?.collaborator_id ?? ''
@@ -119,7 +130,7 @@ export default function ProductApp() {
       const current = () => !controller.signal.aborted && stillCurrent(version, identity) && generation === recommendationsGeneration.current && epoch === (recommendationsEpoch.current[id] ?? 0)
       void api<{ count: number }>(`/api/v1/folders/${encodeURIComponent(id)}/network/?page=1`, { signal: controller.signal }).then(network => {
         if (current()) setRecommendations(previous => ({ ...previous, [id]: network.count > 0 }))
-      }).catch(() => { if (current()) setRecommendations(previous => ({ ...previous, [id]: false })) })
+      }).catch(() => { if (current()) setRecommendations(previous => ({ ...previous, [id]: 'error' })) })
     }
   }, [stillCurrent])
 
@@ -129,20 +140,21 @@ export default function ProductApp() {
     const version = currentSessionVersion()
     const identity = identityRef.current
     const request = ++providersRequestRef.current
+    const generation = recommendationsGeneration.current
     if (!folderId) {
       setProviders([])
       return
     }
     try {
       const result = await api<Provider[]>(`/api/v1/folders/${folderId}/providers/`)
-      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== providersRequestRef.current) return
+      if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || request !== providersRequestRef.current || generation !== recommendationsGeneration.current) return
       recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
       setRecommendations(previous => ({ ...previous, [folderId]: result.length > 0 }))
       setProviders(result)
     } catch (error) {
-      if (stillCurrent(version, identity) && selectedFolderRef.current === folderId && request === providersRequestRef.current) {
+      if (stillCurrent(version, identity) && selectedFolderRef.current === folderId && request === providersRequestRef.current && generation === recommendationsGeneration.current) {
         recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
-        setRecommendations(previous => ({ ...previous, [folderId]: false }))
+        setRecommendations(previous => ({ ...previous, [folderId]: 'error' }))
         throw error
       }
     }
@@ -158,8 +170,8 @@ export default function ProductApp() {
     setPageError('')
   }, [])
 
-  const updateFolderProviders = useCallback((folderId: string, version: number, identity: number, next: Provider[]) => {
-    if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId) return
+  const updateFolderProviders = useCallback((folderId: string, version: number, identity: number, generation: number, next: Provider[]) => {
+    if (!stillCurrent(version, identity) || selectedFolderRef.current !== folderId || generation !== recommendationsGeneration.current) return
     recommendationsEpoch.current[folderId] = (recommendationsEpoch.current[folderId] ?? 0) + 1
     setRecommendations(previous => ({ ...previous, [folderId]: next.length > 0 }))
     // La revalidación de medios invalida también la fuente compartida, para que
@@ -366,8 +378,9 @@ export default function ProductApp() {
   const isAuth = ['/registro', '/ingresar', '/recuperar', '/restablecer-clave'].includes(path)
   const redirectToRole = user && user.role !== 'TOURIST'
   const shellUser = authReady ? user : null
-  const hasRecommendations = folders.some(folder => recommendations[folder.collaborator_id])
-  const checkingRecommendations = folders.some(folder => recommendations[folder.collaborator_id] === undefined)
+  const hasRecommendations = folders.some(folder => recommendations[folder.collaborator_id] === true)
+  const checkingRecommendations = folderCheckState === 'loading' || (folderCheckState !== 'error' && folders.some(folder => recommendations[folder.collaborator_id] === undefined))
+  const recommendationsError = folderCheckState === 'error' || folders.some(folder => recommendations[folder.collaborator_id] === 'error')
 
   const onLogin = (current: User) => {
     clearPrivateData()
@@ -423,9 +436,9 @@ export default function ProductApp() {
         }}
       />
     }
-    if (path === '/referencia') return <QrPage key={`${user?.id}:${renderedSessionVersion}`} signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} hasRecommendations={hasRecommendations} checkingRecommendations={checkingRecommendations} onRedeemed={() => {
+    if (path === '/referencia') return <QrPage key={`${user?.id}:${renderedSessionVersion}`} signedIn={!!user} canRedeem={!user || user.role === 'TOURIST'} folders={folders} hasRecommendations={hasRecommendations} checkingRecommendations={checkingRecommendations} recommendationsError={recommendationsError} onRedeemed={() => {
       const version = currentSessionVersion(), identity = identityRef.current
-      void loadFolders().catch(() => { if (stillCurrent(version, identity)) setNotice('Las recomendaciones se vincularon, pero no pudimos actualizarlas. Volvé a abrir Recomendaciones para intentarlo de nuevo.') })
+      void loadFolders().catch(() => { if (stillCurrent(version, identity)) setNotice('Las recomendaciones se vincularon, pero no pudimos actualizarlas. Volvé a cargar esta página para intentarlo de nuevo.') })
     }} />
     if (!user && path === '/consumo') {
       return <main id="contenido" className="product-gate content-width"><h1>Ingresá para validar tu visita.</h1><p>El QR del negocio quedó disponible mientras iniciás sesión.</p><ProductLink className="button button-orange" href="/ingresar">Ingresar</ProductLink></main>
@@ -439,7 +452,7 @@ export default function ProductApp() {
     }
     if (path === '/recomendaciones') {
       if (selectedProvider) return <ProviderDetail folderId={selectedFolder} provider={selectedProvider} onAccessRevoked={() => void revokeProviderView()} />
-      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, next)} />
+      if (folders.length) return <FolderPage folders={folders} selected={selectedFolder} select={selectFolder} providers={providers} onOpen={id => void openProvider(id)} onAccessRevoked={() => void revokeProviderView()} onProvidersChange={next => updateFolderProviders(selectedFolder, renderedSessionVersion, user.id, renderedRecommendationsGeneration, next)} />
       return <main id="contenido" className="product-gate content-width"><p className="eyebrow">BENEFICIOS PARA VOS</p><h1>Las recomendaciones llegan con un QR.</h1><p>Si recibiste un QR de recomendaciones, abrilo para explorar los beneficios que te compartieron. También podés descubrir negocios y registrar visitas por tu cuenta.</p><ButtonLink href="/referencia">Tengo un QR</ButtonLink></main>
     }
     if (path === '/mi-viaje') return <Trip wallet={wallet} progress={progress} history={history} onRefresh={() => { setPageError(''); void loadTrip().catch(error => setPageError(messageOf(error))) }} />

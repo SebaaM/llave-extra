@@ -5,7 +5,7 @@ import { messageOf } from './shared'
 import { referralToken, setReferralToken } from './qr-intent'
 import { ProductLink } from './navigation'
 
-export function QrPage({ signedIn, canRedeem, hasRecommendations = false, checkingRecommendations = false, onRedeemed }: { signedIn: boolean; canRedeem: boolean; folders: Folder[]; hasRecommendations?: boolean; checkingRecommendations?: boolean; onRedeemed: () => void }) {
+export function QrPage({ signedIn, canRedeem, hasRecommendations = false, checkingRecommendations = false, recommendationsError = false, onRedeemed }: { signedIn: boolean; canRedeem: boolean; folders: Folder[]; hasRecommendations?: boolean; checkingRecommendations?: boolean; recommendationsError?: boolean; onRedeemed: () => void }) {
   const [token, setToken] = useState(referralToken ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +49,7 @@ export function QrPage({ signedIn, canRedeem, hasRecommendations = false, checki
       {error && <p className="form-error" role="alert">{error}</p>}
       {notice && <div className="form-success" role="status"><p>{notice}</p>{hasRecommendations
         ? <ProductLink href="/recomendaciones">Explorar recomendaciones →</ProductLink>
-        : <p>{checkingRecommendations ? 'Estamos comprobando los beneficios disponibles.' : 'Por ahora no hay beneficios disponibles en esta selección. Podés seguir explorando el catálogo.'}</p>}</div>}
+        : <p>{checkingRecommendations ? 'Estamos comprobando los beneficios disponibles.' : recommendationsError ? 'No pudimos comprobar los beneficios disponibles. Volvé a cargar esta página para intentarlo de nuevo.' : 'Por ahora no hay beneficios disponibles en esta selección. Podés seguir explorando el catálogo.'}</p>}</div>}
       {!signedIn && <p className="form-help">Ingresá para guardar estas recomendaciones en tu cuenta.</p>}
       <button className="button button-orange form-submit" disabled={busy || !signedIn || !token.trim()}>{busy ? 'Validando…' : signedIn ? 'Abrir recomendaciones' : 'Iniciá sesión para continuar'}</button>
       {hasRecommendations && <ProductLink className="inline-link" href="/recomendaciones">Ver recomendaciones recibidas →</ProductLink>}
