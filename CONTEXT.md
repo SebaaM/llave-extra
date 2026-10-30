@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Mejora visual del Cliente — 30/10/2026
+
+Las etapas frontend T1–T8 del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md) están implementadas en `feature/frontend-cliente-visual`, con revisiones por etapa y correcciones registradas. El [resumen antes/después y sus límites](docs/verification/11-frontend-cliente-visual.md) distingue las verificaciones realizadas de la revisión integral y QA aún pendientes. La entrega API previa T2/T2b ya está integrada en la base de esta rama; los párrafos siguientes conservan el historial de ese corte.
+
 ## API del Cliente implementada primero — 27/10/2026
 
 Pedido vigente: ejecutar solo las mejoras de API del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md), con [diseño](docs/superpowers/specs/2026-10-27-frontend-cliente-visual-design.md). Backend T2/T2b implementado en `feature/api-cliente-visual`, desde `origin/develop` `754982d` (PR #10 ya integrado); no incorpora los PR #12/#13 pendientes ni altera el checkout original. Categorías públicas completas de beneficios vigentes y `provider_name` actual en historial propio, sin cambios al POST/replay de consumo, reglas del dominio, migraciones o frontend. Valores de categoría originales filtran primero de forma exacta; respaldo recortado solo si no existe la categoría original, decidido antes de búsqueda.

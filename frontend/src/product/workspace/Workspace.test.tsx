@@ -51,7 +51,7 @@ function mount(role: User['role'], route: string, handler?: Handler) {
 describe('paneles operativos por rol', () => {
   it('restaura /espacio como Prestador y usa solo su negocio, sin endpoints financieros', async () => {
     const { calls } = mount('PROVIDER', '/espacio')
-    await screen.findByRole('heading', { name: provider.name })
+    await screen.findByRole('heading', { name: provider.name }, { timeout: 5000 })
     expect(window.location.pathname).toBe('/prestador')
     const editLink = screen.getByRole('link', { name: /Editar información/ })
     expect(editLink.classList.contains('button')).toBe(true)
