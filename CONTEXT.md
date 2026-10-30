@@ -1,5 +1,13 @@
 # Contexto y decisiones
 
+## Correcciones aprobadas de la vista del Cliente — 30/10/2026
+
+El usuario confirma recomendaciones recibidas en pantalla propia, visible al tener beneficios disponibles; el Cliente no recomienda ni gestiona carpetas. Navegación inferior solo móvil, navbar escritorio y red/lista automática por ancho. Inicio: Hero, Red, En tu recorrido, Próxima parada, Mapa y Pasaporte. Hero con carrusel manual y pasaporte como libreta abierta con iniciales, preservando historial, billetera y barra de visitas. Texto cotidiano sin nombres de roles ni jerga del proyecto. [Antes/después y verificación](docs/verification/13-ajustes-vista-cliente.md). Continúa en [PR #16](https://github.com/SebaaM/llave-extra/pull/16), borrador hacia develop, sin merge hasta aprobación del cliente.
+
+El Cliente puede ingresar desde la web y usar beneficios directamente, o recibir una selección por QR. Esa selección pertenece al colaborador: no se crea una carpeta administrable por el Cliente ni se le otorgan acciones de recomendación. El enlace condicional no sustituye la autorización del servidor.
+
+Corte de producto `1ff72fd`: ajustes visuales implementados y revisiones A/B aprobadas. La revisión integral detectó dos casos de recomendaciones obsoletas (estado local al cambiar generación y red privada vacía que no limpia tarjetas hermanas), corregidos en ese commit y aprobados en revisión independiente del delta, sin hallazgos pendientes de código. Suite definitiva de 308 pruebas UI + 1 proxy, lint, tipos y build aprobados. QA real parcial en 320/390/1440 px registrada; no equivale a QA HTTP integral. Los apartados siguientes conservan estados históricos y no sustituyen este pedido vigente.
+
 ## Mejora visual del Cliente — 30/10/2026
 
 Las etapas frontend T1–T8 del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md) están implementadas en `feature/frontend-cliente-visual`, con revisiones por etapa y correcciones registradas. El [resumen antes/después y sus límites](docs/verification/11-frontend-cliente-visual.md) distingue las verificaciones realizadas de la revisión integral y QA aún pendientes. La entrega API previa T2/T2b ya está integrada en la base de esta rama; los párrafos siguientes conservan el historial de ese corte.
