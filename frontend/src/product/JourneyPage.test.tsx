@@ -14,6 +14,17 @@ const history = [
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
 describe('Mi viaje', () => {
+  it('abre la libreta con sellos compactos de iniciales actuales, sin consultar imágenes ni completar nombres', () => {
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    const { container } = render(<Trip wallet={null} progress={null} history={history} onRefresh={vi.fn()} />)
+    expect(screen.getByRole('group', { name: 'Libreta de tu viaje abierta' })).toBeTruthy()
+    const marks = Array.from(container.querySelectorAll('.client-visit-mark'))
+    expect(marks.map(mark => mark.textContent)).toEqual(['CC', 'PS', '—', '—'])
+    expect(marks.every(mark => mark.getAttribute('aria-hidden') === 'true')).toBe(true)
+    expect(container.querySelectorAll('img')).toHaveLength(0)
+    expect(container.textContent).not.toMatch(/servidor|prestador|colaborador|carpeta/)
+    expect(fetch).not.toHaveBeenCalled()
+  })
   it('muestra los mismos datos propios en Pasaporte e Historial sin consultar catálogos ni carpetas', async () => {
     const fetch = vi.spyOn(globalThis, 'fetch')
     const keyboard = userEvent.setup()
@@ -51,8 +62,8 @@ describe('Mi viaje', () => {
     const progress = screen.getByRole('progressbar', { name: 'Progreso de visitas válidas' })
     expect(progress.getAttribute('value')).toBe('8')
     expect(progress.getAttribute('max')).toBe('12')
-    expect(screen.getByText('Llegaste a la meta vigente.')).toBeTruthy()
-    expect(screen.getByText('Te faltan 4 visitas para la meta vigente.')).toBeTruthy()
+    expect(screen.getByText('Llegaste a la meta actual.')).toBeTruthy()
+    expect(screen.getByText('Te faltan 4 visitas para la meta actual.')).toBeTruthy()
     expect(screen.getByText('9')).toBeTruthy()
     expect(screen.getByText('El uso de créditos está pausado mientras se revisa tu cuenta.')).toBeTruthy()
     expect(screen.getByText('Gastar créditos no borra tus visitas.')).toBeTruthy()
@@ -73,11 +84,11 @@ describe('Mi viaje', () => {
     expect(screen.queryByText('Saldo todavía no disponible.')).toBeNull()
     expect(screen.queryByText('Progreso todavía no disponible.')).toBeNull()
     expect(screen.getByRole('progressbar').getAttribute('value')).toBe('0')
-    expect(screen.getByText('Te faltan 5 visitas para la meta vigente.')).toBeTruthy()
+    expect(screen.getByText('Te faltan 5 visitas para la meta actual.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Historial' }).getAttribute('aria-pressed')).toBe('true')
   })
 
-  it.each([['8', { total: 8, target: 5, completed: true }, 'Te faltan 0 visitas para la meta vigente.'], ['4', { total: 4, target: 5, completed: false }, 'Te falta 1 visita para la meta vigente.']] as const)('calcula solo las visitas restantes sin reducir el total %s a la meta', (_label, progress, remaining) => {
+  it.each([['8', { total: 8, target: 5, completed: true }, 'Te faltan 0 visitas para la meta actual.'], ['4', { total: 4, target: 5, completed: false }, 'Te falta 1 visita para la meta actual.']] as const)('calcula solo las visitas restantes sin reducir el total %s a la meta', (_label, progress, remaining) => {
     render(<Trip wallet={null} progress={progress} history={[]} onRefresh={vi.fn()} />)
     expect(screen.getByRole('progressbar').getAttribute('value')).toBe(String(progress.total))
     expect(screen.getByText(remaining)).toBeTruthy()
@@ -85,9 +96,10 @@ describe('Mi viaje', () => {
 
   it('preserva texto largo y trata nombre vacío como ausente en ambas vistas', () => {
     const longName = 'Un comercio con un nombre muy extenso '.repeat(12)
-    render(<Trip wallet={null} progress={null} history={[{ ...history[0], provider_name: longName }, { ...history[1], provider_name: '   ' }]} onRefresh={vi.fn()} />)
+    const { container } = render(<Trip wallet={null} progress={null} history={[{ ...history[0], provider_name: longName }, { ...history[1], provider_name: '   ' }]} onRefresh={vi.fn()} />)
     const heading = screen.getAllByRole('heading', { level: 3 })[0]
     expect(heading.textContent).toBe(longName)
+    expect(Array.from(container.querySelectorAll('.client-visit-mark')).map(mark => mark.textContent)).toEqual(['CE', '—'])
     expect(screen.getByRole('heading', { name: 'Visita anulada' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Historial' }))
     expect(screen.getAllByRole('heading', { level: 3 })[0].textContent).toBe(longName)

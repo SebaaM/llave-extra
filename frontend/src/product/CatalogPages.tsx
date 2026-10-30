@@ -40,7 +40,7 @@ export function BenefitCard({ benefit }: { benefit: PublicBenefit }) {
   return <article className="catalog-card client-benefit-card">
     <PublicPhoto path={benefit.image_url ?? benefit.provider.image_url} alt={`Imagen de ${benefit.provider.name}`} name={benefit.provider.name} />
     <div className="catalog-card-copy">
-      <span>{benefit.provider.category || 'Beneficio local'} {benefit.demo && '· Dato demo'}</span>
+      <span>{benefit.provider.category || 'Beneficio local'} {benefit.demo && '· Ejemplo'}</span>
       <h3>{benefit.title}</h3><p className="client-benefit-provider">{benefit.provider.name}</p>
       {benefit.conditions && <p className="catalog-card-conditions">{benefit.conditions}</p>}
       <ProductLink className="catalog-card-link" href={`/beneficios/${benefit.id}`}>Ver beneficio y condiciones <span aria-hidden="true">↗</span></ProductLink>

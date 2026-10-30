@@ -21,9 +21,9 @@ describe('recorrido del Cliente', () => {
       expect(steps[index].getAttribute('aria-pressed')).toBe('true')
       expect(steps.filter(step => step.getAttribute('aria-pressed') === 'true')).toHaveLength(1)
     }
-    expect(screen.getByRole('heading', { name: 'QR del colaborador' })).toBeTruthy()
-    expect(screen.getByText('Abre una carpeta privada. No acredita una visita por sí solo.')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'QR y PIN del prestador' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'QR de recomendaciones' })).toBeTruthy()
+    expect(screen.getByText('Es opcional: abre los beneficios que te compartieron. No registra una visita.')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'QR y PIN del negocio' })).toBeTruthy()
   })
 })
 
@@ -41,7 +41,7 @@ describe('resumen de Mi viaje', () => {
   it('muestra los valores recibidos, meta cumplida y canjes en revisión', () => {
     render(<TripSummary wallet={{ balance: 83, redemptions_frozen: true }} progress={{ total: 3, target: 2, completed: true }} />)
     expect(screen.getAllByRole('definition').map(item => item.textContent)).toEqual(['3', '2', '83'])
-    expect(screen.getByText('Alcanzaste la meta vigente.')).toBeTruthy()
+    expect(screen.getByText('Alcanzaste tu meta actual.')).toBeTruthy()
     expect(screen.getByText('Los canjes están en revisión.')).toBeTruthy()
   })
 })

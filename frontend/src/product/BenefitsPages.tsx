@@ -132,7 +132,7 @@ function FolderContent({ folders, selected, select, providers: initialProviders,
         {shown.map(provider => <article className="product-provider-card client-private-postcard" key={provider.id}>
           <FolderPhoto provider={missingPaths.includes(provider.image_url ?? '') ? { ...provider, image_url: null } : provider} onDenied={denyMedia} onMissing={missingMedia} />
           <div>
-            <span>{provider.category || 'Recomendación'} {provider.demo && '· Dato demo'}</span>
+            <span>{provider.category || 'Recomendación'} {provider.demo && '· Ejemplo'}</span>
             <h2>{provider.name}</h2>
             <p>{provider.description || 'Conocé los beneficios y condiciones disponibles.'}</p>
             <button className="button button-dark" onClick={() => onOpen(provider.id)}>Ver beneficios</button>

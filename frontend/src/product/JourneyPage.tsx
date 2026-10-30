@@ -11,21 +11,21 @@ export function Trip({ wallet, progress, history, onRefresh }: { wallet: Wallet 
 
   return <main id="contenido" className="trip-page client-trip"><div className="content-width">
     <div className="trip-heading">
-      <div><p className="eyebrow">MI VIAJE / USHUAIA</p><h1>Tu pasaporte local.</h1><p>Un registro de las visitas que el sistema verificó durante tu viaje.</p></div>
+      <div><p className="eyebrow">MI VIAJE / USHUAIA</p><h1>Tu pasaporte local.</h1><p>Los sellos de tus visitas verificadas, en un solo lugar.</p></div>
       <div className="trip-stamp" aria-hidden="true"><span>LLAVE EXTRA</span><strong>✳</strong><small>USHUAIA</small></div>
     </div>
     <div className="trip-stats">
       <section className="trip-balance" aria-label="Créditos disponibles">
         <span>CRÉDITOS DISPONIBLES</span><strong>{wallet?.balance.toLocaleString('es-AR') ?? '—'}</strong>
-        <p>{!wallet ? 'Saldo todavía no disponible.' : wallet.redemptions_frozen ? 'El uso de créditos está pausado mientras se revisa tu cuenta.' : 'Saldo disponible según el servidor.'}</p>
+        <p>{!wallet ? 'Saldo todavía no disponible.' : wallet.redemptions_frozen ? 'El uso de créditos está pausado mientras se revisa tu cuenta.' : 'Créditos listos para usar.'}</p>
         <ProductLink href="/tienda" className="trip-shop-link">Explorar la tienda · Vista previa →</ProductLink>
       </section>
       <section className="trip-progress" aria-label="Visitas válidas">
         <span>VISITAS VÁLIDAS</span><strong>{progress?.total ?? '—'} <small>/ {progress?.target ?? '—'}</small></strong>
         {validProgress ? <>
-          <progress aria-label="Progreso de visitas válidas" aria-valuetext={`${progress.total} visitas válidas; meta vigente ${progress.target}.`} value={progress.total} max={progress.target} />
-          <p>{progress.completed ? 'Llegaste a la meta vigente.' : `Progreso hacia la meta actual: ${progress.total} de ${progress.target}.`}</p>
-          <p>{remaining === 1 ? 'Te falta 1 visita para la meta vigente.' : `Te faltan ${remaining} visitas para la meta vigente.`}</p>
+          <progress aria-label="Progreso de visitas válidas" aria-valuetext={`${progress.total} visitas válidas; meta actual ${progress.target}.`} value={progress.total} max={progress.target} />
+          <p>{progress.completed ? 'Llegaste a la meta actual.' : `Progreso hacia la meta actual: ${progress.total} de ${progress.target}.`}</p>
+          <p>{remaining === 1 ? 'Te falta 1 visita para la meta actual.' : `Te faltan ${remaining} visitas para la meta actual.`}</p>
         </> : <p>Progreso todavía no disponible.</p>}
         <p>Gastar créditos no borra tus visitas.</p>
       </section>
@@ -43,7 +43,7 @@ export function Trip({ wallet, progress, history, onRefresh }: { wallet: Wallet 
       <div id="client-trip-records" className={mode === 'history' ? 'client-trip-history' : 'client-trip-passport'}>
         {history.length ? <Passport history={history} /> : <div className="product-empty">
           <span aria-hidden="true">✳</span><h2>Tu primer sello todavía no llegó.</h2>
-          <p>Cuando una visita elegible se valide en un local, vas a encontrarla acá.</p>
+          <p>Cuando registres una visita que cumpla las condiciones del beneficio, vas a encontrarla acá.</p>
           <ProductLink className="button button-dark" href="/beneficios">Ver mis beneficios</ProductLink>
         </div>}
       </div>

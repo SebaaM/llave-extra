@@ -5,8 +5,8 @@ export function TripSummary({ wallet, progress }: { wallet: Wallet | null; progr
   return <section className="client-trip-summary" aria-label="Resumen de Mi viaje">
     <h3>Tu viaje hasta ahora</h3>
     {wallet && progress ? <>
-      <dl><div><dt>Visitas verificadas</dt><dd>{progress.total}</dd></div><div><dt>Meta vigente</dt><dd>{progress.target}</dd></div><div><dt>Créditos disponibles</dt><dd>{wallet.balance}</dd></div></dl>
-      {progress.completed && <p>Alcanzaste la meta vigente.</p>}
+      <dl><div><dt>Visitas verificadas</dt><dd>{progress.total}</dd></div><div><dt>Meta actual</dt><dd>{progress.target}</dd></div><div><dt>Créditos disponibles</dt><dd>{wallet.balance}</dd></div></dl>
+      {progress.completed && <p>Alcanzaste tu meta actual.</p>}
       {wallet.redemptions_frozen && <p>Los canjes están en revisión.</p>}
     </> : <p>Consultá tus visitas y créditos en Mi viaje.</p>}
     <ProductLink className="inline-link" href="/mi-viaje">Entrar a Mi viaje →</ProductLink>
