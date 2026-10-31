@@ -20,3 +20,12 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 REFRESH_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
+
+# Nginx sustituye esta cabecera antes de pasar solicitudes a Django.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+EMAIL_HOST = environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_USE_SSL = environ.get("EMAIL_USE_SSL", "false").lower() == "true"

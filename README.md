@@ -1,30 +1,70 @@
 # Llave Extra
 
-Red de beneficios turísticos de Ushuaia. El catálogo general de beneficios publicados y vigentes es público cuando el administrador lo habilita. Los **prestadores** ofrecen beneficios; los **colaboradores** refieren turistas a una carpeta privada de recomendaciones mediante un QR único habilitado por el administrador.
+Red de beneficios turísticos de Ushuaia. Esta guía describe el estado actual y cómo arrancar desde cero. El catálogo público muestra beneficios publicados y vigentes; las carpetas de recomendaciones requieren QR y autorización del servidor. [Sitemap provisorio](docs/sitemap.md) · [API](docs/api.md) · [Reglas](docs/business-rules.md) · [Operación de tienda](docs/shop-operations.md).
 
-## Desarrollo por etapas
+## Desarrollo desde cero
 
-El [plan de implementación](docs/plans/00-roadmap.md) define entregables, verificaciones y dependencias. El [contexto](CONTEXT.md) conserva las decisiones funcionales y [AGENTS.md](AGENTS.md) las reglas de trabajo.
+Requisitos: Git, Docker Desktop con Compose activo y, en macOS/Linux, OpenSSL. Cloná el repositorio, abrí una terminal en la raíz y ejecutá:
 
-El flujo de ramas vigente está en [GitFlow](docs/gitflow.md): `main` estable, `develop` para integración y ramas `feature/*`, `release/*` y `hotfix/*`. La corrección del catálogo público se desarrolla en `feature/catalogo-publico-admin` con PR hacia `develop`; no se fusionan PRs automáticamente.
+```powershell
+./scripts/dev.ps1 up -Demo
+```
 
-## Inicio local
+En macOS/Linux: `./scripts/dev.sh up --demo`. Se genera `.env` local ignorado con secretos aleatorios, se construyen imágenes, inician PostgreSQL, Redis, Django, Vite, Nginx y Mailpit, se aplican migraciones y se cargan datos demo. Sin datos de ejemplo usá `up` sin el parámetro demo. Los volúmenes persisten; `./scripts/dev.ps1 down` o `./scripts/dev.sh down` detienen sin borrarlos. Para pruebas backend PostgreSQL: `./scripts/dev.ps1 test` o `./scripts/dev.sh test`. [Más detalles y verificaciones](DEV.md).
 
-Requisitos: Git y Docker con Compose. Desde PowerShell, ejecutá `./scripts/dev.ps1 up -Demo`; desde macOS/Linux, `./scripts/dev.sh up --demo`. El primer arranque crea `.env` con secretos locales y valores de desarrollo, construye los contenedores y aplica migraciones. El archivo `.env` está ignorado por Git.
+### Cuentas de prueba locales
 
-Aplicación demo: <http://localhost:5173>. Backoffice Django: <http://localhost:5173/admin/>. API y OpenAPI: <http://localhost:8000/api/v1/health/> y <http://localhost:8000/api/schema/>. Documentación interactiva: <http://localhost:8000/api/docs/>. Mailpit: <http://localhost:8025>. [Contrato de API](docs/api.md), [modelo](docs/data-model.md) y [reglas](docs/business-rules.md).
+El seed crea las siguientes cuentas sintéticas y genera sus contraseñas en `docs/cuentas-prueba.local.md` (ignorado por Git). Consultá ese archivo local: no hay contraseñas fijas versionadas. Una ejecución normal no cambia contraseñas existentes; si falta el archivo, la recuperación explícita está en [DEV.md](DEV.md). No usar estas cuentas en producción.
 
-En desarrollo, Vite reenvía `/admin/`, los archivos `/static/admin/` y la API a Django. Las imágenes privadas del backoffice usan `/api/v1/admin/private-media/`, con autorización de Django. El backoffice solicita su propio inicio de sesión con cookie de sesión y token CSRF; ingresar en la aplicación con JWT no inicia automáticamente esa sesión. `/media/` se reenvía a Django, pero los archivos privados no se publican allí.
+| Rol | Emails demo |
+| --- | --- |
+| Administrador | `admin@llaveextra.test` |
+| Prestador | `prestador.tiger@llaveextra.test`, `prestador.cumbre@llaveextra.test` |
+| Colaborador | `colaborador@llaveextra.test`, `colaborador.secundario@llaveextra.test` |
+| Cliente | `turista@llaveextra.test`, `turista.pendiente@llaveextra.test`, `turista.creditos@llaveextra.test`, `turista.ajuste@llaveextra.test`, `turista.extra@llaveextra.test` |
 
-Las contraseñas generadas de las seis cuentas demo se guardan en `docs/cuentas-prueba.local.md`, un archivo local ignorado por Git. El seed es idempotente y conserva contraseñas y datos de usuarios existentes. Para parar sin borrar datos: `./scripts/dev.ps1 down` o `./scripts/dev.sh down`. Para pruebas: `./scripts/dev.ps1 test` o `./scripts/dev.sh test`.
+### Puertos locales y rutas
 
-## Roles
+| Dirección | Uso |
+| --- | --- |
+| http://localhost:8080/ | Entrada recomendada Nginx: interfaz, API y Django Admin en el mismo origen |
+| http://localhost:8080/gestion | Panel React de administración |
+| http://localhost:8080/admin/ | Django Admin; sesión independiente |
+| http://localhost:8080/api/v1/health/ | Salud de la API |
+| http://localhost:8080/api/schema/ y http://localhost:8080/api/docs/ | OpenAPI y documentación interactiva |
+| http://localhost:8025/ | Buzón Mailpit de desarrollo |
+| http://localhost:5173/ | Vite directo para desarrollo |
+| http://localhost:8000/ | Django directo para desarrollo |
 
-- `ADMIN`: administra usuarios, carpetas, colaboradores, QR y reglas.
-- `PROVIDER`: prestador/negocio; es distinto del colaborador.
-- `COLLABORATOR`: refiere turistas a prestadores de su carpeta asignada.
-- `TOURIST`: consulta el catálogo general y sus recomendaciones privadas tras obtener acceso por QR autorizado.
+PostgreSQL 5432, Redis 6379 y SMTP Mailpit 1025 son internos a Docker y no se publican al host. No montar ni publicar `private_media`; sus archivos se entregan con autorización.
 
-E2 entrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. E3 agrega prestadores, beneficios y carpetas con filtros de servidor. E4 implementa consumos y créditos. El producto usa la portada Beneficios y Mi viaje estilo Pasaporte; `/beneficios` muestra catálogo público, `/recomendaciones` la carpeta privada por QR y `/consumo` permite validación directa o referida. Los prototipos F1 se retiraron. El administrador habilita perfiles, rota QR y controla el catálogo en `/admin/`. Para añadir fotos aprobadas a registros demo ya existentes sin alterar otros datos, ejecutar `docker compose exec backend uv run --locked python manage.py seed_demo_media` con `DEBUG` local; ver [fuentes y licencias](docs/assets.md). Tienda y analítica siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
+## Producción desde cero
 
-La herramienta de backend es uv 0.11.3 (Python 3.13.16) y la del frontend pnpm 11.22.0 (Node 24.19.0). Docker Compose sigue siendo el arranque predeterminado y no necesita uv, Python ni Node instalados en el host. La opción de uv para IDE y ejecución nativa, con sus requisitos de PostgreSQL/Redis/SMTP, está en [DEV.md](DEV.md).
+El archivo `compose.prod.yaml` usa volúmenes separados, frontend compilado servido por Nginx, Gunicorn, PostgreSQL y Redis. Nginx termina TLS y publica solo 80/443; no incluye Mailpit ni datos demo. Hace falta un servidor con Docker/Compose, dominio apuntando al servidor, certificados TLS válidos y SMTP real. El aprovisionamiento y renovación del certificado se realiza fuera de Compose. Preparar copias y restauración de PostgreSQL y medios privados antes de operar.
+
+1. Copiá `.env-example` como `.env.prod` (archivo ignorado). Configurá `DJANGO_SECRET_KEY`, `JWT_SIGNING_KEY`, `QR_SIGNING_KEY` independientes y aleatorias de al menos 50 caracteres, `DJANGO_ALLOWED_HOSTS` con el dominio, `PUBLIC_APP_URL=https://tu-dominio`, `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PASSWORD` fuertes. Mantené `SHOP_PAYMENT_PROVIDER=disabled` hasta completar sandbox y operación. No publiques el archivo.
+2. Configurá `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS` o `EMAIL_USE_SSL` (no ambos), y `DEFAULT_FROM_EMAIL`. Completá `TLS_CERT_DIR` con ruta absoluta del directorio que contiene `fullchain.pem` y `privkey.pem`, legibles por Nginx. Los campos opcionales vacíos del ejemplo deben eliminarse o completarse: los parámetros numéricos de límites no aceptan cadenas vacías.
+3. Desde la raíz, ejecutá:
+
+```sh
+docker compose --env-file .env.prod -f compose.prod.yaml build
+docker compose --env-file .env.prod -f compose.prod.yaml up -d db redis
+docker compose --env-file .env.prod -f compose.prod.yaml run --rm backend python manage.py migrate
+docker compose --env-file .env.prod -f compose.prod.yaml run --rm backend python manage.py collectstatic --noinput
+docker compose --env-file .env.prod -f compose.prod.yaml run --rm backend python manage.py createsuperuser
+docker compose --env-file .env.prod -f compose.prod.yaml up -d
+docker compose --env-file .env.prod -f compose.prod.yaml ps
+```
+
+4. Abrí `https://tu-dominio/`, verificá `/api/v1/health/`, login, email real y paneles. El superusuario se crea con rol ADMIN; `/gestion` exige además usuario activo, staff y superusuario. `/admin/` tiene sesión propia. Renovado el certificado, recargá Nginx con `docker compose --env-file .env.prod -f compose.prod.yaml exec nginx nginx -s reload`. Para detener sin borrar datos: `docker compose --env-file .env.prod -f compose.prod.yaml down`.
+
+Este Compose es una base de despliegue: todavía requiere validación integral en el servidor, monitoreo, backups/restauración y programación de tareas de tienda; no se ha validado el sandbox externo de pagos. Nunca ejecutar seeds demo en producción. [Operación y reconciliación](docs/shop-operations.md).
+
+## Alcance de los usuarios
+
+- **Cliente (`TOURIST`)**: se registra públicamente, verifica email, consulta catálogo público, abre recomendaciones con QR válido, registra consumo directo o referido con QR y PIN del prestador y consulta créditos, progreso e historial propios. El email verificado es requisito para consumo. La UI de tienda es una muestra visual; compra y canje desde ella están pendientes.
+- **Colaborador (`COLLABORATOR`)**: cuando Admin lo habilita, selecciona y quita beneficios concretos para su propia carpeta, consulta su selección y comparte su QR. No hereda automáticamente todas las ofertas del negocio ni modifica reglas de créditos. El acceso de Clientes se comprueba en cada solicitud.
+- **Prestador (`PROVIDER`)**: administra la ficha y beneficios de su único negocio asignado, crea propuestas en borrador, edita campos permitidos y gestiona QR/PIN de consumo. Admin controla asignación y publicación.
+- **Administrador (`ADMIN`)**: gestiona usuarios y habilitaciones, asigna el negocio del Prestador, publica beneficios, configura catálogo y reglas de créditos, opera consumos, saldos, productos, pedidos y acciones auditadas desde `/gestion` y Django Admin. Las analíticas E6 siguen pendientes.
+
+Las verificaciones y el control de acceso son del servidor; ocultar una opción en pantalla no concede ni revoca permisos. [Panel de administración](docs/panel-administracion.md) · [GitFlow](docs/gitflow.md) · [Contexto](CONTEXT.md).

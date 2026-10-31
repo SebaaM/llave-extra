@@ -52,7 +52,7 @@ function Initialize-Environment {
     JWT_SIGNING_KEY = [Convert]::ToBase64String($jwtBytes)
     QR_SIGNING_KEY = [Convert]::ToBase64String($qrBytes)
     REDIS_URL = 'redis://redis:6379/0'
-    PUBLIC_APP_URL = 'http://localhost:5173'
+    PUBLIC_APP_URL = 'http://localhost:8080'
     DEFAULT_FROM_EMAIL = 'no-reply@llaveextra.local'
   }
   foreach ($key in $keys.Keys) {

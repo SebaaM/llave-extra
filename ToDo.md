@@ -41,3 +41,6 @@
 
 - [x] E5 Task 1 a7a6b59 aprobada por revisión independiente sin hallazgos: catálogo/API/Admin, canje E4, cancelación créditos, stock auditado e historia PG protegida; reserva MONEY/outbox sin HTTP. Evidencia en docs/verification/05-tienda-pagos-task-1.md. Task 2 entregada en PR #11 con worker, vencimiento, pasarela y cancelación/refund monetario; gate independiente y CI aprobados. Sandbox externo pendiente. Guía docs/shop-operations.md y evidencia docs/verification/05-tienda-pagos.md.
 - [x] E5 fix I1 aprobado en 4c9a402 por re-review focal: reservas impagas en revisión vencen/cancelan y stock previamente acreditado se conserva. Upgrade 0005 y QA HTTP aprobados. Evidencia en docs/verification/05-tienda-pagos.md.
+
+
+- [ ] Validar el Compose de producción en un servidor con TLS y SMTP reales, backups/restauración y scheduler de tienda.

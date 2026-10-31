@@ -93,3 +93,8 @@ Corrección I1 del gate final E5: PAYMENT_REVIEW ya distingue reserva impaga de 
 Gate Task 2/rama aprobado en 4c9a402 tras corregir I1, sin hallazgos restantes. payment_confirmed conserva la evidencia histórica del pago: reserva impaga vence/cancela; stock previamente acreditado y refund pendiente se retienen hasta confirmación. Upgrade 0004→0005 y QA HTTP post-fix aprobados.
 
 En el entorno local se aplicaron solo migraciones, sin seed ni rotación de cuentas/QR. Se conservaron 17 usuarios, 14 prestadores, 14 beneficios, 10 asociaciones históricas, 8 selecciones, 6 consumos y 7 movimientos de billetera. La tienda local queda sin productos/pedidos; los escenarios DEMO están separados en llaveextra-e5, con guía docs/shop-operations.md. Backend8000, frontend5173 y Admin por proxy iniciados y HTTP200. E6, UI de tienda y sandbox externo siguen pendientes.
+
+
+## Entornos Compose y documentación — 31/10/2026
+
+Se prepara Nginx en desarrollo (`compose.yaml`, puerto 8080) y producción (`compose.prod.yaml`, HTTPS 443), con guía vigente en README y mapa de rutas en `docs/sitemap.md`. Los certificados, SMTP, backups y validación real de producción siguen a cargo de la operación; sandbox de pagos pendiente.
