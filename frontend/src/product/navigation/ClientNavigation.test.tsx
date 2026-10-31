@@ -7,7 +7,7 @@ import { ProductShell } from '../Layout'
 const tourist: User = { id: 41, email: 'cliente@example.test', role: 'TOURIST', email_verified: true }
 const shell = (user: User | null, path = '/beneficios', hasRecommendations = true) => <ProductShell user={user} path={path} hasRecommendations={hasRecommendations}><main id="contenido"><h1>Contenido de prueba</h1></main></ProductShell>
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 describe('navegación del Cliente', () => {
   it('ofrece Recomendaciones solo cuando hay selecciones recibidas disponibles', () => {
@@ -29,6 +29,15 @@ describe('navegación del Cliente', () => {
     const navigation = screen.getByRole('navigation', { name: 'Tu viaje' })
     expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Recomendaciones', 'Mi viaje'])
     for (const name of ['Beneficios', 'Recomendaciones', 'Mi viaje']) expect(screen.getAllByRole('link', { name })).toHaveLength(1)
+  })
+
+  it('presenta los destinos del navbar público y los accesos de Cliente en escritorio', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
+    render(shell(tourist))
+    const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
+    expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Tienda', 'Cómo funciona', 'Recomendaciones', 'Mi viaje', 'Cuenta'])
+    expect(screen.queryByText('Menú')).toBeNull()
+    expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
   })
 
   it.each(['/beneficios', '/beneficios/oferta-de-prueba'])('marca Beneficios como ruta activa en %s', path => {

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useReducer, useRef } from 'react'
+import { useLayoutEffect, useReducer, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import type { User } from '../api'
 import { ProductLink } from '../navigation'
@@ -16,9 +16,18 @@ function isCurrentTabNavigation(event: MouseEvent<HTMLAnchorElement>) {
     && new URL(link.href).origin === window.location.origin
 }
 export function ClientNavigation({ user, path, hasRecommendations = false }: { user: User | null; path: string; hasRecommendations?: boolean }) {
+  const [isMobile, setIsMobile] = useState(() => typeof window.matchMedia !== 'function' || window.matchMedia('(max-width: 680px)').matches)
   const menu = useRef<HTMLDetailsElement>(null)
   const pendingFocus = useRef<{ path: string; userId: number } | null>(null)
   const [focusRequest, requestContentFocus] = useReducer((value: number) => value + 1, 0)
+  useLayoutEffect(() => {
+    const media = window.matchMedia?.('(max-width: 680px)')
+    if (!media) return
+    const update = () => setIsMobile(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   useLayoutEffect(() => {
     const pending = pendingFocus.current
     pendingFocus.current = null
@@ -45,6 +54,15 @@ export function ClientNavigation({ user, path, hasRecommendations = false }: { u
     requestContentFocus()
     closeMenu()
   }
+
+  if (!isMobile) return <nav aria-label="Navegación principal">
+    <ProductLink href="/beneficios" aria-current={active('/beneficios')}>Beneficios</ProductLink>
+    <ProductLink href="/tienda" aria-current={active('/tienda')}>Tienda</ProductLink>
+    <a href="/#como-funciona">Cómo funciona</a>
+    {availableDestinations.filter(({ href }) => href === '/recomendaciones').map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)}>{label}</ProductLink>)}
+    <ProductLink href="/mi-viaje" aria-current={active('/mi-viaje')}>Mi viaje</ProductLink>
+    <ProductLink href="/perfil" aria-current={active('/perfil')}>Cuenta</ProductLink>
+  </nav>
 
   return <div className="client-navigation-group">
     {!hideBar && <nav className="client-navigation" aria-label="Tu viaje">
