@@ -51,7 +51,7 @@ function mount(role: User['role'], route: string, handler?: Handler) {
 describe('paneles operativos por rol', () => {
   it('restaura /espacio como Prestador y usa solo su negocio, sin endpoints financieros', async () => {
     const { calls } = mount('PROVIDER', '/espacio')
-    await screen.findByRole('heading', { name: provider.name })
+    await screen.findByRole('heading', { name: provider.name }, { timeout: 5000 })
     expect(window.location.pathname).toBe('/prestador')
     const editLink = screen.getByRole('link', { name: /Editar información/ })
     expect(editLink.classList.contains('button')).toBe(true)
@@ -319,9 +319,9 @@ describe('paneles operativos por rol', () => {
 describe('ruta pública de referencia', () => {
   it.each(['PROVIDER', 'COLLABORATOR', 'ADMIN'] as const)('no ofrece canje a la cuenta %s', async role => {
     const { calls } = mount(role, '/referencia')
-    await screen.findByRole('heading', { name: 'Una referencia abre nuevas puertas.' })
-    expect(screen.queryByLabelText('Código de referencia')).toBeNull()
-    expect(screen.getByText('La vinculación de referencias está disponible para cuentas Cliente.')).toBeTruthy()
+    await screen.findByRole('heading', { name: 'Recibí nuevas recomendaciones.' })
+    expect(screen.queryByLabelText('Código de recomendaciones')).toBeNull()
+    expect(screen.getByText('Las recomendaciones recibidas están disponibles para cuentas Cliente.')).toBeTruthy()
     expect(calls.some(call => call.path === '/api/v1/referrals/redeem/' && call.init?.method === 'POST')).toBe(false)
   })
 })

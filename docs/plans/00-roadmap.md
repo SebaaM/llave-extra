@@ -2,6 +2,10 @@
 
 # Plan de implementación aprobado
 
+Corrección aprobada 30/10/2026: navegación y contenido de Cliente sin jerga de roles, recomendaciones solo recibidas, inicio reordenado, carrusel y pasaporte libreta. [Diseño](../superpowers/specs/2026-10-30-ajustes-vista-cliente.md), [plan](../superpowers/plans/2026-10-30-ajustes-vista-cliente.md) y [antes/después](../verification/13-ajustes-vista-cliente.md). PR #16 en borrador, sin fusionar hasta aprobación del cliente.
+
+Estado posterior, 30/10/2026: frontend visual T1–T8 implementado en `feature/frontend-cliente-visual`; sus revisiones por etapa están registradas. El cierre de QA, revisión integral y entrega sigue pendiente. Ver [antes/después y evidencia](../verification/11-frontend-cliente-visual.md). Los párrafos siguientes describen cortes históricos.
+
 Pedido vigente 27/10/2026: implementar primero la API del [plan visual del Cliente](../superpowers/plans/2026-10-27-frontend-cliente-visual.md). Backend T2/T2b implementado en `e3f04fa`, rama `feature/api-cliente-visual` nacida de develop `754982d` (PR #10 integrado). Categorías públicas completas y nombre actual del comercio en historial privado propio; no cambia POST/replay, reglas de negocio ni frontend. Suite 108 PostgreSQL/Redis, QA HTTP real y revisiones por tarea e integral aprobadas. Entrega en [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia develop, abierto sin fusionar, tras autorización explícita del usuario. CI vigente en sus comprobaciones. [Evidencia](../verification/12-api-cliente-visual.md). Las pantallas y tipos/hooks siguen pendientes, al igual que E6 y la tienda transaccional. Los estados siguientes conservan el historial previo.
 Pedido del 26/10/2026: adelantar únicamente el catálogo visual de la tienda de F3. Implementación pública con datos de ejemplo en frontend, sin compra/canje ni modificación de inventario real. [Plan acotado](../superpowers/plans/2026-10-26-catalogo-tienda-visual.md) y [evidencia](../verification/10-catalogo-tienda-visual.md). No inicia E6 ni auditoría activa; la UI transaccional y pedidos del Cliente continúan pendientes.
 

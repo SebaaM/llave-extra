@@ -6,3 +6,11 @@
 @media(prefers-reduced-motion:reduce){.shop-art-link>svg{transition:none}.shop-art-link:hover>svg{transform:none}}
 
 .shop-page h1,.shop-page h2,.shop-page h3,.shop-detail h1{font-weight:800}
+.product-shell .shop-art-preview { min-width: 0; align-self: start; }
+.product-shell .shop-art-preview > button { display: block; min-height: 44px; min-width: 44px; margin-bottom: 12px; padding: 10px 16px; border: 1px solid var(--client-petrol); border-radius: 10px; background: white; color: var(--client-petrol); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.product-shell .shop-art-preview .shop-detail-art { width: 100%; max-width: none; }
+.product-shell .shop-art-preview svg { width: 75%; margin-inline: auto; }
+.product-shell .shop-art-preview .shop-art-expanded svg { width: 100%; }
+.product-shell .shop-detail-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.product-shell .shop-detail :is(h1, p, dt, dd) { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .product-shell .shop-detail-grid { grid-template-columns: minmax(0, 1fr); } }

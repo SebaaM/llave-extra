@@ -19,6 +19,7 @@ export type NetworkItem = { provider: PublicProvider; benefit_id: string; benefi
 export type NetworkPage = Page<NetworkItem> & { presentation: Presentation }
 
 export const catalogConfig = (signal?: AbortSignal) => api<{ enabled: boolean }>('/api/v1/catalog/config/', { auth: false, signal })
+export const catalogCategories = (signal?: AbortSignal) => api<{ results: string[] }>('/api/v1/catalog/categories/', { auth: false, signal })
 export const catalogBenefits = (page = 1, search = '', category = '', signal?: AbortSignal) => {
   const params = new URLSearchParams({ page: String(page) })
   if (search) params.set('search', search)

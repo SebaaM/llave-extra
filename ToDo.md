@@ -1,8 +1,12 @@
 # Pendientes
 
+- [x] Diseño de ajustes del Cliente aprobado el 30/10 e implementación registrada: lenguaje cotidiano, recomendaciones recibidas condicionales, navegación/red adaptables, orden del inicio, carrusel y libreta abierta; [antes/después y pruebas](docs/verification/13-ajustes-vista-cliente.md). Revisión integral y corrector aprobados; la aprobación final del cliente sigue pendiente.
+- [ ] Obtener aprobación del cliente antes de fusionar [PR #16](https://github.com/SebaaM/llave-extra/pull/16). QA restante detallado en la evidencia; no iniciar merge por cerrar pruebas.
+
 - [x] Backend de mejoras visuales del Cliente T2/T2b: categorías públicas completas y nombre actual del comercio en historial propio. Producto `e3f04fa`, rama `feature/api-cliente-visual` desde develop `754982d`; 108 pruebas PG/Redis y QA HTTP real aprobados. Revisiones por tarea e integral aprobadas sin hallazgos pendientes. [Evidencia](docs/verification/12-api-cliente-visual.md).
 - [x] Publicar `feature/api-cliente-visual` y abrir [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia develop en `SebaaM/llave-extra`, sin fusionar. Publicación autorizada expresamente por el usuario; CI vigente en las comprobaciones del PR.
-- [ ] Frontend del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md): hooks y tipos de T2/T2b, navegación, catálogo, red, recomendaciones, pasaporte, QR, acceso/perfil y terminación de tienda. El pedido actual ejecuta primero solo API; no declara completas las tareas visuales ni la tienda transaccional.
+- [x] Frontend del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md): navegación, catálogo, red, recomendaciones, pasaporte, QR, acceso/perfil y tienda de ejemplo implementados y revisados por etapa. [Antes/después](docs/verification/11-frontend-cliente-visual.md).
+- [ ] Cierre visual: QA de navegador restante y HTTP con datos sintéticos y recorrido de referencia al iniciar sesión; revisión de código integral de [PR #16](https://github.com/SebaaM/llave-extra/pull/16) completada localmente. La regresión focal de créditos e historial sobre PostgreSQL aprobó 27 pruebas. La tienda transaccional permanece fuera de este alcance.
 
 - [x] Catálogo visual de tienda adelantado: `/tienda` y fichas públicas con nueve ejemplos, ilustraciones propias, ARS/créditos ilustrativos, búsqueda/filtros/orden/paginación. Sin seed, checkout ni canjes. [Plan](docs/superpowers/plans/2026-10-26-catalogo-tienda-visual.md), [evidencia](docs/verification/10-catalogo-tienda-visual.md). El resto transaccional de F3 y E6 siguen pendientes.
 

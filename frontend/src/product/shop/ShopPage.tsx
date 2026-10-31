@@ -24,6 +24,18 @@ function Prices({ product }: { product: ShopExample }) {
   return <div className="shop-prices"><strong>{formatPesos(product.price)} <small>ARS</small></strong><span>o {formatCredits(product.credits)}</span></div>
 }
 
+function ExpandableArt({ product }: { product: ShopExample }) {
+  const [expanded, setExpanded] = useState(false)
+  const id = `shop-illustration-${product.slug}`
+  return <div className="shop-art-preview">
+    <button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(value => !value)}>{expanded ? 'Reducir ilustración' : 'Ampliar ilustración'}</button>
+    <div id={id} className={`shop-detail-art${expanded ? ' shop-art-expanded' : ''}`} style={{ background: product.background }}>
+      <ProductArt product={product} />
+      <span>Ilustración de ejemplo · Diseño 3D</span>
+    </div>
+  </div>
+}
+
 function ProductCard({ product }: { product: ShopExample }) {
   return <article className="shop-card">
     <ProductLink href={`/tienda/${product.slug}`} className="shop-art-link" aria-label={`Ver ${product.name}`} style={{ background: product.background }}><ProductArt product={product} /><span className="shop-art-label">DISEÑO 3D · EJEMPLO</span></ProductLink>
@@ -62,5 +74,5 @@ export function ShopDetail({ slug }: { slug: string }) {
   const main = usePageStart(slug)
   const product = shopExamples.find(item => item.slug === slug)
   if (!product) return <main ref={main} id="contenido" className="content-width shop-not-found"><h1>No encontramos ese producto.</h1><p>Podés seguir explorando las propuestas del catálogo.</p><ProductLink href="/tienda" className="button button-dark">Volver a la tienda</ProductLink></main>
-  return <main ref={main} id="contenido" className="content-width shop-detail"><ProductLink href="/tienda" className="back-link">← Volver a la tienda</ProductLink><DemoNotice /><div className="shop-detail-grid"><div className="shop-detail-art" style={{ background: product.background }}><ProductArt product={product} /><span>Ilustración de ejemplo · Diseño 3D</span></div><div className="shop-detail-copy"><p className="eyebrow">{product.category} / LLAVE EXTRA</p><h1>{product.name}</h1><p>{product.description}</p><Prices product={product} /><p className="shop-detail-pricing">Valores ilustrativos para esta vista previa.</p><dl><div><dt>Diseño propuesto</dt><dd>Objeto impreso en 3D</dd></div><div><dt>Medidas de ejemplo</dt><dd>{product.dimensions}</dd></div><div><dt>Inspiración</dt><dd>Ushuaia, Tierra del Fuego</dd></div></dl><div className="shop-coming"><strong>Tu próximo recuerdo está tomando forma.</strong><p>La compra y el canje con créditos estarán disponibles en una próxima etapa. Por ahora, podés explorar el catálogo de ejemplo.</p></div><ProductLink href="/tienda" className="shop-detail-link">Seguir explorando <span aria-hidden="true">→</span></ProductLink></div></div></main>
+  return <main ref={main} id="contenido" className="content-width shop-detail"><ProductLink href="/tienda" className="back-link">← Volver a la tienda</ProductLink><DemoNotice /><div className="shop-detail-grid"><ExpandableArt key={product.slug} product={product} /><div className="shop-detail-copy"><p className="eyebrow">{product.category} / LLAVE EXTRA</p><h1>{product.name}</h1><p>{product.description}</p><Prices product={product} /><p className="shop-detail-pricing">Valores ilustrativos para esta vista previa.</p><dl><div><dt>Diseño propuesto</dt><dd>Objeto impreso en 3D</dd></div><div><dt>Medidas de ejemplo</dt><dd>{product.dimensions}</dd></div><div><dt>Inspiración</dt><dd>Ushuaia, Tierra del Fuego</dd></div></dl><div className="shop-coming"><strong>Tu próximo recuerdo está tomando forma.</strong><p>La compra y el canje con créditos estarán disponibles en una próxima etapa. Por ahora, podés explorar el catálogo de ejemplo.</p></div><ProductLink href="/tienda" className="shop-detail-link">Seguir explorando <span aria-hidden="true">→</span></ProductLink></div></div></main>
 }

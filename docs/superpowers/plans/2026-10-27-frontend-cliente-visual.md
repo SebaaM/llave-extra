@@ -11,6 +11,8 @@
 
 **Spec:** [propuesta de diseño](../specs/2026-10-27-frontend-cliente-visual-design.md).
 
+**Actualización 30/10/2026:** T1–T8 frontend están implementadas y revisadas por etapa en `feature/frontend-cliente-visual`. El cierre integral, QA real y entrega aún están pendientes; el [resumen antes/después](../../verification/11-frontend-cliente-visual.md) recoge alcance y límites. Los apartados de estado y casillas siguientes conservan la planificación histórica.
+
 **Estado:** plan preparado el 27/10/2026; dirección visual guía turística + pasaporte todavía propuesta. Backend de T2/T2b implementado y verificado por pedido posterior API primero; frontend pendiente. [Evidencia de la entrega API](../../verification/12-api-cliente-visual.md).
 
 **Ejecución parcial autorizada — 27/10/2026:** el usuario solicita implementar primero las mejoras de API. Se ejecutaron exclusivamente las partes backend de T2 y T2b, con pruebas PostgreSQL y documentación; hooks, tipos y pantallas frontend quedan pendientes. Rama `feature/api-cliente-visual` desde `origin/develop` en `754982d`; no depende de integrar PR #12/#13 para estas dos APIs. Producto `e3f04fa`, 108 pruebas PG/Redis y QA HTTP real aprobados. T0/T1 y los pasos frontend no se declaran terminados por este corte API independiente.
