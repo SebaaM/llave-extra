@@ -29,3 +29,11 @@ Los sellos usan el nombre que ya entrega el historial propio; no buscan logos ni
 Las comprobaciones de autorización y respuestas tardías son pruebas automatizadas con respuestas sintéticas; este ajuste no repitió revocación HTTP real ni consumo real por QR. No cambió backend, contratos OpenAPI, migraciones ni reglas de consumo. La regresión previa de créditos e historial sobre PostgreSQL/Redis aprobó 27 pruebas; no se presenta como una ejecución nueva de este ajuste. No se validan safe areas físicas de dispositivos, zoom 200% ni pagos externos en esta entrega.
 
 La revisión integral de la rama y la revisión de su corrector se completaron. La revisión documental también confirmó la coherencia entre contexto, instrucciones, plan y evidencia. El navegador integrado dejó de responder al intentar una observación adicional posterior; ese intento no se registra como nuevo QA. La aprobación final del cliente sigue pendiente y no se autoriza fusionar la PR.
+
+## Simplificación posterior del navbar
+
+Pedido posterior del usuario implementado en `ab9d6eb`. Antes, el Cliente en escritorio encontraba Tienda, Cuenta y Cómo funciona dentro de Menú. Después, el navbar conserva los enlaces públicos Beneficios, Tienda y Cómo funciona y agrega Recomendaciones cuando hay beneficios recibidos disponibles, Mi viaje y Cuenta, todos visibles. No se presenta un desplegable Menú en escritorio. El componente renderiza una única navegación según el ancho, sin duplicar enlaces accesibles; no agrega CSS, dependencias ni llamadas API. La barra y el menú móvil conservan su estructura.
+
+Verificación de este ajuste: `pnpm --dir frontend exec vitest run src/product/navigation/ClientNavigation.test.tsx src/product/ProductApp.test.tsx`, 66/66 aprobadas; lint, tipos y build aprobados. Revisión independiente del delta aprobada. No se repitió la suite completa de 308 pruebas porque el cambio quedó acotado al navbar y sus regresiones relevantes; su resultado previo no se atribuye a este nuevo corte.
+
+Se recuperó el navegador integrado y se realizó QA adicional: a 1440×900 hay un navbar con los seis destinos y ningún Menú, ancho cliente/desplazable 1425/1425. A 390×844 se mantienen barra fija y menú nativo, ancho 375/375; menú móvil probado. Los tamaños temporales se restauraron al finalizar. Captura de la cabecera guardada fuera del repositorio para revisión del cliente.

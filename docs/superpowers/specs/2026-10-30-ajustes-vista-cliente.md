@@ -14,7 +14,7 @@ Orden del inicio: Hero → Red → En tu recorrido → Próxima parada → Mapa 
 
 El hero muestra un carrusel de beneficios vigentes con controles accesibles anterior/siguiente y pausa de cualquier avance automático con foco, interacción, pestaña oculta o movimiento reducido. Retirar el beneficio al desactivar o recargar el catálogo. Próxima parada reúne las categorías para explorar beneficios; el mapa conserva su alcance geográfico actual.
 
-La barra inferior aparece solo en móvil; en escritorio los enlaces están en el navbar. La red muestra nodos en escritorio y una lista en móvil, según el ancho disponible y sin selector manual. Se conservan selección, paginación, detalle y limpieza de contenido privado.
+La barra inferior aparece solo en móvil. Corrección posterior del usuario: en escritorio se conserva el navbar público con Beneficios, Tienda y Cómo funciona visibles y se suman los accesos de la cuenta (Recomendaciones cuando hay beneficios recibidos disponibles, Mi viaje y Cuenta). No hay desplegable Menú en escritorio; el menú móvil se conserva. La red muestra nodos en escritorio y una lista en móvil, según el ancho disponible y sin selector manual. Se conservan selección, paginación, detalle y limpieza de contenido privado.
 
 En tu recorrido explica explorar, visitar y sumar sellos/créditos. El QR de recomendaciones es opcional; no se presenta como requisito para utilizar beneficios.
 
