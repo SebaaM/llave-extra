@@ -92,7 +92,7 @@ class BenefitReadSerializer(VersionedReadSerializer):
         model = Benefit
         ref_name = "AdminBenefitRead"
         fields = ("id", "provider", "provider_name", "title", "description", "conditions", "valid_from",
-                  "valid_until", "image_url", "status", "demo", "provenance", "version")
+                  "valid_until", "image_url", "status", "featured", "demo", "provenance", "version")
 
     def get_image_url(self, obj) -> str | None:
         return f"/api/v1/admin/benefits/{obj.pk}/image/" if obj.image else None
@@ -105,7 +105,7 @@ class BenefitWriteSerializer(StrictModelSerializer):
         model = Benefit
         ref_name = "AdminBenefitWrite"
         fields = ("provider", "title", "description", "conditions", "valid_from", "valid_until", "image",
-                  "status")
+                  "status", "featured")
 
     def validate(self, attrs):
         def current(name, default=None):

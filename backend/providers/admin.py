@@ -111,8 +111,8 @@ class FolderBenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 
 @admin.register(Benefit)
 class BenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
-    list_display = ("title", "provider", "status", "valid_from", "valid_until", "demo")
-    list_filter = ("status", "demo")
+    list_display = ("title", "provider", "status", "featured", "valid_from", "valid_until", "demo")
+    list_filter = ("status", "featured", "demo")
     readonly_fields = ("id", "demo", "provenance")
 
     def get_readonly_fields(self, request, obj=None):
