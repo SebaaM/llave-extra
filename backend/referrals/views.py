@@ -15,6 +15,7 @@ from accounts.serializers import TokenSerializer
 
 from .access import active_folder_access, redeem_qr, sign_qr
 from .models import CollaboratorProfile, FolderAccess
+from .serializers import RedeemResponseSerializer, collaborator_name
 
 
 def private(response):
@@ -26,13 +27,14 @@ def private(response):
 class RedeemView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=TokenSerializer, responses={200: None})
+    @extend_schema(request=TokenSerializer, responses={200: RedeemResponseSerializer})
     def post(self, request):
         rate_limit("redeem", f"{request.META.get('REMOTE_ADDR', 'unknown')}:{request.user.pk}")
         serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         grant = redeem_qr(request.user, serializer.validated_data["token"])
         return private(Response({"collaborator_id": str(grant.collaborator_id),
+                                 "collaborator_name": collaborator_name(grant.collaborator),
                                  "granted_at": grant.created_at}, status=status.HTTP_200_OK))
 
 

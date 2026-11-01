@@ -42,7 +42,7 @@ def private_file(field):
 
 
 def folder_profile(request, folder_id):
-    profile = CollaboratorProfile.objects.filter(pk=folder_id).first()
+    profile = CollaboratorProfile.objects.select_related("user").filter(pk=folder_id).first()
     if profile is None or not active_folder_access(request.user, profile):
         raise NotFound()
     return profile

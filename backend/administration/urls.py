@@ -21,6 +21,7 @@ from .resources import (
     WalletsView,
     resource_endpoint,
 )
+from .summary import CollaboratorSummaryView
 from .views import (
     ActivityView,
     CatalogSettingsView,
@@ -40,6 +41,7 @@ urlpatterns = [
     path("admin/dashboard/", DashboardView.as_view(), name="admin-dashboard"),
     path("admin/users/<int:pk>/invite/", InviteView.as_view(), name="admin-user-invite"),
     path("admin/collaborators/<uuid:pk>/recommendations/", AdminRecommendationsView.as_view(), name="admin-recommendations"),
+    path("admin/collaborators/<uuid:pk>/summary/", CollaboratorSummaryView.as_view(), name="admin-collaborator-summary"),
     path("admin/<str:resource>/<uuid:pk>/image/", AdminImageView.as_view(), name="admin-resource-image"),
     path("admin/<str:resource>/<uuid:pk>/qr/", AdminQRView.as_view(), name="admin-resource-qr"),
     path("admin/<str:resource>/<uuid:pk>/qr.png", AdminQRPNGView.as_view(), name="admin-resource-qr-png"),
