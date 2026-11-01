@@ -15,7 +15,14 @@ Todas las rutas de dominio usan `/api/v1/`. `GET /auth/csrf/` entrega token CSRF
 | `POST /auth/reset-password/` | `token`, `password` | 200: contraseña nueva, sesiones revocadas; token de un uso, 1 h |
 | `POST /referrals/redeem/` | `token` de QR en cuerpo; bearer | 200: `{collaborator_id,collaborator_name,granted_at}`, vínculo idempotente al Cliente autenticado |
 | `GET /me/folders/` | bearer Cliente (`TOURIST`) | Solo IDs de referencias activas; prestadores por las rutas de carpeta E3 |
-| `GET /collaborator/qr/` | bearer colaborador habilitado | URL firmada actual; `qr.png` descarga la imagen |
+| `GET /collaborator/qr/` | bearer colaborador activo y habilitado | `{url,version}`: URL firmada estable y precondición opaca no secreta; `GET /collaborator/qr.png` descarga la misma imagen para esa configuración y generación |
+| `POST /collaborator/qr/renew/` | bearer colaborador activo/habilitado, solo `{version}` e `Idempotency-Key` | 200: `{id,status:"renewed",version}` sin QR/URL; renovación propia manual, idempotente y auditada atómicamente |
+
+El QR de referencia nuevo usa prefijo `r2.` y firma determinista por perfil/generación, sin timestamp. Los QR históricos siguen válidos hasta cambiar la generación; desplegar este formato no rota perfiles. Consultar, copiar, descargar o editar la selección no renueva la credencial. Cambiar la configuración de URL pública o claves de firma puede cambiar la URL emitida.
+
+La renovación obtiene el perfil exclusivamente desde la cuenta, bloquea Usuario → perfil y comprueba permisos y precondición vigentes. No admite IDs de otro usuario/perfil ni campos extra. `version` es un digest opaco de la credencial y su titular, independiente de los beneficios seleccionados. Falta/formato de versión o clave inválidos responden 400; precondición obsoleta o clave reutilizada con otro cuerpo, 409; cuenta sin habilitación actual, 403. Una misma clave y cuerpo devuelve el resultado original sin volver a incrementar la generación, incluso si luego hubo otra renovación; el replay también exige permisos actuales. Después de confirmar o reintentar con éxito, hacer GET autoritativo para obtener el QR vigente. Ante una respuesta incierta, conservar clave y cuerpo originales en memoria para reintentar.
+
+La tabla específica `referrals.QRRenewalReceipt` registra actor, perfil, clave/digest, generaciones anterior/nueva, precondición resultante y fecha en la misma transacción; no almacena QR, URL ni PIN ni usa el motor de comandos administrativos. Renovar invalida los QR y accesos anteriores, conservando `FolderAccess`, selección e historial de consumos/créditos. El consumo sigue requiriendo QR del negocio + PIN y nunca convierte una referencia inválida en consumo directo.
 
 ### Prestadores y carpetas (E3)
 

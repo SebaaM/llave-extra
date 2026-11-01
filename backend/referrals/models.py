@@ -89,3 +89,25 @@ class FolderAccess(models.Model):
 
     def __str__(self):
         return f"{self.tourist} — {self.collaborator}"
+
+
+class QRRenewalReceipt(models.Model):
+    """Successful own renewals: idempotency receipt and atomic audit without credentials."""
+
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name="Usuario", on_delete=models.PROTECT, related_name="referral_renewals")
+    key = models.CharField("Clave de idempotencia", max_length=128)
+    payload_digest = models.CharField("Resumen de la solicitud", max_length=64)
+    profile = models.ForeignKey(CollaboratorProfile, verbose_name="Colaborador", on_delete=models.PROTECT, related_name="renewal_receipts")
+    previous_version = models.PositiveIntegerField("Generación anterior")
+    renewed_version = models.PositiveIntegerField("Generación renovada")
+    result_version = models.CharField("Precondición resultante", max_length=64)
+    created_at = models.DateTimeField("Fecha de renovación", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Renovación propia de referencia"
+        verbose_name_plural = "Renovaciones propias de referencias"
+        constraints = [
+            models.UniqueConstraint(fields=["actor", "key"], name="unique_own_referral_renewal_key"),
+            models.CheckConstraint(condition=Q(previous_version__gte=1), name="referral_renewal_previous_positive"),
+            models.CheckConstraint(condition=Q(renewed_version=F("previous_version") + 1), name="referral_renewal_single_increment"),
+        ]

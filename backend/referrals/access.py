@@ -1,4 +1,6 @@
+import binascii
 import uuid
+import zlib
 from contextlib import contextmanager
 
 from django.conf import settings
@@ -12,19 +14,31 @@ from accounts.models import User
 from .models import CollaboratorProfile, FolderAccess
 
 QR_SALT = "llave-extra.collaborator-referral.v1"
+QR_V2_SALT = "llave-extra.collaborator-referral.v2"
+QR_V2_PREFIX = "r2."
 
 
 def sign_qr(profile: CollaboratorProfile) -> str:
-    return signing.dumps({"id": str(profile.pk), "v": profile.qr_version}, key=settings.QR_SIGNING_KEY, salt=QR_SALT, compress=False)
+    signer = signing.Signer(key=settings.QR_SIGNING_KEY, salt=QR_V2_SALT)
+    return QR_V2_PREFIX + signer.sign_object({"id": str(profile.pk), "v": profile.qr_version}, compress=False)
 
 
 def parse_qr(token: str) -> tuple[str, int]:
     try:
-        data = signing.loads(token, key=settings.QR_SIGNING_KEY, salt=QR_SALT)
-        if set(data) != {"id", "v"} or type(data["v"]) is not int or data["v"] < 1:
+        if not isinstance(token, str):
             raise ValueError
-        return str(uuid.UUID(str(data["id"]))), data["v"]
-    except (signing.BadSignature, ValueError, TypeError, KeyError):
+        if token.startswith(QR_V2_PREFIX):
+            data = signing.Signer(key=settings.QR_SIGNING_KEY, salt=QR_V2_SALT).unsign_object(token[len(QR_V2_PREFIX):])
+        else:
+            data = signing.loads(token, key=settings.QR_SIGNING_KEY, salt=QR_SALT)
+        if (not isinstance(data, dict) or set(data) != {"id", "v"}
+                or type(data["v"]) is not int or data["v"] < 1 or not isinstance(data["id"], str)):
+            raise ValueError
+        profile_id = str(uuid.UUID(data["id"]))
+        if profile_id != data["id"]:
+            raise ValueError
+        return profile_id, data["v"]
+    except (signing.BadSignature, ValueError, TypeError, KeyError, binascii.Error, zlib.error):
         raise ValidationError({"token": "Referencia inválida"}) from None
 
 
