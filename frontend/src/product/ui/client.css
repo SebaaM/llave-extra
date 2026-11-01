@@ -425,7 +425,6 @@
     box-shadow: 0 -4px 24px #16464a14;
   }
   .product-shell .client-navigation a { padding-inline: var(--client-space-1); }
-  .product-shell .client-navigation:has(> a:nth-child(3)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr) minmax(0, 1fr); }
   .product-shell .product-header-inner { display: flex; width: calc(100% - 32px); flex-direction: row; gap: var(--client-space-3); }
   .product-shell .product-header .product-brand img { width: 112px; }
   .product-shell .product-header-actions { width: 100%; justify-content: space-between; gap: var(--client-space-2); }
@@ -543,6 +542,11 @@
 .product-shell .client-account-passport p { line-height: 1.75; }
 .product-shell .client-account-mark { display: inline-grid; place-items: center; width: 56px; height: 56px; border: 1px dashed var(--client-petrol); border-radius: 50%; color: var(--client-petrol); font-size: 2rem; margin-bottom: var(--client-space-4); }
 .product-shell .client-account-verification { font-weight: 700; }
+.product-shell .client-qr-selection { padding-block: var(--client-space-12); min-height: 480px; }
+.product-shell .client-qr-selection h1 { font: 800 clamp(1.8rem, 4vw, 3rem)/1.2 Montserrat, sans-serif; overflow-wrap: anywhere; }
+.product-shell .client-qr-selection p { line-height: 1.7; overflow-wrap: anywhere; }
+.product-shell .client-qr-selection .product-provider-grid { margin-block: var(--client-space-8); }
+.product-shell .client-qr-selection .product-provider-card { min-width: 0; }
 .product-shell .client-account-passport .button { min-height: 44px; max-width: 100%; white-space: normal; text-align: center; margin: 8px 8px 8px 0; }
 @media (max-width: 390px) {
   .product-shell .client-account-passport { padding: var(--client-space-4); }

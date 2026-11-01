@@ -1,0 +1,52 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ApiError, api, currentSessionVersion } from './api'
+import type { ConsumptionResult } from './api'
+import { consumptionToken, setConsumptionToken } from './qr-intent'
+import { messageOf } from './shared'
+
+type Body = { qr_token: string; pin: string; folder_id?: string }
+type VisitState = { pending: { body: Body; key: string } | null; result: ConsumptionResult | null; busy: boolean; uncertain: boolean; hadUncertainty: boolean; attempted: boolean; errorStatus: number | null; error: string }
+const empty = (): VisitState => ({ pending: null, result: null, busy: false, uncertain: false, hadUncertainty: false, attempted: false, errorStatus: null, error: '' })
+
+// Vive con ProductApp: cambiar de ruta/QR no pierde un POST incierto dentro de la SPA.
+export function useVisitCommand() {
+  const [state, setState] = useState<VisitState>(empty)
+  const snapshot = useRef(state)
+  const generation = useRef(0)
+  const mounted = useRef(true)
+  const publish = useCallback((next: VisitState) => { snapshot.current = next; if (mounted.current) setState(next) }, [])
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; generation.current += 1 } }, [])
+  const reset = useCallback(() => { generation.current += 1; publish(empty()) }, [publish])
+  const newIntent = useCallback(() => {
+    const current = snapshot.current
+    if (!current.busy && !current.hadUncertainty) reset()
+  }, [reset])
+  const correct = useCallback(() => {
+    const current = snapshot.current
+    if (!current.busy && !current.hadUncertainty && current.errorStatus === 400) {
+      generation.current += 1
+      publish({ ...empty(), attempted: true })
+    }
+  }, [publish])
+  const submit = useCallback(async (body: Body): Promise<{ completed: boolean; denied: boolean }> => {
+    if (snapshot.current.busy || snapshot.current.result) return { completed: false, denied: false }
+    const version = currentSessionVersion(), request = generation.current
+    const pending = snapshot.current.pending ?? { body: { ...body }, key: crypto.randomUUID() }
+    publish({ ...snapshot.current, pending, attempted: true, busy: true, error: '' })
+    const current = () => mounted.current && version === currentSessionVersion() && request === generation.current
+    try {
+      const result = await api<ConsumptionResult>('/api/v1/consumptions/', { method: 'POST', body: pending.body, idempotencyKey: pending.key })
+      if (!current()) return { completed: false, denied: false }
+      if (consumptionToken === pending.body.qr_token) setConsumptionToken(null)
+      publish({ ...empty(), result })
+      return { completed: true, denied: false }
+    } catch (error) {
+      if (!current()) return { completed: false, denied: false }
+      const uncertain = !(error instanceof ApiError) || error.status >= 500 || [408, 429].includes(error.status)
+      publish({ ...snapshot.current, busy: false, uncertain, hadUncertainty: snapshot.current.hadUncertainty || uncertain, errorStatus: error instanceof ApiError ? error.status : null, error: messageOf(error) })
+      return { completed: false, denied: !!pending.body.folder_id && error instanceof ApiError && [403, 404].includes(error.status) }
+    }
+  }, [publish])
+  return { ...state, submit, reset, newIntent, correct }
+}
+export type VisitCommand = ReturnType<typeof useVisitCommand>

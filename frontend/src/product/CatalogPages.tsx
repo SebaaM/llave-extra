@@ -31,7 +31,7 @@ export function PublicPhoto({ path, alt, name, className = '' }: { path: string 
 
 export function CatalogState({ enabled, loading, error, retry }: { enabled: boolean | null; loading: boolean; error: string; retry: () => void }) {
   if (loading) return <p className="catalog-state" role="status">Consultando beneficios vigentes…</p>
-  if (enabled === false) return <div className="catalog-state"><h2>El catálogo general no está disponible ahora.</h2><p>Si recibiste un QR de recomendaciones, podés abrir los beneficios que te compartieron.</p><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></div>
+  if (enabled === false) return <div className="catalog-state"><h2>El catálogo general no está disponible ahora.</h2><p>Volvé más tarde para consultar los beneficios publicados. Si recibiste un QR, podés consultar su selección después de ingresar a tu cuenta.</p><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></div>
   if (error) return <div className="catalog-state" role="alert"><h2>No pudimos cargar los beneficios.</h2><p>{error}</p><button className="button button-orange" onClick={retry}>Volver a intentar</button></div>
   return null
 }

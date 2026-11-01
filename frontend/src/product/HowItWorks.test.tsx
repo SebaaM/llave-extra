@@ -22,7 +22,7 @@ describe('recorrido del Cliente', () => {
       expect(steps.filter(step => step.getAttribute('aria-pressed') === 'true')).toHaveLength(1)
     }
     expect(screen.getByRole('heading', { name: 'QR de recomendaciones' })).toBeTruthy()
-    expect(screen.getByText('Es opcional: abre los beneficios que te compartieron. No registra una visita.')).toBeTruthy()
+    expect(screen.getByText('Es opcional: abre la selección de quien te recomendó después de ingresar a tu cuenta. No registra una visita.')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'QR y PIN del negocio' })).toBeTruthy()
   })
 })

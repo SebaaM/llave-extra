@@ -29,7 +29,7 @@ export function HomePage({ settings = defaultSiteSettings, trip }: { settings?: 
           <span>BENEFICIOS PARA TU PRÓXIMA VISITA</span>
           <CatalogState enabled={enabled} loading={loading} error={error} retry={retry} />
           {enabled && !loading && !error && data && <FeaturedBenefits benefits={data.results} />}
-          {enabled && !loading && !error && data?.results.length === 0 && <EmptyState title="Pronto habrá beneficios para explorar." description="Si recibiste un QR de recomendaciones, podés abrir los beneficios que te compartieron."><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></EmptyState>}
+          {enabled && !loading && !error && data?.results.length === 0 && <EmptyState title="Pronto habrá beneficios para explorar." description="Volvé pronto para descubrir las próximas propuestas de la ciudad."><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></EmptyState>}
         </div>
       </div>
     </section>

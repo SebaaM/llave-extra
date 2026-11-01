@@ -26,16 +26,39 @@ let authQueue: Promise<void> = Promise.resolve()
 let sessionVersion = 0
 const privateControllers = new Set<AbortController>()
 const logoutPendingKey = 'llave-extra.logout-pending'
+let memoryPendingLogout = false
+let explicitlyAuthenticated = false
 const verificationRequests = new Map<string, Promise<unknown>>()
 
 export function currentSessionVersion() { return sessionVersion }
-export function hasPendingLogout() { return sessionStorage.getItem(logoutPendingKey) === '1' }
+export function hasPendingLogout() {
+  if (memoryPendingLogout) return true
+  try { return sessionStorage.getItem(logoutPendingKey) === '1' }
+  catch { return memoryPendingLogout }
+}
+function markPendingLogout(pending: boolean) {
+  memoryPendingLogout = pending
+  try {
+    if (pending) sessionStorage.setItem(logoutPendingKey, '1')
+    else sessionStorage.removeItem(logoutPendingKey)
+  } catch { /* La protección del dispositivo continúa en memoria si storage está denegado. */ }
+}
+function canPersistLogoutState() {
+  const probe = `${logoutPendingKey}.check`
+  try {
+    sessionStorage.setItem(probe, '1')
+    const written = sessionStorage.getItem(probe) === '1'
+    sessionStorage.removeItem(probe)
+    return written
+  } catch { return false }
+}
 export function invalidatePrivateState() {
   sessionVersion += 1
   for (const controller of privateControllers) controller.abort()
   privateControllers.clear()
   accessToken = null
   refreshing = null
+  explicitlyAuthenticated = false
 }
 export function setAccessToken(value: string | null) { accessToken = value }
 
@@ -158,13 +181,16 @@ export async function restoreSession() {
   // A failed logout may leave the HttpOnly refresh cookie valid. Do not restore
   // it silently after a reload; require an explicit login to establish a session.
   if (hasPendingLogout()) return null
+  // Sin storage no se puede conocer un logout incierto de la instancia anterior.
+  // Solo el login explícito en esta instancia permite continuar en memoria.
+  if (!explicitlyAuthenticated && !canPersistLogoutState()) return null
   const token = await refreshAccess()
   if (!token) return null
   return api<User>('/api/v1/auth/me/')
 }
 export async function signOut() {
   const oldToken = accessToken
-  sessionStorage.setItem(logoutPendingKey, '1')
+  markPendingLogout(true)
   invalidatePrivateState()
   try {
     await serializeAuthMutation(async () => {
@@ -176,7 +202,7 @@ export async function signOut() {
       })
       if (!response.ok) await jsonOrError(response)
     })
-    sessionStorage.removeItem(logoutPendingKey)
+    markPendingLogout(false)
   } finally { csrfToken = null }
 }
 export async function privateImage(path: string | null) {
@@ -210,8 +236,9 @@ export async function authenticate(email: string, password: string) {
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     const body = await api<{ access: string }>('/api/v1/auth/login/', { method: 'POST', body: { email, password }, auth: false })
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
-    sessionStorage.removeItem(logoutPendingKey)
+    markPendingLogout(false)
     accessToken = body.access
+    explicitlyAuthenticated = true
   })
   // The shared-cookie lock protects the login response and its Set-Cookie.
   // Keep /me outside it: a 401 may need refreshAccess(), which must acquire

@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { invalidatePrivateState, setAccessToken } from './api'
 import { NetworkCanvas } from './NetworkCanvas'
-import { ProviderDetail } from './BenefitsPages'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const provider = { id: 'p1', slug: 'local', name: 'Local seguro', category: 'Paseos', description: '', address: '', hours: '', contact: '', map_url: '', website: '', demo: true, image_url: null as string | null }
@@ -277,43 +276,4 @@ describe('vista previa de la red', () => {
     expect(screen.queryByText('Paseo vigente')).toBeNull()
   })
 
-  it('retira datos privados al recibir 404 del detalle y nunca consulta el catálogo', async () => {
-    const revoked = vi.fn()
-    const fetcher = vi.fn(async (input: URL | RequestInfo) => { expect(String(input)).not.toContain('/catalog/'); return json({}, 404) })
-    vi.stubGlobal('fetch', fetcher)
-    render(<ProviderDetail folderId="carpeta-a" provider={{ ...provider, status: 'PUBLISHED', address: 'Dirección privada', contact: 'Contacto privado' }} onAccessRevoked={revoked} />)
-    await waitFor(() => expect(revoked).toHaveBeenCalledTimes(1))
-    expect(screen.queryByText('Local seguro')).toBeNull()
-    expect(screen.queryByText('Dirección privada')).toBeNull()
-    expect(screen.queryByText('Contacto privado')).toBeNull()
-    expect(fetcher).toHaveBeenCalledTimes(1)
-    expect(String(fetcher.mock.calls[0]?.[0])).not.toContain('/catalog/')
-  })
-
-  it.each([200, 403, 503])('oculta el detalle mientras revalida un medio 404 y solo restaura con autorización (%s)', async status => {
-    let detailCalls = 0
-    let finish!: (response: Response) => void
-    const revoked = vi.fn()
-    const requests: string[] = []
-    vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo) => {
-      const url = String(input); requests.push(url)
-      if (url.includes('/media/')) return Promise.resolve(json({}, 404))
-      detailCalls++
-      return detailCalls === 1 ? Promise.resolve(json([])) : new Promise<Response>(resolve => { finish = resolve })
-    }))
-    render(<ProviderDetail folderId="carpeta-a" provider={{ ...provider, status: 'PUBLISHED', address: 'Dirección privada', image_url: '/api/v1/folders/carpeta-a/providers/p1/media/' }} onAccessRevoked={revoked} />)
-    await waitFor(() => expect(finish).toBeTypeOf('function'))
-    expect(screen.queryByText('Dirección privada')).toBeNull()
-    await act(async () => finish(json(status === 200 ? [] : {}, status)))
-    if (status === 200) {
-      await screen.findByText('Dirección privada')
-      expect(revoked).not.toHaveBeenCalled()
-    } else {
-      expect(screen.queryByText('Dirección privada')).toBeNull()
-      expect(revoked).toHaveBeenCalledTimes(status === 403 ? 1 : 0)
-      if (status === 503) expect(screen.getByRole('button', { name: 'Reintentar' })).toBeTruthy()
-    }
-    expect(requests.filter(url => url.includes('/media/'))).toHaveLength(1)
-    expect(requests.some(url => url.includes('/catalog/'))).toBe(false)
-  })
 })
