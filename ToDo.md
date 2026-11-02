@@ -1,7 +1,11 @@
 # Pendientes
 
+- [x] Diagnosticar el CI de develop `8250205`: fallo exclusivo de auditoría por minimatch transitivo; corrección temporal a 11.0.1 sin desactivar el control. [Evidencia](docs/verification/14-ci-develop.md).
+- [x] Corregir espera de render en las pruebas de navegación Admin y verificar en Docker Linux: 309 UI + 1 proxy, lint, tipos, build y auditoría aprobados.
+- [ ] Integrar el PR de `feature/corregir-ci-develop` hacia develop después de comprobar su CI; este trabajo no fusiona PRs.
+
 - [x] Diseño de ajustes del Cliente aprobado el 30/10 e implementación registrada: lenguaje cotidiano, recomendaciones recibidas condicionales, navegación/red adaptables, orden del inicio, carrusel y libreta abierta; [antes/después y pruebas](docs/verification/13-ajustes-vista-cliente.md). Revisión integral y corrector aprobados; la aprobación final del cliente sigue pendiente.
-- [ ] Obtener aprobación del cliente antes de fusionar [PR #16](https://github.com/SebaaM/llave-extra/pull/16). QA restante detallado en la evidencia; no iniciar merge por cerrar pruebas.
+- [x] [PR #16](https://github.com/SebaaM/llave-extra/pull/16) fusionado externamente el 31/10/2026 en `8250205`; el diagnóstico de CI posterior no acredita el QA de navegador restante descrito en la evidencia.
 
 - [x] Backend de mejoras visuales del Cliente T2/T2b: categorías públicas completas y nombre actual del comercio en historial propio. Producto `e3f04fa`, rama `feature/api-cliente-visual` desde develop `754982d`; 108 pruebas PG/Redis y QA HTTP real aprobados. Revisiones por tarea e integral aprobadas sin hallazgos pendientes. [Evidencia](docs/verification/12-api-cliente-visual.md).
 - [x] Publicar `feature/api-cliente-visual` y abrir [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia develop en `SebaaM/llave-extra`, sin fusionar. Publicación autorizada expresamente por el usuario; CI vigente en las comprobaciones del PR.
