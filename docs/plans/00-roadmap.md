@@ -1,5 +1,9 @@
 # Plan de implementación aprobado
 
+Precisión del 1/11/2026: carrusel del hero alimentado únicamente por beneficios destacados por el Administrador en backoffice, con publicación/vigencia y catálogo público vigente. [Plan incremental](../superpowers/plans/2026-11-01-destacados-hero.md), en la misma rama de mejoras y sin merge.
+
+Decisión posterior vigente 30/10/2026: catálogo habitual sin sección permanente Recomendaciones. El QR del colaborador muestra su selección vigente tras login, registra vínculo y atribuye consumo con QR del negocio + PIN. QR estable y renovación manual desde su espacio; resumen acotado en ficha Admin. [Plan contextual](../superpowers/plans/2026-10-30-seleccion-qr-contextual.md); sustituye la pantalla propia/enlace permanente del ajuste histórico. PR #16 sigue en borrador, sin merge.
+
 Corrección aprobada 30/10/2026: navegación y contenido de Cliente sin jerga de roles, recomendaciones solo recibidas, inicio reordenado, carrusel y pasaporte libreta. [Diseño](../superpowers/specs/2026-10-30-ajustes-vista-cliente.md), [plan](../superpowers/plans/2026-10-30-ajustes-vista-cliente.md) y [antes/después](../verification/13-ajustes-vista-cliente.md). PR #16 en borrador, sin fusionar hasta aprobación del cliente.
 
 Estado posterior, 30/10/2026: frontend visual T1–T8 implementado en `feature/frontend-cliente-visual`; sus revisiones por etapa están registradas. El cierre de QA, revisión integral y entrega sigue pendiente. Ver [antes/después y evidencia](../verification/11-frontend-cliente-visual.md). Los párrafos siguientes describen cortes históricos.

@@ -2,6 +2,8 @@
 
 Estado: diseño aprobado explícitamente por el usuario el 30/10/2026; tareas A/B implementadas, correcciones de la revisión integral verificadas y aprobadas. La aprobación final del cliente sigue pendiente. Alcance y límites de QA en [la evidencia](../../verification/13-ajustes-vista-cliente.md).
 
+Decisión posterior vigente: catálogo habitual sin sección permanente Recomendaciones. La entrada QR muestra una selección contextual tras login, con nombre y vínculo para resumen; el consumo conserva QR del negocio + PIN y atribución. El colaborador renueva su QR solo manualmente desde su espacio. Ver [plan contextual](../plans/2026-10-30-seleccion-qr-contextual.md); los detalles siguientes conservan el historial del diseño anterior.
+
 ## Presentación y permisos
 
 El Cliente explora y utiliza beneficios desde la web, con o sin recomendaciones recibidas por QR. Solo los colaboradores gestionan recomendaciones. La experiencia del Cliente no habla de prestadores, colaboradores, carpetas, referencias técnicas ni servidores: usa negocios, beneficios, visitas y recomendaciones recibidas. Los identificadores y las autorizaciones existentes del servidor se conservan.

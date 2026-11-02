@@ -1,6 +1,26 @@
 # Contexto y decisiones
 
+## Precisión vigente del hero — 1/11/2026
+
+El usuario también pide «Cómo funciona» en el catálogo de beneficios y explicar que las visitas confirmadas generan créditos para canjear en la tienda de la web. Se reutiliza el componente de pasos, con título propio en catálogo y enlace a la tienda. El canje todavía no está habilitado en la UI de tienda: se informa en lenguaje cotidiano, sin ofrecer una operación que aún no funciona. Este pedido se incorpora a la tarea F2 del plan de destacados.
+
+GitHub informa que la PR #16 fue fusionada en `develop` el 31/10, por fuera de esta ejecución. La entrega nueva de QR contextual y destacados se publicará en otra rama `feature/cliente-qr-destacados` y otra PR hacia `develop`, sin merge. La base actual incorpora también ajustes de entornos Docker; se integrará localmente a la rama de trabajo para comprobar el resultado combinado. Los estados de PR #16 en borrador indicados más abajo son históricos.
+
+El usuario confirma que el carrusel del hero muestra los beneficios destacados por el Administrador, configurables en el backoffice. Se implementará una casilla «Destacado en el inicio» por beneficio, falsa por defecto, con las escrituras Admin existentes. La lectura pública exige publicación/vigencia e interruptor del catálogo y filtra antes de paginar; el carrusel debe permitir recorrer todos los destacados. Sin selección automática ni fallback a beneficios comunes. Ver [diseño](docs/superpowers/specs/2026-11-01-destacados-hero.md) y [plan](docs/superpowers/plans/2026-11-01-destacados-hero.md). Se integra al trabajo contextual siguiente, con nueva rama y PR hacia develop, sin merge.
+
+## Decisión vigente: catálogo y selección contextual por QR — 30/10/2026
+
+El usuario decidió retirar la sección permanente Recomendaciones del Cliente, porque ya dispone del catálogo de beneficios. Esta decisión sustituye la pantalla propia y el enlace condicional descritos en los apartados históricos siguientes. En escritorio quedan Beneficios, Tienda, Cómo funciona, Mi viaje y Cuenta; en la barra móvil, Beneficios y Mi viaje.
+
+Precisión posterior: si el turista abre el QR de un colaborador, después de iniciar sesión se muestra una selección dinámica con el nombre de ese colaborador y sus negocios/beneficios elegidos. No se copia la selección ni se crea una colección administrable por el turista. Sí se registra el vínculo de ingreso para resumen/analítica del backoffice y la visita sigue atribuida al colaborador. La autorización de lectura y medios sigue en el servidor con selección canónica vigente. Flujo confirmado y resumen acotado en [selección contextual](docs/superpowers/specs/2026-10-30-seleccion-qr-contextual.md); su ubicación en la ficha administrativa se adopta como decisión reversible de implementación.
+
+Precisión adicional del usuario: el QR/URL del colaborador debe permanecer estable; editar su selección no genera otro QR y no hay renovación automática. El colaborador decide renovarlo manualmente desde su espacio de trabajo. Consultar, copiar o descargar el QR no debe renovarlo. El usuario confirmó conservar QR del negocio + PIN para validar el consumo; no se modifica E4 ni se permite validar solo con PIN. Implementación según el [plan contextual](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md).
+
+El catálogo general no hereda contenidos privados. La ruta antigua `/recomendaciones` se dirige al catálogo; la entrada QR conserva su contexto propio. El retiro de la sección permanente estaba en implementación según [plan acotado](docs/superpowers/plans/2026-10-30-cliente-solo-catalogo.md), interrumpido para incorporar esta precisión. Este corte nuevo tendrá otra PR en borrador hacia develop, sin merge hasta aprobación del cliente; la PR #16 fue integrada el 31/10.
+
 ## Correcciones aprobadas de la vista del Cliente — 30/10/2026
+
+Histórico: la pantalla de Recomendaciones y su enlace condicional de esta entrega fueron sustituidos por la decisión de catálogo único indicada arriba.
 
 El usuario confirma recomendaciones recibidas en pantalla propia, visible al tener beneficios disponibles; el Cliente no recomienda ni gestiona carpetas. Navegación inferior solo móvil, navbar escritorio y red/lista automática por ancho. Inicio: Hero, Red, En tu recorrido, Próxima parada, Mapa y Pasaporte. Hero con carrusel manual y pasaporte como libreta abierta con iniciales, preservando historial, billetera y barra de visitas. Texto cotidiano sin nombres de roles ni jerga del proyecto. [Antes/después y verificación](docs/verification/13-ajustes-vista-cliente.md). Continúa en [PR #16](https://github.com/SebaaM/llave-extra/pull/16), borrador hacia develop, sin merge hasta aprobación del cliente.
 
