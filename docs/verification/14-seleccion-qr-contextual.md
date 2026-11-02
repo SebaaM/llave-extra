@@ -46,6 +46,7 @@ Los comandos backend usan `docker compose --project-name llaveextra-visual --env
 - La pista mínima por pestaña permite continuar al abrir el QR del negocio sin almacenar credenciales ni selecciones. Una pestaña nueva sin pista requiere abrir de nuevo el QR del colaborador; con almacenamiento denegado se requiere login explícito y el contexto funciona en memoria.
 - Destacar usa la edición de ficha existente con versión y auditoría. Una versión antigua devuelve 409 y requiere recargar; no se añadió un comando de edición ni una respuesta persistida para replay del PATCH.
 - El Cliente puede abandonar explícitamente una recomendación antes del primer consumo y continuar directo. Para volver a atribuir desde esa selección debe abrir el QR otra vez; una referencia rechazada o un comando incierto no se convierten automáticamente en directos.
+- El nombre de presentación admite el nombre configurado aunque falte el apellido, con alternativa neutra solo si está vacío; nunca usa el correo como sustituto. Se aclara la frase ambigua de la especificación para coincidir con el plan. El costo es mostrar un nombre parcial; exigir ambos datos completos requeriría cambiar este criterio y su cobertura.
 - Un POST incierto conserva cuerpo y clave dentro de la SPA. Tras una carga completa no se guardan QR/PIN/cuerpo/clave en el navegador; no se promete recuperación automática del comando entre cargas completas. Las restricciones e idempotencia del servidor permanecen vigentes.
 
 ## Evidencia pendiente

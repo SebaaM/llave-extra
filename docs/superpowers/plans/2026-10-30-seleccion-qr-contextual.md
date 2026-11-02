@@ -63,4 +63,4 @@ Archivos: ProductApp/ReferencePage, nuevo QrSelection, navegación/Layout, Consu
 
 - [ ] Revisión integral y correcciones, suite backend PG/Redis y frontend sobre corte final, esquema/Ruff/drift, QA real sintético disponible sin revelar QR o claves.
 - [ ] Actualizar CONTEXT/AGENTS/ToDo/roadmap/API y evidencia antes/después; reflejar retiros de pruebas de la sección permanente por cobertura del contexto QR.
-- [ ] Publicar en PR #16 en borrador; sin merge y con límites de QA/CI reales.
+- [ ] Publicar una nueva PR de `feature/cliente-qr-destacados` hacia `develop` en borrador; sin merge y con límites de QA/CI reales. PR #16 ya fue integrada externamente el 31/10.
