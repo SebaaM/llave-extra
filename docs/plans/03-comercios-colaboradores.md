@@ -1,3 +1,5 @@
+> Documento de planificación histórica: para arranque, rutas y roles vigentes consultar [README](../../README.md), [sitemap](../sitemap.md) y las correcciones 07 y 08.
+
 # E3 — Prestadores, beneficios y carpetas privadas del Cliente
 
 El Cliente es el usuario principal y conserva el identificador técnico `TOURIST`. Los cuatro roles son Cliente, Colaborador, Prestador y Administrador. La carpeta es la relación administrada `FolderProvider` entre perfil colaborador y prestador. Redimir un QR crea un grant de versión; las vistas del Cliente lo revalidan en cada solicitud con `active_folder_access` y comprueban pertenencia y publicación. Los IDs cruzados devuelven 404, incluyendo medios. Beneficios requieren publicación y vigencia. Corrección vigente del 19/10/2026: el catálogo general sí es público, con interruptor administrativo y solo beneficios publicados y vigentes; esto no expone carpetas ni referencias. Ver `07-catalogo-publico-spec.md` y `docs/api.md`.

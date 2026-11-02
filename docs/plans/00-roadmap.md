@@ -1,3 +1,5 @@
+> Documento de planificación histórica: para arranque, rutas y roles vigentes consultar [README](../../README.md), [sitemap](../sitemap.md) y las correcciones 07 y 08.
+
 # Plan de implementación aprobado
 
 Precisión del 1/11/2026: carrusel del hero alimentado únicamente por beneficios destacados por el Administrador en backoffice, con publicación/vigencia y catálogo público vigente. [Plan incremental](../superpowers/plans/2026-11-01-destacados-hero.md), en la misma rama de mejoras y sin merge.

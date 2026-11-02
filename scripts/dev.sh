@@ -33,7 +33,7 @@ EOF
     fi
   done
   if ! grep -q '^REDIS_URL=' .env; then printf '%s\n' 'REDIS_URL=redis://redis:6379/0' >> .env; fi
-  if ! grep -q '^PUBLIC_APP_URL=' .env; then printf '%s\n' 'PUBLIC_APP_URL=http://localhost:5173' >> .env; fi
+  if ! grep -q '^PUBLIC_APP_URL=' .env; then printf '%s\n' 'PUBLIC_APP_URL=http://localhost:8080' >> .env; fi
   if ! grep -q '^DEFAULT_FROM_EMAIL=' .env; then printf '%s\n' 'DEFAULT_FROM_EMAIL=no-reply@llaveextra.local' >> .env; fi
 }
 
