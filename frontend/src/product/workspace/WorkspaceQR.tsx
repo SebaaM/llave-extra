@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, ApiError, currentSessionVersion, privateImage } from '../api'
 import { safeExternal } from '../catalog'
 import { messageOf } from '../shared'
@@ -7,6 +7,93 @@ import { Feedback } from './UI'
 
 type Credential = { configured?: boolean; qr_url?: string; url?: string }
 export function WorkspaceQR({ kind, credentialPath }: { kind: 'provider' | 'collaborator'; credentialPath: string }) {
+  return kind === 'collaborator' ? <CollaboratorQR key={`${credentialPath}:${currentSessionVersion()}`} path={credentialPath} /> : <ProviderQR kind={kind} credentialPath={credentialPath} />
+}
+
+type CollaboratorCredential = { url: string; version: string }
+type Renewal = { key: string; body: { version: string } }
+type QrPhase = 'reading' | 'ready' | 'confirm' | 'sending' | 'uncertain' | 'read-required' | 'denied'
+
+function CollaboratorQR({ path }: { path: string }) {
+  const [credential, setCredential] = useState<CollaboratorCredential | null>(null)
+  const [phase, setPhase] = useState<QrPhase>('reading')
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const command = useRef<Renewal | null>(null)
+  const busy = useRef(false)
+  const denied = useRef(false)
+  const request = useRef(0)
+  const current = useCurrent()
+  const deny = useCallback(() => {
+    denied.current = true; command.current = null; request.current += 1
+    setCredential(null); setNotice(''); setError(''); setPhase('denied')
+  }, [])
+  const read = useCallback(async () => {
+    if (!current() || command.current || busy.current || denied.current) return
+    const sequence = ++request.current
+    setCredential(null); setError(''); setNotice(''); setPhase('reading')
+    try {
+      const next = await api<CollaboratorCredential>(path)
+      if (!current() || sequence !== request.current) return
+      if (!safeExternal(next.url) || typeof next.version !== 'string' || !next.version) throw new Error('No pudimos consultar la versión vigente del QR.')
+      setCredential(next); setPhase('ready')
+    } catch (failure) {
+      if (!current() || sequence !== request.current) return
+      if (failure instanceof ApiError && (failure.status === 401 || failure.status === 403)) deny()
+      else { setError(messageOf(failure)); setPhase('read-required') }
+    }
+  }, [current, deny, path])
+  useEffect(() => {
+    let alive = true
+    queueMicrotask(() => { if (alive) void read() })
+    const focus = () => { void read() }
+    window.addEventListener('focus', focus)
+    return () => { alive = false; request.current += 1; window.removeEventListener('focus', focus) }
+  }, [read])
+  const send = async (pending: Renewal) => {
+    if (!current() || busy.current || denied.current) return
+    busy.current = true; command.current = pending; request.current += 1
+    setCredential(null); setNotice(''); setError(''); setPhase('sending')
+    try {
+      await api(`${path}renew/`, { method: 'POST', body: pending.body, idempotencyKey: pending.key })
+      if (!current()) return
+      command.current = null; busy.current = false
+      await read()
+    } catch (failure) {
+      if (!current()) return
+      if (failure instanceof ApiError && (failure.status === 401 || failure.status === 403)) deny()
+      else if (failure instanceof ApiError && failure.status < 500 && failure.status !== 408 && failure.status !== 429) {
+        command.current = null
+        setError(`${messageOf(failure)} Volvé a consultar el QR vigente antes de una nueva renovación.`); setPhase('read-required')
+      } else {
+        setError('No pudimos confirmar la renovación. Reintentá la operación anterior para conocer el resultado.'); setPhase('uncertain')
+      }
+    } finally { if (current()) busy.current = false }
+  }
+  if (phase === 'denied') return <section className="workspace-panel"><Feedback error="El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización." /><button className="button button-dark" onClick={() => { denied.current = false; void read() }}>Actualizar autorización</button></section>
+  const visible = credential && (phase === 'ready' || phase === 'confirm')
+  return <div className="workspace-qr-layout"><section className="workspace-panel workspace-qr-panel">
+    <span className="workspace-tag">TU CARPETA PRIVADA</span><h2>Una puerta a tus recomendaciones</h2>
+    <p>Compartí tu QR para que los clientes abran la selección de beneficios de tu carpeta.</p>
+    {visible && <QRImage key={credential.version} path="/api/v1/collaborator/qr.png" kind="collaborator" onDenied={deny} />}
+    {phase === 'reading' && <p role="status">Actualizando QR…</p>}
+    {phase === 'sending' && <p role="status">Renovando QR…</p>}
+    <Feedback error={error} notice={notice} />
+    {phase === 'uncertain' && <button className="button button-dark" onClick={() => { if (command.current) void send(command.current) }}>Reintentar renovación anterior</button>}
+    {(phase === 'ready' || phase === 'read-required') && <div className="workspace-actions">
+      {credential && <button className="button button-ghost" onClick={() => {
+        const sequence = request.current
+        void Promise.resolve().then(() => { if (current() && sequence === request.current && !command.current) return navigator.clipboard.writeText(credential.url) }).then(() => { if (current() && sequence === request.current && !command.current) setNotice('Enlace de referencia copiado.') }).catch(() => { if (current() && sequence === request.current && !command.current) setNotice('No pudimos copiar el enlace. Podés descargar el QR.') })
+      }}>Copiar enlace</button>}
+      <button className="button button-ghost" onClick={() => { void read() }}>Volver a consultar</button>
+      {credential && <button className="button button-orange" onClick={() => setPhase('confirm')}>Renovar QR</button>}
+    </div>}
+    {phase === 'confirm' && <div role="group" aria-labelledby="renew-qr-title"><h3 id="renew-qr-title">¿Renovar tu QR?</h3><p>El QR anterior dejará de funcionar. Tendrás que actualizar tu material impreso y los enlaces compartidos.</p><div className="workspace-actions"><button className="button button-ghost" onClick={() => setPhase('ready')}>Cancelar</button><button className="button button-orange" onClick={() => { if (credential && !command.current && !busy.current) void send({ key: crypto.randomUUID(), body: { version: credential.version } }) }}>Confirmar renovación</button></div></div>}
+    <p className="workspace-muted">Consultar, copiar o descargar conserva el mismo QR. Renovalo solo cuando quieras reemplazarlo.</p>
+  </section><section className="workspace-panel workspace-qr-guide"><h2>Compartí tu selección</h2><ol><li>Elegí beneficios en el catálogo.</li><li>Descargá tu QR personal.</li><li>Invitá a los clientes a escanearlo e ingresar.</li></ol><p>El QR abre recomendaciones; no acredita un consumo.</p></section></div>
+}
+
+function ProviderQR({ kind, credentialPath }: { kind: 'provider' | 'collaborator'; credentialPath: string }) {
   const [notice, setNotice] = useState('')
   const [denied, setDenied] = useState(false)
   const deny = useCallback(() => setDenied(true), [])
