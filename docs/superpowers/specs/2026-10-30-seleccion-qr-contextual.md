@@ -8,7 +8,7 @@ El catálogo sigue siendo la vista habitual y no existe una sección permanente 
 
 La selección no se copia a la cuenta ni es administrable por el turista. Se consulta vigente en el servidor y el contexto del QR activo vive en memoria, con una pista mínima por pestaña (identificador de cuenta y colaborador, sin nombre, QR, URL ni secretos) para sobrevivir la apertura del QR del negocio. Al cambiar de cuenta/cerrar sesión se limpia; un QR nuevo sustituye el contexto anterior. La ruta `/referencia` conserva la entrada y el contexto QR; `/beneficios` sigue siendo el catálogo normal. No hay colección de recomendaciones guardadas ni selector de accesos históricos en la cuenta.
 
-El nombre de presentación usa nombre/apellido configurados del colaborador, con una alternativa neutra cuando no están completos. Nunca se usa su correo como nombre público ni se exponen datos de su cuenta. Las tarjetas hablan de negocios y beneficios, sin jerga de roles del proyecto.
+El nombre de presentación usa `get_full_name().strip()` sobre nombre/apellido configurados del colaborador: un nombre parcial no vacío es válido aunque falte el nombre o el apellido; la alternativa neutra se usa solo cuando ambos están vacíos tras quitar espacios. Nunca se usa su correo como nombre público ni se exponen datos de su cuenta. Las tarjetas hablan de negocios y beneficios, sin jerga de roles del proyecto.
 
 ## QR estable y renovación manual
 

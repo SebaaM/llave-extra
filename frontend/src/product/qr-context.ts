@@ -34,8 +34,9 @@ export function selectionPageNumber(value: string | null, collaboratorId: string
   try {
     const url = new URL(value, window.location.origin)
     if (url.origin !== window.location.origin || url.username || url.password || url.hash || url.pathname !== `/api/v1/folders/${encodeURIComponent(collaboratorId)}/benefits/`) return null
-    if ([...url.searchParams.keys()].some(key => !['page', 'page_size'].includes(key)) || url.searchParams.getAll('page').length !== 1 || url.searchParams.getAll('page_size').length > 1) return null
-    const raw = url.searchParams.get('page') ?? ''
+    if ([...url.searchParams.keys()].some(key => !['page', 'page_size'].includes(key)) || url.searchParams.getAll('page').length > 1 || url.searchParams.getAll('page_size').length > 1) return null
+    // DRF omite page cuando el enlace anterior vuelve a la primera página.
+    const raw = url.searchParams.get('page') ?? '1'
     const page = Number(raw)
     return /^[1-9][0-9]*$/.test(raw) && Number.isSafeInteger(page) ? page : null
   } catch { return null }

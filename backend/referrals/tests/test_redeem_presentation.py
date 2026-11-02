@@ -7,7 +7,14 @@ from referrals.models import CollaboratorProfile, FolderAccess
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("first,last,expected", [("Ana", "Pérez", "Ana Pérez"), ("  ", "  ", "tu guía local")])
+@pytest.mark.parametrize("first,last,expected", [
+    ("Ana", "Pérez", "Ana Pérez"),
+    ("Ana", "", "Ana"),
+    ("", "Pérez", "Pérez"),
+    ("  Ana  ", "", "Ana"),
+    ("", "  Pérez  ", "Pérez"),
+    ("  ", "  ", "tu guía local"),
+])
 def test_redeem_exposes_safe_collaborator_name_without_email(first, last, expected):
     owner = User.objects.create_user("private-name@example.test", role=User.Role.COLLABORATOR, first_name=first, last_name=last)
     profile = CollaboratorProfile.objects.create(user=owner, enabled=True)

@@ -139,13 +139,109 @@ describe('selección contextual del QR', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
     expect(screen.queryByText(benefit.title)).toBeNull()
     await waitFor(() => expect(finish).toBeTypeOf('function'))
-    await act(async () => finish(json(page({ count: 25, previous: '/api/v1/folders/guide-a/benefits/?page=1&page_size=24', results: [{ ...benefit, id: 'last', title: 'Última propuesta' }] }))))
+    await act(async () => finish(json(page({ count: 25, previous: '/api/v1/folders/guide-a/benefits/?page_size=24', results: [{ ...benefit, id: 'last', title: 'Última propuesta' }] }))))
     await screen.findByRole('heading', { name: 'Última propuesta' })
     expect(screen.getByText('Página 2 · 25 beneficios')).toBeTruthy()
     expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }))
     fireEvent.click(screen.getByRole('button', { name: '← Anterior' }))
     await screen.findByRole('heading', { name: benefit.title })
     expect(fetcher.mock.calls.filter(([url]) => /folders.*benefits/.test(String(url)))).toHaveLength(3)
+  })
+
+  it.each([false, true])('recupera una última página retirada con página 1 vigente (vacía: %s)', async empty => {
+    let removed = false, finishFirst!: (value: Response) => void
+    const { fetcher } = await mount('/referencia', 'synthetic-guide-qr', url => {
+      if (!url.includes('/folders/guide-a/benefits/')) return
+      if (new URL(url).searchParams.get('page') === '2') return removed ? json({}, 404) : json(page({ count: 25, previous: '/api/v1/folders/guide-a/benefits/?page_size=24', results: [{ ...benefit, title: 'Última propuesta' }] }))
+      return removed ? new Promise(resolve => { finishFirst = resolve }) : json(page({ count: 25, next: '/api/v1/folders/guide-a/benefits/?page=2&page_size=24' }))
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await screen.findByRole('heading', { name: 'Última propuesta' })
+    removed = true; fireEvent(window, new Event('focus'))
+    await waitFor(() => expect(finishFirst).toBeTypeOf('function'))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText('Última propuesta')).toBeNull()
+    expect(sessionStorage.getItem(hintKey)).toBe(JSON.stringify({ accountId: tourist.id, collaboratorId: collaborator.id }))
+    fireEvent(window, new Event('focus'))
+    await act(async () => finishFirst(json(page(empty ? { count: 0, results: [] } : {}))))
+    await screen.findByText(`Página 1 · ${empty ? 0 : 1} beneficios`)
+    if (empty) await screen.findByText('Por ahora no hay beneficios disponibles en esta selección.')
+    else expect(screen.getByRole('heading', { name: benefit.title })).toBeTruthy()
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/folders/guide-a/benefits/'))).toHaveLength(4)
+    expect(fetcher.mock.calls.some(([url]) => /\/catalog\/|\/api\/v1\/consumptions\/$/.test(String(url)))).toBe(false)
+    expect(sessionStorage.getItem(hintKey)).not.toBeNull()
+  })
+
+  it.each([401, 403, 404])('bloquea una revocación %s en página 1 tras un único rescate de página 2', async status => {
+    let revoked = false
+    const { fetcher } = await mount('/referencia', 'synthetic-guide-qr', url => {
+      if (revoked && status === 401 && url.endsWith('/auth/refresh/')) return json({}, 401)
+      if (!url.includes('/folders/guide-a/benefits/')) return
+      if (new URL(url).searchParams.get('page') === '2') return json({}, 404)
+      return revoked ? json({}, status) : json(page({ count: 25, next: '/api/v1/folders/guide-a/benefits/?page=2' }))
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    revoked = true; fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await screen.findByText(/Esta recomendación ya no está disponible/)
+    expect(screen.queryByText(benefit.title)).toBeNull()
+    expect(sessionStorage.getItem(hintKey)).toBeNull()
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/folders/guide-a/benefits/')).map(([url]) => new URL(String(url)).searchParams.get('page'))).toEqual(['1', '2', '1'])
+    expect(fetcher.mock.calls.some(([url]) => /\/catalog\/|\/api\/v1\/consumptions\/$/.test(String(url)))).toBe(false)
+  })
+
+  it.each(['QR', 'cuenta'])('descarta página 1 de recuperación tardía tras cambiar de %s', async change => {
+    let reads = 0, accountB = false, finishOld!: (value: Response) => void, oldSignal: AbortSignal | null | undefined
+    const { intents, fetcher } = await mount('/referencia', 'synthetic-guide-qr', (url, init) => {
+      if (url.endsWith('/auth/login/')) { accountB = true; return json({ access: 'access-b' }) }
+      if (url.endsWith('/auth/me/')) return json(accountB ? { ...tourist, id: 805, email: 'b@example.test' } : tourist)
+      if (url.endsWith('/referrals/redeem/') && JSON.parse(String(init?.body)).token === 'new-qr') return json({ collaborator_id: 'guide-b', collaborator_name: 'Beatriz' })
+      if (url.includes('/folders/guide-b/benefits/')) return json(page({ collaborator: { id: 'guide-b', name: 'Beatriz' }, results: [] }))
+      if (!url.includes('/folders/guide-a/benefits/')) return
+      if (++reads === 1) return json(page({ count: 25, next: '/api/v1/folders/guide-a/benefits/?page=2' }))
+      if (new URL(url).searchParams.get('page') === '2') return json({}, 404)
+      oldSignal = init?.signal
+      return new Promise(resolve => { finishOld = resolve })
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await waitFor(() => expect(finishOld).toBeTypeOf('function'))
+    if (change === 'QR') {
+      act(() => intents.setReferralToken('new-qr'))
+      await screen.findByRole('heading', { name: 'Recomendaciones de Beatriz' })
+    } else {
+      await act(async () => { window.history.pushState({}, '', '/ingresar'); window.dispatchEvent(new PopStateEvent('popstate')) })
+      fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'b@example.test' } })
+      fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+      await screen.findByRole('heading', { name: 'Tu pasaporte local.' })
+    }
+    expect(oldSignal?.aborted).toBe(true)
+    await act(async () => finishOld(json(page({ results: [{ ...benefit, title: 'Respuesta anterior' }] }))))
+    expect(screen.queryByText('Respuesta anterior')).toBeNull()
+    expect(sessionStorage.getItem(hintKey)).toBe(change === 'QR' ? JSON.stringify({ accountId: tourist.id, collaboratorId: 'guide-b' }) : null)
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/folders/guide-a/benefits/'))).toHaveLength(3)
+  })
+
+  it('no inicia recuperación por un 404 tardío de página 2 tras un QR nuevo', async () => {
+    let finishOld!: (value: Response) => void
+    const { intents, fetcher } = await mount('/referencia', 'synthetic-guide-qr', (url, init) => {
+      if (url.endsWith('/referrals/redeem/') && JSON.parse(String(init?.body)).token === 'new-qr') return json({ collaborator_id: 'guide-b', collaborator_name: 'Beatriz' })
+      if (url.includes('/folders/guide-b/benefits/')) return json(page({ collaborator: { id: 'guide-b', name: 'Beatriz' }, results: [] }))
+      if (!url.includes('/folders/guide-a/benefits/')) return
+      if (new URL(url).searchParams.get('page') === '2') return new Promise(resolve => { finishOld = resolve })
+      return json(page({ count: 25, next: '/api/v1/folders/guide-a/benefits/?page=2' }))
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await waitFor(() => expect(finishOld).toBeTypeOf('function'))
+    act(() => intents.setReferralToken('new-qr'))
+    await screen.findByRole('heading', { name: 'Recomendaciones de Beatriz' })
+    await act(async () => finishOld(json({}, 404)))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Recomendaciones de Beatriz' })).toBeTruthy()
+    expect(fetcher.mock.calls.filter(([url]) => String(url).includes('/folders/guide-a/benefits/'))).toHaveLength(2)
+    expect(sessionStorage.getItem(hintKey)).toBe(JSON.stringify({ accountId: tourist.id, collaboratorId: 'guide-b' }))
   })
 
   it.each([403, 404, 503])('retira contenido en revalidación %s y permite recuperación autoritativa', async status => {

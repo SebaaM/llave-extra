@@ -29,9 +29,15 @@ describe('límites del contexto QR', () => {
     '/api/v1/catalog/benefits/?page=2', '/api/v1/folders/guide/benefits/?page=2&token=secret',
     '/api/v1/folders/guide/benefits/?page=2&page=3', '/api/v1/folders/guide/benefits/?page=0',
     '/api/v1/folders/guide/benefits/?page=-1', '/api/v1/folders/guide/benefits/?page=2#secret',
+    '/api/v1/folders/guide/benefits/?page=', '/api/v1/folders/guide/benefits/?page=1.5',
+    '/api/v1/folders/guide/benefits/?page=9007199254740992', '/api/v1/folders/guide/benefits/?page_size=24&page_size=24',
+    '/api/v1/folders/guide/benefits/?token=secret', '/api/v1/folders/guide/benefits/#secret',
+    `${window.location.origin.replace('://', '://user:password@')}/api/v1/folders/guide/benefits/`,
   ])('no sigue una página fuera de la selección: %s', url => { expect(selectionPageNumber(url, 'guide')).toBeNull() })
   it('acepta paginación relativa o absoluta del mismo origen', () => {
     expect(selectionPageNumber('/api/v1/folders/guide/benefits/?page=2&page_size=24', 'guide')).toBe(2)
     expect(selectionPageNumber(`${window.location.origin}/api/v1/folders/guide/benefits/?page=3`, 'guide')).toBe(3)
+    expect(selectionPageNumber('/api/v1/folders/guide/benefits/?page_size=24', 'guide')).toBe(1)
+    expect(selectionPageNumber(`${window.location.origin}/api/v1/folders/guide/benefits/`, 'guide')).toBe(1)
   })
 })

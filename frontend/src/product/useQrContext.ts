@@ -45,17 +45,30 @@ export function useQrContext(user: User | null, path: string) {
     const current = () => !abort.signal.aborted && sequence === request.current && account === owner.current && version === currentSessionVersion()
     const previous = stateRef.current
     publish({ ...previous, owner: account, version, revision: previous.revision + 1, status: 'loading', collaborator: { id, name: previous.collaborator?.id === id ? previous.collaborator.name : '' }, page: null, pageNumber, error: '', missing })
-    const promise = api<SelectionPage>(`/api/v1/folders/${encodeURIComponent(id)}/benefits/?page=${pageNumber}&page_size=24`, { signal: abort.signal }).then(result => {
+    const read = (page: number) => api<SelectionPage>(`/api/v1/folders/${encodeURIComponent(id)}/benefits/?page=${page}&page_size=24`, { signal: abort.signal })
+    const promise = (async () => {
+      let resolvedPage = pageNumber
+      let result: SelectionPage
+      try { result = await read(pageNumber) }
+      catch (error) {
+        if (!current()) return
+        if (!(error instanceof ApiError) || error.status !== 404 || pageNumber <= 1) throw error
+        // Una página retirada no prueba revocación. Revalidar la primera una sola
+        // vez, con el mismo perfil, sesión, cancelación y fence de la intención.
+        resolvedPage = 1
+        publish({ ...stateRef.current, pageNumber: resolvedPage })
+        result = await read(resolvedPage)
+      }
       if (!current()) return
       if (result.collaborator?.id !== id || !Array.isArray(result.results) || !Number.isSafeInteger(result.count) || result.count < 0) throw new Error('La selección recibida no es válida.')
       const collaborator = { id, name: result.collaborator.name?.trim() || 'tu guía local' }
       writeQrHint(account, id)
-      publish({ ...stateRef.current, status: 'ready', collaborator, page: { ...result, collaborator }, error: '' })
-    }).catch(error => {
+      publish({ ...stateRef.current, status: 'ready', collaborator, page: { ...result, collaborator }, pageNumber: resolvedPage, error: '' })
+    })().catch(error => {
       if (!current()) return
       clearQrHint()
       const revoked = error instanceof ApiError && [401, 403, 404].includes(error.status)
-      publish({ ...stateRef.current, status: revoked ? 'blocked' : 'error', page: null, error: revoked ? denied : messageOf(error) })
+      publish({ ...stateRef.current, status: revoked ? 'blocked' : 'error', page: null, missing: revoked ? [] : stateRef.current.missing, error: revoked ? denied : messageOf(error) })
     }).finally(() => { if (current()) flight.current = null })
     flight.current = { key, promise }
     return promise
