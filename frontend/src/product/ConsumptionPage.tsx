@@ -13,9 +13,13 @@ export function ConsumePage({ context, command, onComplete, onReferenceDenied, o
   const [pin, setPin] = useState(() => visit.pending?.body.pin ?? '')
   const [error, setError] = useState('')
   const frozen = !!visit.pending
-  const blocked = context.status !== 'none' && context.status !== 'ready'
+  const folderId = context.status === 'ready' ? context.collaborator?.id : undefined
+  const boundBody = visit.pending?.body ?? visit.correction
+  const sameIntent = !boundBody || (boundBody.qr_token === consumptionToken && boundBody.folder_id === folderId)
+  const correctionDrift = !!visit.correction && !sameIntent
+  const blocked = (context.status !== 'none' && context.status !== 'ready') || correctionDrift
   const displayedPin = visit.pending?.body.pin ?? pin
-  const qr = visit.pending?.body.qr_token ?? consumptionToken
+  const qr = boundBody?.qr_token ?? consumptionToken
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (visit.busy || visit.result || (blocked && !visit.uncertain)) return
@@ -42,7 +46,7 @@ export function ConsumePage({ context, command, onComplete, onReferenceDenied, o
         <div className="qr-symbol" aria-hidden="true">▦</div><h2>Falta el QR del negocio</h2><p>Volvé a escanear el QR para validar visitas que te muestra el negocio para continuar.</p><ProductLink href="/beneficios">Volver a beneficios</ProductLink>
       </> : <>
         <div className="qr-symbol" aria-hidden="true">▦</div><h2>Validá tu visita</h2>
-        {blocked ? <p role={context.error ? 'alert' : 'status'}>{context.error || 'Comprobando la recomendación antes de validar tu visita…'}</p> : context.collaborator ? <>
+        {blocked ? <p role={context.error || correctionDrift ? 'alert' : 'status'}>{context.error || (correctionDrift ? 'El QR o la recomendación cambió. Abrí de nuevo el QR para iniciar otra visita.' : 'Comprobando la recomendación antes de validar tu visita…')}</p> : context.collaborator ? <>
           <p>Visita recomendada por {context.collaborator.name}</p>
           {!frozen && !visit.attempted && <button type="button" className="button button-ghost" onClick={onDirect}>Continuar sin esta recomendación</button>}
         </> : <p>Lo descubrí por mi cuenta</p>}
@@ -50,7 +54,7 @@ export function ConsumePage({ context, command, onComplete, onReferenceDenied, o
         <label htmlFor="provider-pin">PIN del negocio</label><input id="provider-pin" type="password" inputMode="numeric" pattern="[0-9]{6,12}" minLength={6} maxLength={12} autoComplete="off" value={displayedPin} disabled={visit.busy || frozen || blocked} onChange={event => { if (!frozen && !visit.busy) setPin(event.target.value.replace(/\D/g, '').slice(0, 12)) }} required aria-describedby="pin-help" />
         <p id="pin-help" className="form-help">El PIN solo se envía para validar este consumo y no se guarda en el navegador.</p>
         {(error || visit.error) && <p className="form-error" role="alert">{error || visit.error}</p>}
-        {!blocked && visit.errorStatus === 400 && !visit.hadUncertainty && !visit.busy && <button type="button" className="button button-ghost" onClick={visit.correct}>Corregir PIN</button>}
+        {!blocked && sameIntent && visit.errorStatus === 400 && !visit.hadUncertainty && !visit.busy && <button type="button" className="button button-ghost" onClick={visit.correct}>Corregir PIN</button>}
         {frozen && <p className="form-help">{visit.uncertain ? 'La respuesta no se confirmó. Reintentá con los mismos datos para recuperar el resultado; otro QR no modifica este envío.' : 'Los datos enviados se conservan. Si la recomendación fue rechazada, abrí un nuevo QR vigente para iniciar otra visita.'}</p>}
         <button className="button button-orange form-submit" disabled={visit.busy || (blocked && !visit.uncertain)}>{visit.busy ? 'Validando…' : 'Validar visita'}</button>
       </>}

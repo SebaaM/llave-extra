@@ -1,10 +1,11 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ConsumePage } from './ConsumptionPage'
 import { api, ApiError, invalidatePrivateState } from './api'
 import { setConsumptionToken } from './qr-intent'
 import type { QrContext } from './qr-context'
+import { useVisitCommand } from './useVisitCommand'
 
 vi.mock('./api', async importOriginal => ({ ...await importOriginal<typeof import('./api')>(), api: vi.fn() }))
 const request = vi.mocked(api)
@@ -81,6 +82,37 @@ describe('validación de visitas desde el contexto actual', () => {
     submit(); await screen.findByRole('heading', { name: 'Visita verificada' })
     expect(request.mock.calls[1][1]?.body).toEqual({ qr_token: 'synthetic-qr', pin: '000124', folder_id: 'folder-a' })
     expect(request.mock.calls[1][1]?.idempotencyKey).not.toBe(first?.idempotencyKey)
+  })
+  it.each(['qr', 'reference', 'both'])('no ofrece corregir el PIN de A con la intención B recibida durante el POST: %s', async changed => {
+    let reject!: (reason: unknown) => void
+    request.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail })).mockResolvedValueOnce(result)
+    const view = setup(referred)
+    fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
+    submit()
+    const first = request.mock.calls[0][1]
+    if (changed !== 'reference') setConsumptionToken('business-qr-b')
+    view.rerender(<ConsumePage {...view.props} context={changed !== 'qr' ? { ...referred, collaborator: { id: 'guide-b', name: 'Beatriz' } } : referred} />)
+    await act(async () => reject(new ApiError(400, 'QR o PIN inválido')))
+    expect(screen.queryByRole('button', { name: 'Corregir PIN' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Continuar sin esta recomendación' })).toBeNull()
+    submit(); await screen.findByRole('heading', { name: 'Visita verificada' })
+    expect(request.mock.calls[1][1]).toEqual(first)
+    expect(first?.body).toEqual({ qr_token: 'synthetic-qr', pin: '000123', folder_id: 'folder-a' })
+  })
+  it('la corrección en el comando solo cambia PIN y clave aunque el llamador aporte otro QR y referencia', async () => {
+    let reject!: (reason: unknown) => void
+    request.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail })).mockResolvedValueOnce(result)
+    const hook = renderHook(useVisitCommand)
+    const bodyA = { qr_token: 'business-qr-a', pin: '000123', folder_id: 'guide-a' }
+    let pending!: ReturnType<typeof hook.result.current.submit>
+    act(() => { pending = hook.result.current.submit(bodyA) })
+    act(() => { setConsumptionToken('business-qr-b'); hook.result.current.newIntent() })
+    await act(async () => { reject(new ApiError(400, 'QR o PIN inválido')); await pending })
+    act(() => hook.result.current.correct())
+    await act(async () => { await hook.result.current.submit({ qr_token: 'business-qr-b', pin: '000124', folder_id: 'guide-b' }) })
+    expect(request.mock.calls[0][1]?.body).toEqual(bodyA)
+    expect(request.mock.calls[1][1]?.body).toEqual({ ...bodyA, pin: '000124' })
+    expect(request.mock.calls[1][1]?.idempotencyKey).not.toBe(request.mock.calls[0][1]?.idempotencyKey)
   })
   it('no ofrece corregir PIN después de timeout seguido de400 ni borra su comando', async () => {
     request.mockRejectedValueOnce(new DOMException('Timeout', 'TimeoutError')).mockRejectedValueOnce(new ApiError(400, 'QR o PIN inválido')).mockResolvedValueOnce(result)

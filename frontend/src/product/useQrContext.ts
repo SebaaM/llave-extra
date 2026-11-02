@@ -146,6 +146,7 @@ export function useQrContext(user: User | null, path: string) {
     if (intent.current) void redeem()
     else if (stateRef.current.collaborator) void load(stateRef.current.collaborator.id, stateRef.current.pageNumber)
   }, [redeem, load])
+  const hasPendingIntent = useCallback(() => !!intent.current, [])
 
   const visible = state.owner === accountId && state.version === version ? state : { ...empty(accountId, state.revision), status: 'pending' as const }
   const guardedBlock = useCallback(() => {
@@ -154,7 +155,7 @@ export function useQrContext(user: User | null, path: string) {
   const guardedMissing = useCallback((media: string) => {
     if (stateRef.current.revision === state.revision && state.owner === owner.current && state.version === currentSessionVersion()) missingMedia(media)
   }, [missingMedia, state.revision, state.owner, state.version])
-  return { state: visible, draftToken, changeToken, redeem, clear, block: guardedBlock, retry, loadPage: (page: number) => { const id = stateRef.current.collaborator?.id; if (id) void load(id, page) }, missingMedia: guardedMissing }
+  return { state: visible, draftToken, hasPendingIntent, changeToken, redeem, clear, block: guardedBlock, retry, loadPage: (page: number) => { const id = stateRef.current.collaborator?.id; if (id) void load(id, page) }, missingMedia: guardedMissing }
 }
 
 export type QrCoordinator = ReturnType<typeof useQrContext>

@@ -294,6 +294,33 @@ describe('selección contextual del QR', () => {
     expect(JSON.parse(String(redemptions[0][1]?.body))).toEqual({ token: 'pending-guide-qr' })
   })
 
+  it('muestra la selección al completar QR → registro → login sin descubrir accesos históricos', async () => {
+    let authenticated = false
+    const { fetcher } = await mount('/referencia', 'registration-guide-qr', url => {
+      if (url.endsWith('/auth/refresh/') && !authenticated) return json({}, 401)
+      if (url.endsWith('/auth/register/')) return json({ ...tourist, email_verified: false }, 201)
+      if (url.endsWith('/auth/login/')) { authenticated = true; return json({ access: 'registered-session' }) }
+    })
+    fireEvent.click(await screen.findByRole('link', { name: 'Crear cuenta con este QR' }))
+    await screen.findByRole('heading', { name: 'Creá tu cuenta' })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: tourist.email } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear mi cuenta' }))
+    await screen.findByRole('heading', { name: 'Qué bueno verte' })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: tourist.email } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await screen.findByRole('heading', { name: 'Recomendaciones de Ana del Sur' })
+    expect(window.location.pathname).toBe('/referencia')
+    expect(screen.getByRole('heading', { name: benefit.title })).toBeTruthy()
+    expect(fetcher.mock.calls.some(([url]) => String(url).includes('/me/folders/'))).toBe(false)
+    const register = fetcher.mock.calls.find(([url]) => String(url).includes('/auth/register/'))
+    expect(JSON.parse(String(register?.[1]?.body)).referral_token).toBe('registration-guide-qr')
+    const redemptions = fetcher.mock.calls.filter(([url]) => String(url).includes('/referrals/redeem/'))
+    expect(redemptions).toHaveLength(1)
+    expect(JSON.parse(String(redemptions[0][1]?.body))).toEqual({ token: 'registration-guide-qr' })
+  })
+
   it('cambiar de cuenta no restaura la selección ni una lectura privada tardía de A', async () => {
     let accountB = false, reads = 0, finishOld!: (value: Response) => void
     const { fetcher, intents } = await mount('/referencia', 'guide-a-qr', url => {

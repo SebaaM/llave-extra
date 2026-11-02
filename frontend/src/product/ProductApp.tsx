@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, AuthCoordinationError, api, currentSessionVersion, hasPendingLogout, invalidatePrivateState, restoreSession, signOut, verifyEmailToken } from './api'
 import type { Consumption, Progress, User, Wallet } from './api'
 import { messageOf } from './shared'
-import { consumptionToken, referralToken, captureQrIntent, verifyToken, setVerifyToken } from './qr-intent'
+import { consumptionToken, captureQrIntent, verifyToken, setVerifyToken } from './qr-intent'
 import { ProductShell, ButtonLink } from './Layout'
 import { Auth } from './PublicPages'
 import { AccountPage } from './AccountPage'
@@ -231,7 +231,7 @@ export default function ProductApp() {
       })
     }
     const target = current.role === 'TOURIST'
-      ? consumptionToken ? '/consumo' : referralToken ? '/referencia' : '/mi-viaje'
+      ? consumptionToken ? '/consumo' : qr.hasPendingIntent() ? '/referencia' : '/mi-viaje'
       : workspaceHome(current)
     window.history.pushState({}, '', target)
     locationRef.current = target
@@ -258,7 +258,7 @@ export default function ProductApp() {
       return <Auth
         key={path}
         mode={path === '/registro' ? 'register' : path === '/ingresar' ? 'login' : path === '/recuperar' ? 'forgot' : 'reset'}
-        referral={referralToken}
+        referral={qr.draftToken || null}
         onLogin={onLogin}
         onLoginStart={() => clearAccount(true)}
         onRegistered={email => {

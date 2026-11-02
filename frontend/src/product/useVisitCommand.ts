@@ -5,8 +5,8 @@ import { consumptionToken, setConsumptionToken } from './qr-intent'
 import { messageOf } from './shared'
 
 type Body = { qr_token: string; pin: string; folder_id?: string }
-type VisitState = { pending: { body: Body; key: string } | null; result: ConsumptionResult | null; busy: boolean; uncertain: boolean; hadUncertainty: boolean; attempted: boolean; errorStatus: number | null; error: string }
-const empty = (): VisitState => ({ pending: null, result: null, busy: false, uncertain: false, hadUncertainty: false, attempted: false, errorStatus: null, error: '' })
+type VisitState = { pending: { body: Body; key: string } | null; correction: Body | null; result: ConsumptionResult | null; busy: boolean; uncertain: boolean; hadUncertainty: boolean; attempted: boolean; errorStatus: number | null; error: string }
+const empty = (): VisitState => ({ pending: null, correction: null, result: null, busy: false, uncertain: false, hadUncertainty: false, attempted: false, errorStatus: null, error: '' })
 
 // Vive con ProductApp: cambiar de ruta/QR no pierde un POST incierto dentro de la SPA.
 export function useVisitCommand() {
@@ -23,15 +23,17 @@ export function useVisitCommand() {
   }, [reset])
   const correct = useCallback(() => {
     const current = snapshot.current
-    if (!current.busy && !current.hadUncertainty && current.errorStatus === 400) {
+    if (current.pending && !current.busy && !current.hadUncertainty && current.errorStatus === 400) {
       generation.current += 1
-      publish({ ...empty(), attempted: true })
+      publish({ ...empty(), attempted: true, correction: { ...current.pending.body } })
     }
   }, [publish])
   const submit = useCallback(async (body: Body): Promise<{ completed: boolean; denied: boolean }> => {
     if (snapshot.current.busy || snapshot.current.result) return { completed: false, denied: false }
     const version = currentSessionVersion(), request = generation.current
-    const pending = snapshot.current.pending ?? { body: { ...body }, key: crypto.randomUUID() }
+    const correction = snapshot.current.correction
+    // Corregir PIN conserva el negocio y la referencia del intento autorizado.
+    const pending = snapshot.current.pending ?? { body: correction ? { ...correction, pin: body.pin } : { ...body }, key: crypto.randomUUID() }
     publish({ ...snapshot.current, pending, attempted: true, busy: true, error: '' })
     const current = () => mounted.current && version === currentSessionVersion() && request === generation.current
     try {
