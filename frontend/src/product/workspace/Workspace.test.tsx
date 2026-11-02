@@ -332,7 +332,7 @@ describe('QR privado y PIN', () => {
     const copy = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } })
     mount('COLLABORATOR', '/colaborador/qr', path => {
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
     })
     const button = await screen.findByRole('button', { name: 'Copiar enlace' })
@@ -342,9 +342,9 @@ describe('QR privado y PIN', () => {
     expect(copy).toHaveBeenCalledTimes(1)
   })
 
-  it('consulta el QR solo en su sección, lo renueva al foco y revoca cada Blob', async () => {
+  it('consulta el QR solo en su sección, lo vuelve a consultar al foco y revoca cada Blob', async () => {
     const { calls } = mount('COLLABORATOR', '/colaborador/qr', path => {
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
     })
     await screen.findByRole('img', { name: 'QR privado de recomendaciones' })
@@ -359,7 +359,7 @@ describe('QR privado y PIN', () => {
   it('descarta el Blob QR que termina después del logout', async () => {
     let finish!: (response: Response) => void
     mount('COLLABORATOR', '/colaborador/qr', path => {
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Promise<Response>(resolve => { finish = resolve })
       if (path.endsWith('/auth/logout/')) return json(null, 204)
     })
@@ -373,7 +373,7 @@ describe('QR privado y PIN', () => {
   it('revoca el Blob QR tardío después de salir de la sección con la misma sesión', async () => {
     let finish!: (response: Response) => void
     mount('COLLABORATOR', '/colaborador/qr', path => {
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Promise<Response>(resolve => { finish = resolve })
     })
     await waitFor(() => expect(finish).toBeTypeOf('function'))
@@ -386,7 +386,7 @@ describe('QR privado y PIN', () => {
 
   it('retira el enlace y QR si el PNG responde 403', async () => {
     mount('COLLABORATOR', '/colaborador/qr', path => {
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return json({ detail: 'Deshabilitado' }, 403)
     })
     await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
@@ -397,7 +397,7 @@ describe('QR privado y PIN', () => {
     let refreshes = 0
     mount('COLLABORATOR', '/colaborador/qr', path => {
       if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
-      if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return json({ detail: 'Sesión vencida' }, 401)
     })
     await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')

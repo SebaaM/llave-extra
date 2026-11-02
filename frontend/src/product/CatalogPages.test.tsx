@@ -20,6 +20,33 @@ beforeEach(() => {
 afterEach(() => { cleanup(); setAccessToken(null); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('catálogo público', () => {
+  it.each(['resultados', 'vacío', 'error', 'apagado'])('incluye el recorrido después de los resultados en estado %s, con salto nativo y tienda', async state => {
+    const keyboard = userEvent.setup()
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/config/')) return json({ enabled: state !== 'apagado' })
+      if (url.endsWith('/categories/')) return json({ results: [] })
+      if (state === 'error') return json({}, 503)
+      return json({ count: state === 'vacío' ? 0 : 1, next: null, previous: null, results: state === 'vacío' ? [] : [benefit] })
+    }))
+    render(<CatalogPage search="" />)
+    if (state === 'resultados') await screen.findByRole('article')
+    if (state === 'vacío') await screen.findByText('No encontramos beneficios para esta búsqueda.')
+    if (state === 'error') await screen.findByRole('alert')
+    if (state === 'apagado') await screen.findByText('El catálogo general no está disponible ahora.')
+    const journey = screen.getByRole('region', { name: 'Cómo funciona' })
+    expect(screen.getByRole('main').lastElementChild).toBe(journey)
+    const jump = screen.getByRole('link', { name: 'Cómo funciona ↓' })
+    expect(jump.getAttribute('href')).toBe(`#${journey.id}`)
+    expect(within(journey).getByRole('heading', { name: 'Cómo funciona' })).toBeTruthy()
+    expect(within(journey).getByText(/Las visitas confirmadas suman créditos para canjear/)).toBeTruthy()
+    expect(within(journey).getByText(/el canje aún no está habilitado/)).toBeTruthy()
+    expect(within(journey).getByRole('link', { name: 'Conocer la tienda' }).getAttribute('href')).toBe('/tienda')
+    const steps = within(journey).getByRole('group', { name: 'Pasos de tu recorrido' })
+    const first = within(steps).getAllByRole('button')[0]
+    first.focus(); await keyboard.tab(); await keyboard.keyboard('{Enter}')
+    expect(within(steps).getByRole('button', { name: /Visitá un negocio/ }).getAttribute('aria-pressed')).toBe('true')
+  })
   it('muestra la condición real en la portada y no envía JWT en las consultas públicas', async () => {
     const requests: Array<{ url: string; headers: Headers }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {

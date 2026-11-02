@@ -1,16 +1,28 @@
 # Pendientes
 
-- [x] Diagnosticar el CI de develop `8250205`: fallo exclusivo de auditoría por minimatch transitivo; corrección temporal a 11.0.1 sin desactivar el control. [Evidencia](docs/verification/14-ci-develop.md).
-- [x] Corregir espera de render en las pruebas de navegación Admin y verificar en Docker Linux: 309 UI + 1 proxy, lint, tipos, build y auditoría aprobados.
-- [ ] Integrar el PR de `feature/corregir-ci-develop` hacia develop después de comprobar su CI; este trabajo no fusiona PRs.
+- [ ] Resolver antes del merge la continuidad del QR si una página retirada devuelve 404 y su recuperación falla por 503/red: la pista se borra y una carga completa requiere reabrir el QR para conservar atribución. La recuperación normal y la revocación real están cubiertas; [residual de revisión](docs/verification/14-seleccion-qr-contextual.md).
+- [x] Realizar revisión integral y publicar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) de `feature/cliente-qr-destacados` hacia develop, en borrador y sin merge. Un residual Important sigue abierto en el pendiente anterior; no equivale a aprobación técnica final.
+- [ ] Revisión visual manual del corte nuevo (desktop/móvil, zoom y safe area): herramienta de Opera agotó autorización; [evidencia y límites](docs/verification/14-seleccion-qr-contextual.md).
+
+- [x] Agregar «Cómo funciona» al catálogo con explicación de créditos para canje en tienda, indicando que el canje aún no está habilitado; integrado en F2 del plan de destacados.
+
+- [x] Hero con beneficios destacados por Administrador desde backoffice, filtrados por política pública y recorridos mediante carrusel paginado; [plan](docs/superpowers/plans/2026-11-01-destacados-hero.md). Sin fallback a beneficios no destacados.
+
+- [x] Aplicar selección contextual por QR: catálogo sin sección permanente Recomendaciones, selección vigente tras login con nombre, vínculo de ingreso/resumen Admin, atribución y QR del negocio + PIN; QR del colaborador estable y renovable manualmente en su espacio. [Plan vigente](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md). Sustituye el corte inicial de catálogo único y la pantalla permanente históricos.
 
 - [x] Diseño de ajustes del Cliente aprobado el 30/10 e implementación registrada: lenguaje cotidiano, recomendaciones recibidas condicionales, navegación/red adaptables, orden del inicio, carrusel y libreta abierta; [antes/después y pruebas](docs/verification/13-ajustes-vista-cliente.md). Revisión integral y corrector aprobados; la aprobación final del cliente sigue pendiente.
+- [ ] Obtener aprobación del cliente antes de fusionar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) hacia develop, después de cerrar residual técnico y QA visual. PR #16 ya fue integrada externamente; no iniciar merge por cerrar pruebas.
+
+- [x] Diagnosticar el CI de develop `8250205`: fallo exclusivo de auditoría por minimatch transitivo; corrección temporal a 11.0.1 sin desactivar el control. [Evidencia](docs/verification/14-ci-develop.md).
+- [x] Corregir espera de render en las pruebas de navegación Admin y verificar en Docker Linux: 309 UI + 1 proxy, lint, tipos, build y auditoría aprobados.
+- [x] PR #17 de `feature/corregir-ci-develop` integrada externamente en `develop` el 2/11 (`054342e`); incorporada localmente a la rama Cliente, sin fusionar su entrega.
+
 - [x] [PR #16](https://github.com/SebaaM/llave-extra/pull/16) fusionado externamente el 31/10/2026 en `8250205`; el diagnóstico de CI posterior no acredita el QA de navegador restante descrito en la evidencia.
 
 - [x] Backend de mejoras visuales del Cliente T2/T2b: categorías públicas completas y nombre actual del comercio en historial propio. Producto `e3f04fa`, rama `feature/api-cliente-visual` desde develop `754982d`; 108 pruebas PG/Redis y QA HTTP real aprobados. Revisiones por tarea e integral aprobadas sin hallazgos pendientes. [Evidencia](docs/verification/12-api-cliente-visual.md).
 - [x] Publicar `feature/api-cliente-visual` y abrir [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia develop en `SebaaM/llave-extra`, sin fusionar. Publicación autorizada expresamente por el usuario; CI vigente en las comprobaciones del PR.
 - [x] Frontend del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md): navegación, catálogo, red, recomendaciones, pasaporte, QR, acceso/perfil y tienda de ejemplo implementados y revisados por etapa. [Antes/después](docs/verification/11-frontend-cliente-visual.md).
-- [ ] Cierre visual: QA de navegador restante y HTTP con datos sintéticos y recorrido de referencia al iniciar sesión; revisión de código integral de [PR #16](https://github.com/SebaaM/llave-extra/pull/16) completada localmente. La regresión focal de créditos e historial sobre PostgreSQL aprobó 27 pruebas. La tienda transaccional permanece fuera de este alcance.
+- [x] Cierre de código de la entrega inicial PR #16: revisión integral local registrada y posterior integración externa el 31/10. La revisión visual manual restante se centraliza en el pendiente del corte nuevo indicado arriba; HTTP y regresión actuales están en docs/verification/14-seleccion-qr-contextual.md. La tienda transaccional sigue fuera de este alcance.
 
 - [x] Catálogo visual de tienda adelantado: `/tienda` y fichas públicas con nueve ejemplos, ilustraciones propias, ARS/créditos ilustrativos, búsqueda/filtros/orden/paginación. Sin seed, checkout ni canjes. [Plan](docs/superpowers/plans/2026-10-26-catalogo-tienda-visual.md), [evidencia](docs/verification/10-catalogo-tienda-visual.md). El resto transaccional de F3 y E6 siguen pendientes.
 

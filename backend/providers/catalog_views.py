@@ -2,7 +2,7 @@ from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import permissions, serializers
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -53,12 +53,16 @@ class CatalogBenefitsView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, description="24 por defecto; máximo 48"),
             OpenApiParameter("search", OpenApiTypes.STR),
             OpenApiParameter("category", OpenApiTypes.STR),
+            OpenApiParameter("featured", OpenApiTypes.BOOL, description="Opcional; solo true o false. Filtra destacados antes de paginar, sin alterar publicación ni vigencia."),
         ],
-        responses=PublicBenefitPageSerializer,
+        responses={200: PublicBenefitPageSerializer, 400: OpenApiTypes.OBJECT},
     )
     def get(self, request):
         require_catalog()
         benefits = catalog_benefits()
+        featured = request.query_params.get("featured")
+        if featured is not None and featured not in ("true", "false"):
+            raise ValidationError({"featured": "Usá true o false."})
         search = request.query_params.get("search", "").strip()
         category = request.query_params.get("category", "")
         trimmed_category = category.strip()
@@ -71,6 +75,8 @@ class CatalogBenefitsView(APIView):
                 Q(title__icontains=search) | Q(description__icontains=search)
                 | Q(provider__name__icontains=search)
             )
+        if featured is not None:
+            benefits = benefits.filter(featured=featured == "true")
         benefits = benefits.order_by("provider__name", "title", "pk")
         paginator = CatalogPagination()
         page = paginator.paginate_queryset(benefits, request, view=self)

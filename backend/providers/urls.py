@@ -8,6 +8,7 @@ from .catalog_views import (
     CatalogConfigView,
     CatalogProviderMediaView,
 )
+from .folder_selection import FolderSelectionView
 from .network import FolderNetworkView, NetworkView
 from .recommendations import (
     CollaboratorCatalogView,
@@ -47,6 +48,7 @@ urlpatterns = [
     path("catalog/providers/<uuid:provider_id>/media/", CatalogProviderMediaView.as_view(), name="catalog-provider-media"),
     path("admin/private-media/<path:name>", admin_private_media, name="admin-private-media"),
     path("folders/<uuid:folder_id>/providers/", FolderProvidersView.as_view()),
+    path("folders/<uuid:folder_id>/benefits/", FolderSelectionView.as_view(), name="folder-benefits"),
     path("folders/<uuid:folder_id>/network/", FolderNetworkView.as_view(), name="folder-network"),
     path("folders/<uuid:folder_id>/providers/<uuid:provider_id>/", FolderProviderView.as_view()),
     path("folders/<uuid:folder_id>/providers/<uuid:provider_id>/media/", FolderProviderMediaView.as_view(), name="folder-provider-media"),

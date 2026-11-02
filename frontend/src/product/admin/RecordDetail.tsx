@@ -14,6 +14,10 @@ import type { Page, Resource, Row } from './types'
 import { BackLink, DetailFields, LoadState, Status } from './UI'
 
 export function RecordDetail({ resource, id, search }: { resource: Resource; id: string; search: string }) {
+  return <RecordDetailContent key={`${resource.key}:${id}:${currentSessionVersion()}`} resource={resource} id={id} search={search} />
+}
+
+function RecordDetailContent({ resource, id, search }: { resource: Resource; id: string; search: string }) {
   const [editing, setEditing] = useState(false)
   const [related, setRelated] = useState<Row[] | null>(null)
   const [relatedError, setRelatedError] = useState('')
@@ -67,6 +71,7 @@ export function RecordDetail({ resource, id, search }: { resource: Resource; id:
       {refreshError && <><Status error>{refreshError}</Status><button className="button button-ghost" disabled={refreshing || editing} onClick={() => void manualRefresh()}>Reintentar actualización de ficha</button></>}
       {editing && resource.fields && <RecordForm key={`${resource.key}:${id}`} resource={resource} data={data} back={`${base}/${id}${search}`} onCancel={() => { if (checkAdminNavigation()) setEditing(false) }} onReload={refresh} onSaved={row => { setState({ data: row, loading: false, error: '' }); setEditing(false) }} />}
       <section className="admin-panel"><h2>Información</h2><DetailFields data={data} names={[...resource.columns, ...(resource.detail ?? [])].filter((name, index, all) => all.indexOf(name) === index && name !== 'image_url' && name !== 'movements' && !(resource.key === 'orders' && name in orderHistories))} />{typeof data.image_url === 'string' && <PrivateMedia key={data.image_url} path={data.image_url} />}</section>
+      {resource.key === 'collaborators' && !loading && !error && String(data.id) === id && <CollaboratorSummary key={`${id}:${data.version}:${currentSessionVersion()}`} id={id} />}
       {resource.key === 'collaborators' && <section className="admin-panel"><h2>Beneficios seleccionados</h2><p>Solo estas ofertas concretas integran la carpeta del colaborador.</p><button className="button button-ghost" onClick={() => void loadRelated()}>Consultar selección actual</button>{relatedError && <Status error>{relatedError}</Status>}{related && (related.length ? <ul className="admin-related">{related.map(item => <li key={String(item.benefit_id)}><strong>{item.available ? 'Disponible' : 'No disponible'}</strong> · {String(item.benefit_id)}{Boolean(item.benefit) && <span> · {String((item.benefit as Row).title)}</span>}</li>)}</ul> : <p>No hay beneficios seleccionados.</p>)}</section>}
       {(resource.key === 'providers' || resource.key === 'collaborators') && <PrivateQr key={`${data.id}:${data.version}`} resource={resource.key} id={data.id} />}
       <section className="admin-panel"><h2>Acciones</h2><p className="admin-muted">Cada operación comprueba el estado actual. Después de un cambio, la ficha se actualiza para la próxima acción.</p><div className="admin-action-grid"><RecordActions resource={resource.key} data={data} onSuccess={async result => { if (result?.removed === true) setRemoved(true); else await refresh() }} /></div></section>
@@ -74,6 +79,19 @@ export function RecordDetail({ resource, id, search }: { resource: Resource; id:
       {resource.key === 'orders' && <section className="admin-panel"><h2>Detalles del pedido</h2>{Object.keys(orderHistories).map(name => <OrderHistory key={name} name={name} value={data[name]} />)}</section>}
     </>}</>}
   </>
+}
+
+type Summary = { collaborator_id: string; linked_clients: number; valid_attributed_consumptions: number }
+function CollaboratorSummary({ id }: { id: string }) {
+  const load = useCallback(async (signal: AbortSignal) => {
+    const result = await adminApi<Summary>(`collaborators/${encodeURIComponent(id)}/summary/`, { signal })
+    if (result.collaborator_id !== id) throw new Error('El resumen no corresponde a esta ficha.')
+    return result
+  }, [id])
+  const { data, loading, error, reload } = useAdminLoad(load)
+  return <section className="admin-panel" aria-label="Ingresos y visitas"><h2>Ingresos y visitas</h2><p>Clientes vinculados históricamente y visitas válidas atribuidas a este colaborador. No representa escaneos del QR.</p>
+    {loading ? <p role="status">Cargando resumen…</p> : error ? <><Status error>{error}</Status><button className="button button-ghost" onClick={reload}>Reintentar resumen</button></> : data && <dl className="admin-details"><div><dt>Clientes que ingresaron por QR</dt><dd>{data.linked_clients}</dd></div><div><dt>Visitas válidas atribuidas</dt><dd>{data.valid_attributed_consumptions}</dd></div></dl>}
+  </section>
 }
 
 function PrivateMedia({ path }: { path: string }) {

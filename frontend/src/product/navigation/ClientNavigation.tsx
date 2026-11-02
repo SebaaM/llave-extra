@@ -5,7 +5,6 @@ import { ProductLink } from '../navigation'
 
 const destinations = [
   { href: '/beneficios', label: 'Beneficios' },
-  { href: '/recomendaciones', label: 'Recomendaciones' },
   { href: '/mi-viaje', label: 'Mi viaje' },
 ]
 
@@ -15,7 +14,7 @@ function isCurrentTabNavigation(event: MouseEvent<HTMLAnchorElement>) {
     && (!link.target || link.target.toLowerCase() === '_self') && !link.hasAttribute('download')
     && new URL(link.href).origin === window.location.origin
 }
-export function ClientNavigation({ user, path, hasRecommendations = false }: { user: User | null; path: string; hasRecommendations?: boolean }) {
+export function ClientNavigation({ user, path }: { user: User | null; path: string }) {
   const [isMobile, setIsMobile] = useState(() => typeof window.matchMedia !== 'function' || window.matchMedia('(max-width: 680px)').matches)
   const menu = useRef<HTMLDetailsElement>(null)
   const pendingFocus = useRef<{ path: string; userId: number } | null>(null)
@@ -41,7 +40,6 @@ export function ClientNavigation({ user, path, hasRecommendations = false }: { u
 
   if (user?.role !== 'TOURIST') return null
 
-  const availableDestinations = destinations.filter(({ href }) => href !== '/recomendaciones' || hasRecommendations)
   const route = path.replace(/\/$/, '') || '/'
   const hideBar = ['/consumo', '/ingresar', '/registro', '/recuperar', '/restablecer-clave', '/verificar-email', '/verificar']
     .some(page => route === page || route.startsWith(`${page}/`))
@@ -59,14 +57,13 @@ export function ClientNavigation({ user, path, hasRecommendations = false }: { u
     <ProductLink href="/beneficios" aria-current={active('/beneficios')}>Beneficios</ProductLink>
     <ProductLink href="/tienda" aria-current={active('/tienda')}>Tienda</ProductLink>
     <a href="/#como-funciona">Cómo funciona</a>
-    {availableDestinations.filter(({ href }) => href === '/recomendaciones').map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)}>{label}</ProductLink>)}
     <ProductLink href="/mi-viaje" aria-current={active('/mi-viaje')}>Mi viaje</ProductLink>
     <ProductLink href="/perfil" aria-current={active('/perfil')}>Cuenta</ProductLink>
   </nav>
 
   return <div className="client-navigation-group">
     {!hideBar && <nav className="client-navigation" aria-label="Tu viaje">
-      {availableDestinations.map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)} onClick={closeMenu}>{label}</ProductLink>)}
+      {destinations.map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)} onClick={closeMenu}>{label}</ProductLink>)}
     </nav>}
     <details key={path} className="client-menu" ref={menu} onKeyDown={event => {
       if (event.key === 'Escape' && menu.current?.open) {
@@ -76,7 +73,7 @@ export function ClientNavigation({ user, path, hasRecommendations = false }: { u
     }}>
       <summary>Menú</summary>
       <nav className="client-menu-links" aria-label="Navegación de cuenta">
-        {hideBar && availableDestinations.map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)} onClick={navigateFromMenu}>{label}</ProductLink>)}
+        {hideBar && destinations.map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)} onClick={navigateFromMenu}>{label}</ProductLink>)}
         <ProductLink href="/tienda" aria-current={active('/tienda')} onClick={navigateFromMenu}>Tienda</ProductLink>
         <ProductLink href="/perfil" aria-current={active('/perfil')} onClick={navigateFromMenu}>Cuenta</ProductLink>
         <a href="/#como-funciona" onClick={event => { if (isCurrentTabNavigation(event)) closeMenu() }}>Cómo funciona</a>

@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError } from './api'
 import { catalogBenefits, catalogConfig } from './catalog'
-import type { Page, PublicBenefit } from './catalog'
+import type { CatalogOptions, Page, PublicBenefit } from './catalog'
 import { messageOf } from './shared'
 
-type CatalogRequest = { page: number; search: string; category: string; revision: number }
+type CatalogRequest = { page: number; search: string; category: string; revision: number; featured?: boolean; pageSize?: number }
 type CatalogState = { request: CatalogRequest; enabled: boolean | null; data: Page<PublicBenefit> | null; error: string }
 
-export function usePublicCatalog(page = 1, search = '', category = '') {
+export function usePublicCatalog(page = 1, search = '', category = '', { featured, pageSize }: CatalogOptions = {}) {
   const [state, setState] = useState<CatalogState | null>(null)
   const [revision, setRevision] = useState(0)
-  const request = useMemo(() => ({ page, search, category, revision }), [page, search, category, revision])
+  const request = useMemo(() => ({ page, search, category, revision, featured, pageSize }), [page, search, category, revision, featured, pageSize])
   const retry = useCallback(() => setRevision(value => value + 1), [])
   useEffect(() => {
     const controller = new AbortController()
@@ -23,7 +23,7 @@ export function usePublicCatalog(page = 1, search = '', category = '') {
         if (controller.signal.aborted) return
         if (!config.enabled) { save(false, null); return }
         try {
-          const data = await catalogBenefits(request.page, request.search, request.category, controller.signal)
+          const data = await catalogBenefits(request.page, request.search, request.category, controller.signal, request)
           save(true, data)
         } catch (error) {
           if (controller.signal.aborted) return

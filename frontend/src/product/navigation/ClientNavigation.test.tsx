@@ -5,37 +5,30 @@ import type { User } from '../api'
 import { ProductShell } from '../Layout'
 
 const tourist: User = { id: 41, email: 'cliente@example.test', role: 'TOURIST', email_verified: true }
-const shell = (user: User | null, path = '/beneficios', hasRecommendations = true) => <ProductShell user={user} path={path} hasRecommendations={hasRecommendations}><main id="contenido"><h1>Contenido de prueba</h1></main></ProductShell>
+const shell = (user: User | null, path = '/beneficios') => <ProductShell user={user} path={path}><main id="contenido"><h1>Contenido de prueba</h1></main></ProductShell>
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 describe('navegación del Cliente', () => {
-  it('ofrece Recomendaciones solo cuando hay selecciones recibidas disponibles', () => {
-    const { rerender } = render(shell(tourist, '/beneficios', false))
-    expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
-    rerender(shell(tourist, '/beneficios', true))
-    expect(screen.getAllByRole('link', { name: 'Recomendaciones' })).toHaveLength(1)
-    rerender(shell(tourist, '/beneficios', false))
+  it.each([false, true])('no incluye la sección retirada en móvil o escritorio (móvil: %s)', mobile => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: mobile, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
+    const { container } = render(shell(tourist))
+    expect(container.querySelector('a[href="/recomendaciones"]')).toBeNull()
     expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
   })
 
-  it('oculta Recomendaciones si el shell no recibió disponibilidad explícita', () => {
-    render(<ProductShell user={tourist} path="/beneficios"><h1>Beneficios</h1></ProductShell>)
-    expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
-  })
-
-  it('presenta una sola navegación de tres destinos para el Cliente', () => {
+  it('presenta una sola navegación de dos destinos para el Cliente', () => {
     render(shell(tourist))
     const navigation = screen.getByRole('navigation', { name: 'Tu viaje' })
-    expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Recomendaciones', 'Mi viaje'])
-    for (const name of ['Beneficios', 'Recomendaciones', 'Mi viaje']) expect(screen.getAllByRole('link', { name })).toHaveLength(1)
+    expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Mi viaje'])
+    for (const name of ['Beneficios', 'Mi viaje']) expect(screen.getAllByRole('link', { name })).toHaveLength(1)
   })
 
   it('presenta los destinos del navbar público y los accesos de Cliente en escritorio', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })))
     render(shell(tourist))
     const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
-    expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Tienda', 'Cómo funciona', 'Recomendaciones', 'Mi viaje', 'Cuenta'])
+    expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Tienda', 'Cómo funciona', 'Mi viaje', 'Cuenta'])
     expect(screen.queryByText('Menú')).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
   })
@@ -46,7 +39,7 @@ describe('navegación del Cliente', () => {
     expect(screen.getByRole('link', { name: 'Mi viaje' }).hasAttribute('aria-current')).toBe(false)
   })
 
-  it.each([['/recomendaciones', 'Recomendaciones'], ['/mi-viaje', 'Mi viaje']])('marca el destino activo %s', (path, label) => {
+  it.each([['/mi-viaje', 'Mi viaje']])('marca el destino activo %s', (path, label) => {
     render(shell(tourist, path))
     expect(screen.getByRole('link', { name: label }).getAttribute('aria-current')).toBe('page')
   })

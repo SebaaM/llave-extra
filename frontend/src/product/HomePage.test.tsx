@@ -4,7 +4,7 @@ import { HomePage } from './HomePage'
 import { defaultSiteSettings } from './useSiteSettings'
 
 const catalog = vi.hoisted(() => ({ enabled: true as boolean | null, data: { results: [{ id: 'b1', title: 'Una pausa local', description: '', conditions: 'Presentar el beneficio antes de pedir.', valid_from: null, valid_until: null, demo: true, image_url: null, provider: { id: 'p1', slug: 'local', name: 'Local de ejemplo', category: 'Café', description: '', address: '', hours: '', contact: '', map_url: '', website: '', demo: true, image_url: null } }] }, loading: false, error: '', retry: vi.fn() }))
-vi.mock('./usePublicCatalog', () => ({ usePublicCatalog: () => catalog }))
+vi.mock('./useFeaturedCatalog', () => ({ useFeaturedCatalog: () => ({ ...catalog, benefit: catalog.data.results[0], count: catalog.data.results.length, index: 0, select: vi.fn() }) }))
 vi.mock('./useCatalogCategories', () => ({ useCatalogCategories: () => ({ categories: [' Café ', 'Paseos'], error: '', loading: false, retry: vi.fn() }) }))
 vi.mock('./NetworkCanvas', () => ({ NetworkCanvas: () => <section aria-label="Red">Red de negocios</section> }))
 const firstBenefit = catalog.data.results[0]
@@ -15,22 +15,18 @@ describe('Inicio', () => {
     render(<HomePage />)
     expect(Array.from(screen.getByRole('main').children).map(section => section.getAttribute('aria-label'))).toEqual(['Inicio', 'Red', 'En tu recorrido', 'Próxima parada', 'Mapa', 'Pasaporte'])
   })
-  it('recorre beneficios con controles manuales y limpia la selección durante recarga y desactivación', () => {
-    catalog.data.results = [firstBenefit, { ...firstBenefit, id: 'b2', title: 'Un paseo por el canal' }]
+  it('limpia las tarjetas mientras recarga o se desactiva el catálogo', () => {
     const { rerender } = render(<HomePage />)
-    fireEvent.click(screen.getByRole('button', { name: 'Beneficio siguiente' }))
-    expect(screen.getByRole('heading', { name: 'Un paseo por el canal' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: firstBenefit.title })).toBeNull()
-    expect(screen.getByRole('status', { name: 'Beneficio destacado actual' }).textContent).toContain('2 de 2')
+    expect(screen.getByRole('heading', { name: firstBenefit.title })).toBeTruthy()
     catalog.loading = true
     rerender(<HomePage />)
-    expect(screen.queryByRole('region', { name: 'Beneficios destacados' })).toBeNull()
+    expect(screen.queryByRole('article')).toBeNull()
     catalog.loading = false
     rerender(<HomePage />)
     expect(screen.getByRole('heading', { name: firstBenefit.title })).toBeTruthy()
     catalog.enabled = false
     rerender(<HomePage />)
-    expect(screen.queryByRole('region', { name: 'Beneficios destacados' })).toBeNull()
+    expect(screen.queryByRole('article')).toBeNull()
   })
   it('explica visitas con o sin recomendaciones y evita lenguaje técnico', () => {
     const { container } = render(<HomePage />)
@@ -61,12 +57,12 @@ describe('Inicio', () => {
     expect(screen.queryByRole('heading', { name: 'Una pausa local' })).toBeNull()
     if (enabled === false) expect(screen.getByRole('link', { name: 'Ingresar con QR' })).toBeTruthy()
   })
-  it('conserva categorías completas aunque la página de beneficios esté vacía y ofrece QR', () => {
+  it('conserva categorías completas sin destacados y ofrece el catálogo', () => {
     const previous = catalog.data.results
     catalog.data.results = []
     render(<HomePage />)
     expect(screen.getByRole('group', { name: 'Categorías de beneficios' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Ingresar con QR' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ver todos los beneficios' })).toBeTruthy()
     catalog.data.results = previous
   })
 })

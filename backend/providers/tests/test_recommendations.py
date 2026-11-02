@@ -449,38 +449,49 @@ def test_migration_snapshots_only_current_offers_and_rejects_multi_business():
     previous = [("providers", "0005_alter_benefit_options_alter_folderprovider_options_and_more")]
     current = [("providers", "0006_folder_benefit_and_unique_business")]
     executor = MigrationExecutor(connection)
-    executor.migrate(previous)
-    apps = executor.loader.project_state(previous).apps
-    user_model = apps.get_model("accounts", "User")
-    profile_model = apps.get_model("referrals", "CollaboratorProfile")
-    provider_model = apps.get_model("providers", "Provider")
-    benefit_model = apps.get_model("providers", "Benefit")
-    membership_model = apps.get_model("providers", "ProviderMembership")
-    legacy_model = apps.get_model("providers", "FolderProvider")
-    owner = user_model.objects.create(email="migration-owner@example.test", role="PROVIDER")
-    collaborator = user_model.objects.create(email="migration-collab@example.test", role="COLLABORATOR")
-    profile = profile_model.objects.create(user=collaborator, enabled=True)
-    provider = provider_model.objects.create(slug="migration", name="Migración", status="PUBLISHED")
-    other = provider_model.objects.create(slug="migration-other", name="Otro", status="DRAFT")
-    membership_model.objects.create(user=owner, provider=provider)
-    duplicate = membership_model.objects.create(user=owner, provider=other)
-    legacy_model.objects.create(collaborator=profile, provider=provider)
-    legacy_model.objects.create(collaborator=profile, provider=other)
-    today = timezone.localdate()
-    eligible = benefit_model.objects.create(provider=provider, title="Vigente", conditions="Sí", status="PUBLISHED", valid_from=today, valid_until=today)
-    for title, status, start, end in [("Borrador", "DRAFT", None, None), ("Vencida", "PUBLISHED", None, today - timedelta(days=1)), ("Futura", "PUBLISHED", today + timedelta(days=1), None)]:
-        benefit_model.objects.create(provider=provider, title=title, conditions="Sí", status=status, valid_from=start, valid_until=end)
-    benefit_model.objects.create(provider=other, title="Negocio borrador", conditions="Sí", status="PUBLISHED")
+    original_targets = executor.loader.graph.leaf_nodes()
+    membership_model, duplicate_pk = None, None
     try:
+        executor.migrate(previous)
+        apps = executor.loader.project_state(previous).apps
+        user_model = apps.get_model("accounts", "User")
+        profile_model = apps.get_model("referrals", "CollaboratorProfile")
+        provider_model = apps.get_model("providers", "Provider")
+        benefit_model = apps.get_model("providers", "Benefit")
+        membership_model = apps.get_model("providers", "ProviderMembership")
+        legacy_model = apps.get_model("providers", "FolderProvider")
+        owner = user_model.objects.create(email="migration-owner@example.test", role="PROVIDER")
+        collaborator = user_model.objects.create(email="migration-collab@example.test", role="COLLABORATOR")
+        profile = profile_model.objects.create(user=collaborator, enabled=True)
+        provider = provider_model.objects.create(slug="migration", name="Migración", status="PUBLISHED")
+        other = provider_model.objects.create(slug="migration-other", name="Otro", status="DRAFT")
+        membership_model.objects.create(user=owner, provider=provider)
+        duplicate_pk = membership_model.objects.create(user=owner, provider=other).pk
+        legacy_model.objects.create(collaborator=profile, provider=provider)
+        legacy_model.objects.create(collaborator=profile, provider=other)
+        today = timezone.localdate()
+        eligible = benefit_model.objects.create(provider=provider, title="Vigente", conditions="Sí", status="PUBLISHED", valid_from=today, valid_until=today)
+        for title, status, start, end in [("Borrador", "DRAFT", None, None), ("Vencida", "PUBLISHED", None, today - timedelta(days=1)), ("Futura", "PUBLISHED", today + timedelta(days=1), None)]:
+            benefit_model.objects.create(provider=provider, title=title, conditions="Sí", status=status, valid_from=start, valid_until=end)
+        benefit_model.objects.create(provider=other, title="Negocio borrador", conditions="Sí", status="PUBLISHED")
         with pytest.raises(RuntimeError, match="más de un negocio"):
             MigrationExecutor(connection).migrate(current)
         assert membership_model.objects.filter(user=owner).count() == 2
-        duplicate.delete()
-        MigrationExecutor(connection).migrate(current)
-        assert list(FolderBenefit.objects.values_list("benefit_id", flat=True)) == [eligible.pk]
-        assert FolderProvider.objects.count() == 2
-        Benefit.objects.create(provider_id=provider.pk, title="Posterior", conditions="Sí", status="PUBLISHED")
-        assert FolderBenefit.objects.count() == 1
+        membership_model.objects.filter(pk=duplicate_pk).delete()
+        executor = MigrationExecutor(connection)
+        executor.migrate(current)
+        migrated_apps = executor.loader.project_state(current).apps
+        selection_model = migrated_apps.get_model("providers", "FolderBenefit")
+        legacy_model = migrated_apps.get_model("providers", "FolderProvider")
+        benefit_model = migrated_apps.get_model("providers", "Benefit")
+        assert list(selection_model.objects.values_list("benefit_id", flat=True)) == [eligible.pk]
+        assert legacy_model.objects.count() == 2
+        benefit_model.objects.create(provider_id=provider.pk, title="Posterior", conditions="Sí", status="PUBLISHED")
+        assert selection_model.objects.count() == 1
     finally:
-        membership_model.objects.filter(pk=duplicate.pk).delete()
-        MigrationExecutor(connection).migrate(current)
+        try:
+            if membership_model is not None and duplicate_pk is not None:
+                membership_model.objects.filter(pk=duplicate_pk).delete()
+        finally:
+            MigrationExecutor(connection).migrate(original_targets)
+    assert MigrationExecutor(connection).migration_plan(original_targets) == []

@@ -7,6 +7,25 @@ const empty = { count: 0, next: null, previous: null, results: [] }
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 describe('vigencia del catálogo público', () => {
+  it('incluye featured en la consulta y su identidad, sin conservar datos al cambiar el filtro', async () => {
+    const calls: URL[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = new URL(String(input)); calls.push(url)
+      return url.pathname.endsWith('/config/') ? json({ enabled: true }) : json(empty)
+    }))
+    const { result, rerender } = renderHook(({ featured }: { featured?: boolean }) => usePublicCatalog(1, '', '', { featured, pageSize: 24 }), { initialProps: { featured: true as boolean | undefined } })
+    await waitFor(() => expect(result.current.data).toEqual(empty))
+    expect(calls.at(-1)?.searchParams.get('featured')).toBe('true')
+    expect(calls.at(-1)?.searchParams.get('page_size')).toBe('24')
+    rerender({ featured: false })
+    expect(result.current.data).toBeNull()
+    await waitFor(() => expect(result.current.data).toEqual(empty))
+    expect(calls.at(-1)?.searchParams.get('featured')).toBe('false')
+    rerender({ featured: undefined })
+    expect(result.current.data).toBeNull()
+    await waitFor(() => expect(result.current.data).toEqual(empty))
+    expect(calls.at(-1)?.searchParams.has('featured')).toBe(false)
+  })
   it.each([true, false])('reconsulta la configuración tras 404 de página y conserva enabled=%s', async enabled => {
     let configs = 0
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => String(input).endsWith('/config/')
