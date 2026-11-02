@@ -1,6 +1,6 @@
 # Selección contextual y QR estable
 
-Estado: implementación en curso desde `e89329a`, reanudada el 1/11/2026. GitHub informa que PR #16 fue fusionada el 31/10 por fuera de esta ejecución. El corte nuevo se publicará en `feature/cliente-qr-destacados` mediante otra PR hacia `develop`, sin merge. Este documento registra únicamente la verificación nueva; los resultados anteriores no prueban este flujo ni la base combinada con los ajustes recientes de entornos.
+Estado: implementación completada hasta `1ad27dd`, con revisión integral y publicación en cierre. GitHub informa que PR #16 fue fusionada el 31/10 por fuera de esta ejecución. El corte nuevo se publicará en `feature/cliente-qr-destacados` mediante otra PR hacia `develop`, sin merge. Este documento registra la verificación nueva; la revisión visual manual queda pendiente.
 
 ## Antes y después solicitado
 
@@ -12,6 +12,7 @@ Estado: implementación en curso desde `e89329a`, reanudada el 1/11/2026. GitHub
 | Sin resumen acotado en ficha administrativa | Clientes distintos que ingresaron por QR y visitas válidas atribuidas |
 | Firma de QR con hora de emisión; botón «Actualizar QR» solo consultaba | Enlace estable por versión; consulta y renovación manual son acciones distintas |
 | Hero tomaba la primera página del catálogo habitual | Solo beneficios destacados por el Administrador, publicados/vigentes y con el catálogo habilitado |
+| Catálogo centrado en ofertas y condiciones | Sección «Cómo funciona» con pasos, créditos para futuro canje y enlace a la tienda, con disponibilidad real informada |
 
 El consumo conserva QR del negocio + PIN, reglas de créditos e idempotencia. Una referencia rechazada no se transforma en consumo directo. El vínculo de ingreso conserva autorización/historia, sin copiar beneficios al Cliente.
 
@@ -31,14 +32,25 @@ Los códigos anteriores siguen siendo aceptados hasta su renovación manual. El 
 - QR estable/renovación propia: `e301a7b`, revisión independiente de seguridad/concurrencia sin hallazgos. Cubre ambos formatos, estabilidad, permisos actuales, idempotencia, rollback y concurrencia PostgreSQL real. Migración `referrals.0005` aplicada solo al entorno aislado, sin renovar códigos.
 - Corrección de integración `c0d8177`: una prueba histórica retrocedía a providers0006 usando el modelo actual y dejaba el esquema antiguo para las siguientes. Usa modelos históricos y restaura los destinos originales en `finally`; RED reproducido, 24 pruebas focales aprobadas y re-review sin hallazgos. No se cambió producto para acomodar la prueba.
 - Suite completa de backend en `c0d8177`: `-m pytest --ds=config.settings.test -q --tb=short` → **383 passed en 152,16 s, exit 0, sin exclusiones**. Cierra la regresión pendiente de A/B y la integración de la nueva migración.
+- Base actual de `develop` incorporada localmente en `97d5feb`, en la nueva rama. Imagen backend reconstruida con `uv --locked`; nueva suite completa sobre esa imagen/base: **383 passed en 156,25 s, sin exclusiones**. Ruff, OpenAPI, drift, configuración Compose y build frontend aprobados. La PR anterior fue fusionada externamente; esta integración local no fusiona la entrega nueva.
+- Cliente contextual `945cf5f`: 318 pruebas UI y 1 del proxy aprobadas, lint/tipos/build aprobados. La revisión independiente detectó dos casos: destino después de registro con QR y conservación de QR/referencia al corregir PIN tras cambio de intención durante el envío. Se resolvieron en el siguiente corte indicado abajo.
+- Corrección C1 `484e95b`: RED de los cinco escenarios nuevos, GREEN de 62 pruebas focales y lint/tipos/build aprobados. Revisión del delta: ambos hallazgos resueltos, sin rupturas nuevas. La ruta tras registro usa la intención del coordinador; corregir PIN conserva la base original de negocio/referencia.
+- Espacio QR y resumen Admin `faf191f`: 95 pruebas focales/regresiones y lint/tipos/build aprobados. Revisión independiente de código sin hallazgos. El Colaborador confirma manualmente la renovación; ante incertidumbre conserva solicitud y clave y oculta el QR anterior. El resumen exige ficha autorizada y limpia resultados al cambiar cuenta/ruta.
+- Presentación pública `1ad27dd`: hero con filtro `featured=true` y páginas de 24, índice global e indicadores acotados; el catálogo normal omite el filtro. Casilla Admin en ficha de beneficio y «Cómo funciona» compartido en catálogo con créditos y tienda. **351 pruebas UI en 30 archivos + 1 del proxy aprobadas, exit 0, 206,24 s**; lint, tipos y build aprobados. El árbol del commit coincide con el índice congelado revisado. Revisión independiente F2 sin hallazgos. El log incluye siete avisos de jsdom por navegación a otro documento, ya conocidos en la entrega anterior; no se ocultaron ni se presentan como QA de navegador.
+- QA HTTP real por el proxy del frontend: login con CSRF/JWT, QR URL/PNG estables, redención con nombre, selección de dos ofertas paginada, medio privado autorizado, anónimo rechazado, renovación/replay con un recibo, revocación de selección/medio antiguos, nuevo acceso y resumen de un Cliente pese a dos versiones de vínculo. Todas las comprobaciones aprobaron. Se usaron tres cuentas sintéticas temporales, eliminadas en `finally`; no se acreditaron consumos ni se modificaron cuentas existentes. Conteos posteriores: 3 usuarios, 5 negocios, 5 beneficios, 3 selecciones, 1 vínculo, 1 consumo y 0 recibos de renovación.
 
 Los comandos backend usan `docker compose --project-name llaveextra-visual --env-file <entorno-local> -f compose.yaml -f work/visual-qa.compose.yaml exec -T backend /opt/venv/bin/python`, seguido de `-m pytest ... --ds=config.settings.test`; para esquema/drift, `manage.py ... --settings=config.settings.test`. Es necesario indicar settings explícitamente porque Compose exporta la configuración local. No se versiona el entorno ni su contenido.
 
+## Decisiones y límites de continuidad
+
+- La pista mínima por pestaña permite continuar al abrir el QR del negocio sin almacenar credenciales ni selecciones. Una pestaña nueva sin pista requiere abrir de nuevo el QR del colaborador; con almacenamiento denegado se requiere login explícito y el contexto funciona en memoria.
+- Destacar usa la edición de ficha existente con versión y auditoría. Una versión antigua devuelve 409 y requiere recargar; no se añadió un comando de edición ni una respuesta persistida para replay del PATCH.
+- El Cliente puede abandonar explícitamente una recomendación antes del primer consumo y continuar directo. Para volver a atribuir desde esa selección debe abrir el QR otra vez; una referencia rechazada o un comando incierto no se convierten automáticamente en directos.
+- Un POST incierto conserva cuerpo y clave dentro de la SPA. Tras una carga completa no se guardan QR/PIN/cuerpo/clave en el navegador; no se promete recuperación automática del comando entre cargas completas. Las restricciones e idempotencia del servidor permanecen vigentes.
+
 ## Evidencia pendiente
 
-- Cliente contextual: pendiente de completar el parcial interrumpido y revisar.
-- Espacio QR/resumen Admin: pendiente de implementación y revisión.
-- Hero y casilla de destacados en React: pendientes de implementación y revisión.
-- Corte final: pruebas PostgreSQL/Redis, frontend, Ruff/OpenAPI/drift y QA real pendientes. No hay afirmación de validación integral todavía.
+- Revisión integral de código y publicación de la nueva PR. Suites completas, revisiones por tarea, Ruff/OpenAPI/drift y HTTP real tienen el corte comprobado indicado arriba.
+- QA visual manual del corte nuevo pendiente: Computer Use listó Opera, pero la solicitud de autorización para capturar su estado agotó el tiempo (`Computer Use app approval timed out`). No se obtuvo una captura válida ni se ejecutaron acciones sobre la página. Las comprobaciones DOM/HTTP no se presentan como aprobación visual en navegador ni dispositivo físico.
 
 El entorno Docker aislado `llaveextra-visual` está activo en frontend `5176` y backend `8002`. Las bases y cuentas del entorno original no se modifican por esta entrega. La aprobación del cliente sigue siendo requisito para fusionar.

@@ -45,4 +45,6 @@ Los implementadores no crean otros subagentes ni sus propios revisores. El orque
 
 El carrusel del hero muestra únicamente beneficios destacados por Administrador desde backoffice, sujetos a la política pública de publicación/vigencia y catálogo habilitado. No seleccionar ofertas automáticamente ni usar las recomendaciones privadas como fuente del hero. Ver `docs/superpowers/specs/2026-11-01-destacados-hero.md`.
 
+El catálogo de beneficios incluye «Cómo funciona», compartido con el inicio: visita confirmada, acreditación única por negocio y créditos destinados al canje en la tienda web. La UI actual de tienda aún no permite canjear; informar su disponibilidad real y no ofrecer una operación que no existe. Este contenido no requiere nuevas lecturas privadas.
+
 El QR del colaborador es estable por perfil/versión; consultar, copiar, descargar o editar selección no lo renueva. La renovación propia es manual, con precondición, idempotencia y auditoría sin secretos. El consumo mantiene QR del negocio + PIN. La selección contextual no se copia al Cliente: la pista por pestaña admite solo IDs de cuenta/perfil, sin QR, URL, PIN ni nombre, y se revalida en servidor antes de usarse; no reconstruirla desde accesos históricos. El resumen acotado de clientes vinculados y visitas válidas atribuidas no equivale a E6 completa.

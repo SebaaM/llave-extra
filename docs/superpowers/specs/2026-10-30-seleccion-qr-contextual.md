@@ -14,7 +14,7 @@ El nombre de presentación usa nombre/apellido configurados del colaborador, con
 
 El QR/URL identifica al colaborador y abre su selección vigente; no contiene una copia de los beneficios. Editar la selección no obliga a cambiar el QR. Consultar, copiar, descargar o recargar la pantalla no cambia el enlace ni rota su autorización. El colaborador puede renovarlo mediante una acción manual explícita desde su espacio, invalidando el QR anterior. No se implementan temporizadores de renovación.
 
-Brecha observada: hoy la rotación real solo está expuesta en administración; el botón «Actualizar QR» del espacio consulta de nuevo y no rota. La firma actual de la URL incluye la hora de emisión, aunque la versión autorizada no cambia; el ajuste debe ofrecer un enlace estable por versión y conservar compatibilidad de QR ya emitidos hasta su renovación, sin persistir secretos en resultados de comandos. Implementación concreta pendiente del plan técnico.
+Situación anterior: la rotación real solo estaba expuesta en administración; «Actualizar QR» consultaba sin rotar y la firma incluía la hora. La implementación nueva entrega enlace estable por versión y renovación propia manual, conserva códigos anteriores hasta renovar y no persiste QR/URL/PIN en resultados. Ver el plan y la evidencia del corte vigente.
 
 ## Vínculo y consumo
 

@@ -2,7 +2,7 @@
 
 # Plan de implementación aprobado
 
-Precisión del 1/11/2026: carrusel del hero alimentado únicamente por beneficios destacados por el Administrador en backoffice, con publicación/vigencia y catálogo público vigente. [Plan incremental](../superpowers/plans/2026-11-01-destacados-hero.md), en la misma rama de mejoras y sin merge.
+Estado del 1/11/2026: QR contextual, renovación propia manual, resumen Admin, hero solo con destacados configurados y «Cómo funciona» en catálogo implementados en `feature/cliente-qr-destacados`, con base develop integrada localmente. Revisiones por tarea, 383 pruebas PostgreSQL/Redis y 351 UI + 1 proxy aprobadas. Revisión integral y publicación en cierre; revisión visual manual pendiente. La PR #16 ya se integró externamente el 31/10: esta entrega tiene otra PR hacia develop, sin merge hasta aprobación. [Plan público](../superpowers/plans/2026-11-01-destacados-hero.md) y [evidencia](../verification/14-seleccion-qr-contextual.md).
 
 Decisión posterior vigente 30/10/2026: catálogo habitual sin sección permanente Recomendaciones. El QR del colaborador muestra su selección vigente tras login, registra vínculo y atribuye consumo con QR del negocio + PIN. QR estable y renovación manual desde su espacio; resumen acotado en ficha Admin. [Plan contextual](../superpowers/plans/2026-10-30-seleccion-qr-contextual.md); sustituye la pantalla propia/enlace permanente del ajuste histórico. PR #16 sigue en borrador, sin merge.
 

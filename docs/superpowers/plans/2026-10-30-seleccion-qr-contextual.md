@@ -53,11 +53,11 @@ Se ejecuta en dos cortes revisables: C1 contexto/navegación/consumo y C2 espaci
 
 Archivos: ProductApp/ReferencePage, nuevo QrSelection, navegación/Layout, ConsumptionPage, WorkspaceQR, nueva tarjeta Admin summary, textos y pruebas correspondientes. Retomar cambios frontend no commiteados del retiro de sección permanente; no restaurar colecciones históricas ni probes para un enlace de menú.
 
-- [ ] Implementar un único coordinador de redención automática/manual con cercas token/cuenta/sesión/solicitud. Tras login y redeem guardar contexto `{collaborator_id,collaborator_name}` en memoria, con pista mínima por pestaña para sobrevivir la recarga por QR de negocio, y cargar selección paginada privada bajo `/referencia`, título «Recomendaciones de …». QR nuevo sustituye contexto y limpia respuestas/blobs antiguos; errores/revocación no muestran selección anterior. Sin recomendaciones en navbar ni barra.
-- [ ] Tarjetas privadas con negocio/beneficio/condiciones; no usar BenefitCard con transporte público ni catálogo como fallback privado. Consumo recibe referencia explícita del contexto actual, conserva QR del negocio+PIN y reintentos; no elige un grant histórico.
-- [ ] Mostrar resumen de dos cifras en ficha Admin con carga/error/reintento y guardas de cuenta/ruta; no iniciar dashboard analítico general.
-- [ ] Workspace colaborador distingue consultar/copiar/descargar de renovar. Renovación manual explícita explica invalidez anterior, preserva clave/cuerpo ante incertidumbre, bloquea acciones y obtiene QR/PNG autoritativos tras éxito; revoca blobs anteriores. No tocar PIN/QR del Prestador.
-- [ ] RED/GREEN y regresiones de QR/login/cambio cuenta/nuevo QR/revocación/consumo y renovación incierta. Suite frontend, lint/tipos/build; revisión independiente y commit.
+- [x] Implementar un único coordinador de redención automática/manual con cercas token/cuenta/sesión/solicitud. Tras login y redeem guardar contexto `{collaborator_id,collaborator_name}` en memoria, con pista mínima por pestaña para sobrevivir la recarga por QR de negocio, y cargar selección paginada privada bajo `/referencia`, título «Recomendaciones de …». QR nuevo sustituye contexto y limpia respuestas/blobs antiguos; errores/revocación no muestran selección anterior. Sin recomendaciones en navbar ni barra.
+- [x] Tarjetas privadas con negocio/beneficio/condiciones; no usar BenefitCard con transporte público ni catálogo como fallback privado. Consumo recibe referencia explícita del contexto actual, conserva QR del negocio+PIN y reintentos; no elige un grant histórico.
+- [x] Mostrar resumen de dos cifras en ficha Admin con carga/error/reintento y guardas de cuenta/ruta; no iniciar dashboard analítico general.
+- [x] Workspace colaborador distingue consultar/copiar/descargar de renovar. Renovación manual explícita explica invalidez anterior, preserva clave/cuerpo ante incertidumbre, bloquea acciones y obtiene QR/PNG autoritativos tras éxito; revoca blobs anteriores. No tocar PIN/QR del Prestador.
+- [x] RED/GREEN y regresiones de QR/login/cambio cuenta/nuevo QR/revocación/consumo y renovación incierta. Suite frontend, lint/tipos/build; revisión independiente y commit.
 
 ## D — Cierre
 
