@@ -1,6 +1,6 @@
 # Selección contextual y QR estable
 
-Estado al 2/11/2026: funcionalidades principales implementadas hasta `02781f2`, con revisión integral realizada y un residual Important de continuidad pendiente antes del merge. GitHub informa que PR #16 fue fusionada por fuera de esta ejecución. El corte nuevo se publicará en `feature/cliente-qr-destacados` mediante otra PR en borrador hacia `develop`, sin merge. Este documento registra la verificación nueva; la revisión visual manual queda pendiente.
+Estado al 2/11/2026: funcionalidades principales implementadas hasta `02781f2`, integración local verificada en `84d872b`, revisión integral realizada y un residual Important de continuidad pendiente antes del merge. Entrega publicada en [PR #18](https://github.com/SebaaM/llave-extra/pull/18), rama `feature/cliente-qr-destacados`, borrador hacia `develop`, sin merge. PR #16 fue fusionada por fuera de esta ejecución. La revisión visual manual queda pendiente.
 
 ## Antes y después solicitado
 
@@ -55,7 +55,7 @@ Los comandos backend usan `docker compose --project-name llaveextra-visual --env
 ## Evidencia pendiente
 
 - Residual Important de revisión: si la página retirada responde 404 y la lectura de recuperación de página 1 falla por 503/red, el manejo existente de errores borra la pista mínima. La selección queda oculta y un reintento dentro de la SPA puede recuperarla, pero una carga completa requiere abrir de nuevo el QR para conservar la atribución. No hay exposición privada ni conversión automática de un comando referido a directo. Se difiere explícitamente este ajuste y su regresión antes del merge; no se declara revisión integral limpia ni entrega técnicamente lista para fusionar.
-- Publicación de la nueva PR en borrador. Suites, revisiones, Ruff/OpenAPI/drift y HTTP real tienen los cortes y límites indicados arriba; el residual impide declarar aprobación técnica para merge.
+- CI remoto vigente en las comprobaciones de [PR #18](https://github.com/SebaaM/llave-extra/pull/18/checks); las verificaciones locales no se presentan como resultado remoto. El residual impide declarar aprobación técnica para merge.
 - QA visual manual del corte nuevo pendiente: Computer Use listó Opera, pero la solicitud de autorización para capturar su estado agotó el tiempo (`Computer Use app approval timed out`). No se obtuvo una captura válida ni se ejecutaron acciones sobre la página. Las comprobaciones DOM/HTTP no se presentan como aprobación visual en navegador ni dispositivo físico.
 
 El entorno Docker aislado `llaveextra-visual` está activo en frontend `5176` y backend `8002`. Las bases y cuentas del entorno original no se modifican por esta entrega. La aprobación del cliente sigue siendo requisito para fusionar.

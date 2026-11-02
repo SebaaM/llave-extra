@@ -61,6 +61,7 @@ Archivos: ProductApp/ReferencePage, nuevo QrSelection, navegación/Layout, Consu
 
 ## D — Cierre
 
-- [ ] Revisión integral y correcciones, suite backend PG/Redis y frontend sobre corte final, esquema/Ruff/drift, QA real sintético disponible sin revelar QR o claves.
-- [ ] Actualizar CONTEXT/AGENTS/ToDo/roadmap/API y evidencia antes/después; reflejar retiros de pruebas de la sección permanente por cobertura del contexto QR.
-- [ ] Publicar una nueva PR de `feature/cliente-qr-destacados` hacia `develop` en borrador; sin merge y con límites de QA/CI reales. PR #16 ya fue integrada externamente el 31/10.
+- [x] Revisión integral realizada, una onda de correcciones y re-review; suites PG/Redis y frontend, esquema/Ruff/drift y HTTP sintético registrados en la evidencia. Queda un residual Important antes del merge: 404 de página retirada seguido de 503/red borra la pista; QA visual manual pendiente. No se declara revisión limpia.
+- [x] Actualizar CONTEXT/AGENTS/ToDo/roadmap/API y evidencia antes/después; retiro de la sección permanente cubierto por pruebas de contexto QR.
+- [x] Publicar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) de `feature/cliente-qr-destacados` hacia `develop` en borrador; sin merge y con límites de QA/CI reales. PR #16 ya fue integrada externamente.
+- [ ] Resolver el residual de continuidad, completar QA visual y obtener aprobación antes del merge.

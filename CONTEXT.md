@@ -2,7 +2,7 @@
 
 ## Estado vigente del Cliente — 2/11/2026
 
-Implementados QR contextual, renovación manual, resumen administrativo, destacados del hero y «Cómo funciona» en catálogo. Rama `feature/cliente-qr-destacados`, con base `develop` `054342e` incorporada localmente, incluida su corrección de CI. La PR #16 fue fusionada externamente el 31/10; esta entrega nueva tendrá otra PR en borrador hacia `develop`, sin merge hasta aprobación del cliente. Los estados anteriores de #16 en borrador son históricos.
+Implementados QR contextual, renovación manual, resumen administrativo, destacados del hero y «Cómo funciona» en catálogo. Rama `feature/cliente-qr-destacados`, con base `develop` `054342e` incorporada localmente en `84d872b`, incluida su corrección de CI. Entrega publicada en [PR #18](https://github.com/SebaaM/llave-extra/pull/18), borrador hacia `develop`, sin merge y con residual técnico/QA/aprobación del cliente pendientes. La PR #16 fue fusionada externamente el 31/10; sus estados anteriores en borrador son históricos.
 
 El catálogo es la vista habitual, sin sección permanente ni menú Recomendaciones. Abrir un QR e iniciar sesión muestra «Recomendaciones de [nombre]» con la selección vigente, sin copiarla a una colección del turista. Se registra el vínculo para resumen; consumo referido conserva atribución y QR del negocio + PIN. La pista por pestaña contiene solo IDs y se revalida en servidor. Hay salida explícita a consumo directo antes del primer POST; una referencia rechazada nunca se convierte automáticamente a directa. El comando incierto conserva cuerpo/clave dentro de la SPA.
 
