@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Corrección del CI de develop — 02/11/2026
+
+El merge externo del PR #16 dejó `develop` en `8250205` el 31/10. Su ejecución de CI y el push previo `f565cee` fallaron exclusivamente en la auditoría frontend por GHSA-g3hv-75wg-m249, minimatch 10.2.6 transitivo de ESLint/typescript-eslint; backend, lint, tipos, pruebas y build remotos aprobaron. Corrección aislada en `feature/corregir-ci-develop`: override temporal a minimatch 11.0.1 y lockfile regenerado, sin suprimir auditorías ni modificar API, dominio o dependencias directas. La verificación Linux detectó además una carrera en las pruebas de navegación Admin; ambas ahora esperan el render del panel después del cambio de URL. [Evidencia y validación](docs/verification/14-ci-develop.md). Se conserva GitFlow mediante PR hacia develop, sin fusionarlo desde este trabajo; los cambios locales previos quedan intactos. Los estados anteriores del PR #16 se conservan como historial.
+
 ## Correcciones aprobadas de la vista del Cliente — 30/10/2026
 
 El usuario confirma recomendaciones recibidas en pantalla propia, visible al tener beneficios disponibles; el Cliente no recomienda ni gestiona carpetas. Navegación inferior solo móvil, navbar escritorio y red/lista automática por ancho. Inicio: Hero, Red, En tu recorrido, Próxima parada, Mapa y Pasaporte. Hero con carrusel manual y pasaporte como libreta abierta con iniciales, preservando historial, billetera y barra de visitas. Texto cotidiano sin nombres de roles ni jerga del proyecto. [Antes/después y verificación](docs/verification/13-ajustes-vista-cliente.md). Continúa en [PR #16](https://github.com/SebaaM/llave-extra/pull/16), borrador hacia develop, sin merge hasta aprobación del cliente.

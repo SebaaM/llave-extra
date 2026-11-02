@@ -1,2 +1,7 @@
 allowBuilds:
   esbuild: true
+
+# GHSA-g3hv-75wg-m249: ESLint y typescript-eslint aún requieren minimatch 10.
+# Retirar cuando sus rangos incluyan una versión corregida (>=11.0.1).
+overrides:
+  'minimatch@<11.0.1': 11.0.1
