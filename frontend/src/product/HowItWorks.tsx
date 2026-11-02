@@ -1,17 +1,19 @@
 import { useId, useState } from 'react'
+import { ButtonLink } from './Layout'
 
 const steps = [
   { title: 'Explorá beneficios', text: 'Elegí entre los beneficios disponibles sin crear una cuenta. Si recibiste un QR, ingresá a tu cuenta para ver los beneficios elegidos por quien te recomendó.' },
   { title: 'Visitá un negocio', text: 'Acercate al negocio que elegiste y revisá las condiciones de su beneficio. No necesitás haber recibido recomendaciones.' },
-  { title: 'Sumá tu sello', text: 'Usá el QR y el PIN del negocio para registrar tu primera visita que cumpla las condiciones. Necesitás una cuenta con email verificado. Cada negocio puede sumar una sola visita a tu pasaporte.' },
-  { title: 'Seguí tu viaje', text: 'Consultá tus sellos, tu meta actual y tus créditos en Mi viaje. Usar créditos no borra tus visitas.' },
+  { title: 'Sumá tu sello', text: 'Usá el QR y el PIN del negocio para registrar tu primera visita que cumpla las condiciones. Necesitás una cuenta con email verificado. Cada negocio puede sumar una sola visita a tu pasaporte y acreditar créditos una sola vez.' },
+  { title: 'Seguí tu viaje', text: 'Consultá tus sellos, tu meta actual y tus créditos en Mi viaje. Los créditos sirven para canjear en la tienda de la web. Usarlos no borra tus visitas.' },
 ]
 
-export function HowItWorks() {
+export function HowItWorks({ variant = 'home' }: { variant?: 'home' | 'catalog' }) {
   const [selected, setSelected] = useState(0)
   const panel = useId()
-  return <section id="como-funciona" className="how-it-works client-how-it-works" aria-label="En tu recorrido"><div className="content-width">
-    <p className="eyebrow">EN TU RECORRIDO</p><h2>Tu próxima parada, paso a paso.</h2>
+  return <section id="como-funciona" className="how-it-works client-how-it-works" aria-label={variant === 'catalog' ? 'Cómo funciona' : 'En tu recorrido'}><div className="content-width">
+    <p className="eyebrow">EN TU RECORRIDO</p><h2>{variant === 'catalog' ? 'Cómo funciona' : 'Tu próxima parada, paso a paso.'}</h2>
+    <div className="client-journey-credits"><p>Las visitas confirmadas suman créditos para canjear en la tienda de la web. Cada negocio acredita créditos una sola vez. Por ahora podés explorar los productos; el canje aún no está habilitado.</p><ButtonLink href="/tienda" tone="dark">Conocer la tienda</ButtonLink></div>
     <div className="client-journey-steps" role="group" aria-label="Pasos de tu recorrido">
       {steps.map((step, index) => <button type="button" key={step.title} aria-pressed={selected === index} aria-controls={panel} onClick={() => setSelected(index)}><span aria-hidden="true">0{index + 1}</span>{step.title}</button>)}
     </div>

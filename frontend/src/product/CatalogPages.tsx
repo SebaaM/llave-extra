@@ -12,6 +12,7 @@ import { calendarDate, catalogBenefit, catalogConfig, publicImage, safeExternal 
 import type { PublicBenefit } from './catalog'
 import { usePublicCatalog } from './usePublicCatalog'
 import { messageOf } from './shared'
+import { HowItWorks } from './HowItWorks'
 
 export function PublicPhoto({ path, alt, name, className = '' }: { path: string | null; alt: string; name: string; className?: string }) {
   const [image, setImage] = useState<{ path: string; url: string } | null>(null)
@@ -61,6 +62,7 @@ export function CatalogPage({ search }: { search: string }) {
   return <main id="contenido" className="catalog-page client-catalog-page"><div className="content-width">
     <p className="eyebrow">LLAVE EXTRA · USHUAIA</p><h1>Beneficios para vivir más la ciudad.</h1>
     <p className="catalog-intro">Explorá las propuestas publicadas y vigentes de la red. Consultá las condiciones de cada una antes de visitar el local.</p>
+    <a className="inline-link" href="#como-funciona">Cómo funciona ↓</a>
     <form className="client-catalog-search" onSubmit={event => {
       event.preventDefault()
       const value = String(new FormData(event.currentTarget).get('search') ?? '').trim()
@@ -87,7 +89,7 @@ export function CatalogPage({ search }: { search: string }) {
         <button disabled={!data.next} onClick={() => apply({ page: query.page + 1 })}>Siguiente →</button>
       </nav>
     </>}
-  </div></main>
+  </div><HowItWorks variant="catalog" /></main>
 }
 
 function CopyAddress({ address }: { address: string }) {

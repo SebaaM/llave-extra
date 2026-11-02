@@ -20,6 +20,7 @@ const providerFields: Field[] = [
   { name: 'status', label: 'Publicación', kind: 'select', options: statusOptions },
 ]
 const benefitFields: Field[] = [
+  { name: 'featured', label: 'Destacado en el inicio', kind: 'boolean' },
   { name: 'provider', label: 'Prestador', kind: 'lookup', lookup: 'providers', required: true, createOnly: true },
   { name: 'title', label: 'Título', required: true }, { name: 'description', label: 'Descripción', kind: 'textarea' },
   { name: 'conditions', label: 'Condiciones', kind: 'textarea' },
@@ -33,7 +34,7 @@ export const resources: Resource[] = [
     { name: 'is_active', label: 'Cuenta activa', kind: 'boolean', editOnly: true },
   ], filters: [{ name: 'role', label: 'Rol', options: roleOptions }, { name: 'is_active', label: 'Cuenta activa', options: yesNo }, { name: 'email_verified', label: 'Email verificado', options: yesNo }] },
   { key: 'providers', title: 'Prestadores', singular: 'Prestador', columns: ['name', 'category', 'status', 'user_ids'], fields: providerFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }], detail: ['description', 'address', 'hours', 'contact', 'website', 'demo', 'provenance', 'user_ids', 'image_url'] },
-  { key: 'benefits', title: 'Beneficios', singular: 'Beneficio', columns: ['title', 'provider_name', 'status', 'valid_until'], fields: benefitFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }, { name: 'current', label: 'Vigencia', options: [['true', 'Vigente']] }], detail: ['description', 'conditions', 'valid_from', 'valid_until', 'demo', 'provenance', 'image_url'] },
+  { key: 'benefits', title: 'Beneficios', singular: 'Beneficio', columns: ['title', 'provider_name', 'status', 'featured', 'valid_until'], fields: benefitFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }, { name: 'current', label: 'Vigencia', options: [['true', 'Vigente']] }], detail: ['description', 'conditions', 'valid_from', 'valid_until', 'featured', 'demo', 'provenance', 'image_url'] },
   { key: 'collaborators', title: 'Colaboradores', singular: 'Colaborador', columns: ['user_email', 'enabled', 'benefit_ids'], fields: [{ name: 'user', label: 'Usuario Colaborador', kind: 'lookup', lookup: 'users', lookupQuery: 'role=COLLABORATOR&is_active=true', createOnly: true, required: true }, ...networkFields], filters: [{ name: 'enabled', label: 'Habilitado', options: yesNo }, { name: 'user_active', label: 'Usuario activo', options: yesNo }], detail: ['benefit_ids', ...networkFields.map(field => field.name)] },
   { key: 'consumptions', title: 'Consumos', singular: 'Consumo', columns: ['tourist_email', 'provider_name', 'award', 'state', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['VALID', 'Válido'], ['ANNULLED', 'Anulado']] }], detail: ['collaborator_email', 'rule_snapshot', 'annulled_at', 'annul_reason'] },
   { key: 'wallets', title: 'Billeteras', singular: 'Billetera', columns: ['tourist_email', 'balance', 'redemptions_frozen'], detail: ['movements'] },

@@ -1,7 +1,7 @@
 import { ButtonLink } from './Layout'
 import { CatalogState } from './CatalogPages'
 import { FeaturedBenefits } from './FeaturedBenefits'
-import { usePublicCatalog } from './usePublicCatalog'
+import { useFeaturedCatalog } from './useFeaturedCatalog'
 import { NetworkCanvas } from './NetworkCanvas'
 import type { SiteSettings } from './admin/types'
 import { defaultSiteSettings } from './useSiteSettings'
@@ -15,7 +15,7 @@ import { catalogHref } from './catalog-query'
 import { navigate } from './navigate'
 
 export function HomePage({ settings = defaultSiteSettings, trip }: { settings?: SiteSettings; trip?: { wallet: Wallet; progress: Progress } }) {
-  const { enabled, data, loading, error, retry } = usePublicCatalog()
+  const { enabled, benefit, count, index, select, loading, error, retry } = useFeaturedCatalog()
   const categories = useCatalogCategories(enabled)
   return <main id="contenido" className="product-home">
     <section className="home-hero" aria-label="Inicio">
@@ -27,9 +27,10 @@ export function HomePage({ settings = defaultSiteSettings, trip }: { settings?: 
         </div>
         <div className="home-hero-feature client-home-postcard">
           <span>BENEFICIOS PARA TU PRÓXIMA VISITA</span>
-          <CatalogState enabled={enabled} loading={loading} error={error} retry={retry} />
-          {enabled && !loading && !error && data && <FeaturedBenefits benefits={data.results} />}
-          {enabled && !loading && !error && data?.results.length === 0 && <EmptyState title="Pronto habrá beneficios para explorar." description="Volvé pronto para descubrir las próximas propuestas de la ciudad."><ButtonLink href="/referencia">Ingresar con QR</ButtonLink></EmptyState>}
+          <FeaturedBenefits benefit={enabled && !loading && !error ? benefit : undefined} count={count} index={index} onSelect={select}>
+            <CatalogState enabled={enabled} loading={loading} error={error} retry={retry} />
+            {enabled && !loading && !error && count === 0 && <EmptyState title="Pronto habrá nuevas ideas para tu visita." description="Mientras tanto, explorá las propuestas disponibles en el catálogo."><ButtonLink href="/beneficios">Ver todos los beneficios</ButtonLink></EmptyState>}
+          </FeaturedBenefits>
         </div>
       </div>
     </section>

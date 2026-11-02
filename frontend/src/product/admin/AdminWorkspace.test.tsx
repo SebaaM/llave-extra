@@ -14,6 +14,21 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); if (nativeLocks) Object.defineProperty(navigator, 'locks', nativeLocks); else Reflect.deleteProperty(navigator, 'locks') })
 
 describe('gestión administrativa', () => {
+  it('actualiza el destacado mediante el PATCH de ficha y su versión vigente', async () => {
+    const onSaved = vi.fn()
+    const requests: Array<{ url: string; method?: string; body: Record<string, unknown> }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push({ url: String(input), method: init?.method, body: JSON.parse(String(init?.body)) })
+      return json({ id: 'b1', version: 'v2', featured: true })
+    }))
+    render(<RecordForm resource={resources.find(item => item.key === 'benefits')!} data={{ id: 'b1', version: 'v1', title: 'Visita local', featured: false, status: 'PUBLISHED' }} back="/gestion/beneficios" onSaved={onSaved} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Destacado en el inicio' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toMatchObject({ method: 'PATCH', body: { version: 'v1', featured: true } })
+    expect(requests[0].url).toContain('/admin/benefits/b1/')
+  })
   it('conserva el texto del formulario ante una versión obsoleta', async () => {
     const user = resources.find(item => item.key === 'users')!
     const onSaved = vi.fn()

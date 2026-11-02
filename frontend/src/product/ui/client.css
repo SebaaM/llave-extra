@@ -202,6 +202,9 @@
 
 .product-shell .client-step-explanation h3 { margin-top: 0; }
 .product-shell .client-step-explanation p { margin-bottom: 0; }
+.product-shell .client-journey-credits { display: flex; align-items: center; flex-wrap: wrap; gap: var(--client-space-4); margin-block: var(--client-space-4); }
+.product-shell .client-journey-credits p { flex: 1 1 20rem; margin: 0; }
+.product-shell .client-how-it-works { scroll-margin-top: 6rem; }
 
 .product-shell .client-trip-summary {
   margin-top: var(--client-space-6);
