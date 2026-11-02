@@ -88,7 +88,8 @@ describe('paneles operativos por rol', () => {
   it('abre el panel React del Administrador al resolver /espacio', async () => {
     mount('ADMIN', '/espacio')
     await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
-    expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
+    // La URL cambia antes de que React termine de renderizar el panel.
+    expect(await screen.findByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
   })
 
   it('abre el panel React del Administrador después del login', async () => {
@@ -98,7 +99,7 @@ describe('paneles operativos por rol', () => {
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-ejemplo-123!' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
     await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
-    expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
+    expect(await screen.findByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
   })
 
   it('guarda la ficha por multipart con la whitelist y conserva el nombre informativo', async () => {

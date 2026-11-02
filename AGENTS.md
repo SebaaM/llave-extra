@@ -34,6 +34,7 @@ Ejecutar comprobaciones relevantes antes de cada commit: pruebas de backend sobr
 
 - Backend: Python 3.13.16 y uv 0.11.3. `backend/pyproject.toml` y `backend/uv.lock` son la fuente única; el entorno nativo vive en `backend/.venv` (ignorado). En Docker uv instala con `--locked` en `/opt/venv`, fuera del montaje `backend:/app`.
 - Frontend: Node 24.19.0 y pnpm 11.22.0. `frontend/package.json` declara `packageManager`, `pnpm-lock.yaml` es la fuente única y `pnpm-workspace.yaml` permite solo los scripts requeridos. Instalar con `pnpm install --frozen-lockfile`.
+- Mantener `pnpm audit --audit-level moderate` activo en CI. El override temporal de minimatch en `frontend/pnpm-workspace.yaml` corrige GHSA-g3hv-75wg-m249; retirarlo solo cuando las dependencias ascendentes admitan versiones corregidas y se verifique el árbol bloqueado.
 - Docker Compose es la opción local predeterminada y no requiere Python, uv ni Node en el host. Una ejecución nativa de Django requiere PostgreSQL, Redis, SMTP local y variables de entorno configuradas para servicios accesibles desde el host; no uses `db`, `redis` ni `mailpit` como hostname fuera de Docker.
 - No montar entornos `.venv` ni `node_modules` del host en contenedores. No usar SQLite para validar el dominio.
 
