@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Seed de actividad completa opcional — 02/11/2026
+
+El usuario pidió más volumen, consumos y escenarios para probar backoffice mediante un comando separado. `seed_activity_demo` agrega por defecto 300 Clientes, 30 negocios, 10 colaboradores y 12 productos; la prueba nueva generó 980 consumos, 205 pedidos en ocho estados y 20 ajustes abiertos. Cantidad configurable 20–3000 Clientes. Usa servicios E4/E5, redención QR válida, selección canónica, fake explícito sin HTTP externo, checkpoints y bloqueo PostgreSQL. No se ejecuta al iniciar ni cambia datos/configuración existentes. Accesos privados por base en archivo ignorado; guía en `docs/demo-activity.md`. Verificación en `docs/verification/15-seed-actividad-demo.md`; no se cargó la base principal ni se habilita compra React o integración externa.
+
 ## Arranque local en primer plano — 02/11/2026
 
 Los scripts `dev.ps1 up` y `dev.sh up` preparan servicios, migraciones y demo opcional antes de mostrar el historial disponible y seguir los logs de todos los servicios mediante `docker compose logs --follow --tail all`. Corrección del usuario: adjuntarse con otro `compose up` después de iniciarlos no mostraba sus logs de inicio. `Ctrl+C` ejecuta `docker compose stop`, conservando volúmenes. Los errores de preparación se propagan antes de adjuntarse. No cambia el dominio ni OpenAPI.

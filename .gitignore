@@ -20,6 +20,8 @@ test-results/
 *.diff
 .worktrees/
 docs/cuentas-prueba.local.md
+docs/activity-demo*.local.json
+docs/activity-demo*.local.json.tmp
 work/
 .env-example
 !.env-example
