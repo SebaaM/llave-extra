@@ -12,6 +12,8 @@ Requisitos: Git, Docker Desktop con Compose activo y, en macOS/Linux, OpenSSL. C
 
 En macOS/Linux: `./scripts/dev.sh up --demo`. Se genera `.env` local ignorado con secretos aleatorios, se construyen imágenes, inician PostgreSQL, Redis, Django, Vite, Nginx y Mailpit, se aplican migraciones y se cargan datos demo. Sin datos de ejemplo usá `up` sin el parámetro demo. Los volúmenes persisten; `./scripts/dev.ps1 down` o `./scripts/dev.sh down` detienen sin borrarlos. Para pruebas backend PostgreSQL: `./scripts/dev.ps1 test` o `./scripts/dev.sh test`. [Más detalles y verificaciones](DEV.md).
 
+Al finalizar la preparación, `up` muestra los logs de inicio disponibles de todos los servicios y sigue los nuevos en primer plano mediante `docker compose logs --follow --tail all`. `Ctrl+C` detiene los contenedores y devuelve la consola, conservando los volúmenes.
+
 ### Cuentas de prueba locales
 
 El seed crea las siguientes cuentas sintéticas y genera sus contraseñas en `docs/cuentas-prueba.local.md` (ignorado por Git). Consultá ese archivo local: no hay contraseñas fijas versionadas. Una ejecución normal no cambia contraseñas existentes; si falta el archivo, la recuperación explícita está en [DEV.md](DEV.md). No usar estas cuentas en producción.

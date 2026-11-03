@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Arranque local en primer plano — 02/11/2026
+
+Los scripts `dev.ps1 up` y `dev.sh up` preparan servicios, migraciones y demo opcional antes de mostrar el historial disponible y seguir los logs de todos los servicios mediante `docker compose logs --follow --tail all`. Corrección del usuario: adjuntarse con otro `compose up` después de iniciarlos no mostraba sus logs de inicio. `Ctrl+C` ejecuta `docker compose stop`, conservando volúmenes. Los errores de preparación se propagan antes de adjuntarse. No cambia el dominio ni OpenAPI.
+
 ## Estado vigente del Cliente — 2/11/2026
 
 Implementados QR contextual, renovación manual, resumen administrativo, destacados del hero y «Cómo funciona» en catálogo. Rama `feature/cliente-qr-destacados`, con base `develop` `054342e` incorporada localmente en `84d872b`, incluida su corrección de CI. Entrega publicada en [PR #18](https://github.com/SebaaM/llave-extra/pull/18), borrador hacia `develop`, sin merge y con residual técnico/QA/aprobación del cliente pendientes. La PR #16 fue fusionada externamente el 31/10; sus estados anteriores en borrador son históricos.

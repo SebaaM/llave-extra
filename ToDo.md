@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Arranque local con consola adjunta: PowerShell y Bash muestran todos los servicios al finalizar la preparación; `Ctrl+C` detiene los contenedores conservando volúmenes. Ver `DEV.md`.
+
 - [ ] Resolver antes del merge la continuidad del QR si una página retirada devuelve 404 y su recuperación falla por 503/red: la pista se borra y una carga completa requiere reabrir el QR para conservar atribución. La recuperación normal y la revocación real están cubiertas; [residual de revisión](docs/verification/14-seleccion-qr-contextual.md).
 - [x] Realizar revisión integral y publicar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) de `feature/cliente-qr-destacados` hacia develop, en borrador y sin merge. Un residual Important sigue abierto en el pendiente anterior; no equivale a aprobación técnica final.
 - [ ] Revisión visual manual del corte nuevo (desktop/móvil, zoom y safe area): herramienta de Opera agotó autorización; [evidencia y límites](docs/verification/14-seleccion-qr-contextual.md).

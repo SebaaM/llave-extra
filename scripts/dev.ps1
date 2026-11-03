@@ -71,7 +71,18 @@ switch ($Action) {
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
     docker compose exec backend python manage.py migrate
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    if ($Demo -or $Mode -eq '--demo') { docker compose exec backend python manage.py seed_demo }
+    if ($Demo -or $Mode -eq '--demo') {
+      docker compose exec backend python manage.py seed_demo
+      if ($LASTEXITCODE) { exit $LASTEXITCODE }
+    }
+    $followExitCode = 0
+    try {
+      docker compose logs --follow --tail all
+      $followExitCode = $LASTEXITCODE
+    } finally {
+      docker compose stop
+    }
+    if ($followExitCode) { exit $followExitCode }
   }
   'test' {
     Initialize-Environment

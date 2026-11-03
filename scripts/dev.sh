@@ -43,6 +43,10 @@ case "${1:-}" in
     docker compose up -d --build
     docker compose exec backend python manage.py migrate
     if [ "${2:-}" = "--demo" ] || [ "${2:-}" = "-Demo" ]; then docker compose exec backend python manage.py seed_demo; fi
+    trap 'docker compose stop' 0
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    docker compose logs --follow --tail all
     ;;
   test)
     bootstrap

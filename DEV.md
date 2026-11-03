@@ -13,6 +13,10 @@ El entorno local predeterminado corre backend Django 5.2 sobre PostgreSQL 17, fr
 
 En macOS/Linux se usa `./scripts/dev.sh` con los mismos subcomandos (`up --demo`, `test`, `down`). `down` conserva los volúmenes. El código frontend se monta para hot reload; al cambiar `package.json`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`, ejecutar `./scripts/dev.ps1 up` o `./scripts/dev.sh up` para reconstruir la imagen de dependencias. Solo borrar volúmenes manualmente cuando se desee eliminar los datos locales.
 
+`up` construye e inicia en segundo plano para ejecutar migraciones y, si corresponde, el seed demo. Si esos pasos terminan correctamente, ejecuta `docker compose logs --follow --tail all`: recupera los logs de inicio disponibles y muestra los nuevos de todos los servicios, con sus prefijos. Al pulsar `Ctrl+C`, el script ejecuta `docker compose stop` sin borrar volúmenes. Un fallo de preparación devuelve el error y no entra en el seguimiento.
+
+La primera prueba del 02/11/2026 confirmó la conexión a los seis servicios y su detención con `Ctrl+C`, pero no verificó líneas de logs por servicio. El usuario detectó la omisión de logs iniciales al adjuntarse con `compose up` a contenedores ya iniciados. La nueva ejecución real de `dev.ps1 up` verificó líneas con prefijo de backend (81), db (27), frontend (19), Mailpit (9), Nginx (61) y Redis (45), recuperando sus logs disponibles. `Ctrl+C` volvió a detener los seis servicios. Sintaxis PowerShell/POSIX sh y `git diff --check` aprobados. No se modificó código del dominio ni el contrato API.
+
 ## uv nativo opcional
 
 Docker Compose es la forma recomendada de ejecutar y probar la aplicación; no requiere Python ni Node en el host. Para que un IDE use el entorno Python local, ejecutá desde PowerShell:
