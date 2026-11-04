@@ -1,5 +1,7 @@
 # Pendientes
 
+- [ ] Completar la revisión visual administrativa y el CI del [PR #20](https://github.com/SebaaM/llave-extra/pull/20) de backoffice de tienda y catálogo real. No habilita compra ni canje desde la web; sandbox externo de pagos sigue pendiente.
+
 - [x] Comando opcional `seed_activity_demo` con volumen para web/backoffice: consumos directos/referidos, créditos, ajustes, canjes y pagos fake, sin carga automática ni cambios de datos previos. [Guía](docs/demo-activity.md); [evidencia](docs/verification/15-seed-actividad-demo.md).
 
 - [x] Arranque local con consola adjunta: PowerShell y Bash muestran todos los servicios al finalizar la preparación; `Ctrl+C` detiene los contenedores conservando volúmenes. Ver `DEV.md`.
