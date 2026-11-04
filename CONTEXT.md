@@ -2,7 +2,11 @@
 
 ## Backoffice de tienda y catálogo real — 04/11/2026
 
-Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` desde `develop`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. Pruebas y límites en [verificación](docs/verification/16-backoffice-tienda-catalogo.md): QA visual del panel y entrega final pendientes; sandbox externo de pagos sigue pendiente.
+Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` y publicado en [PR #20](https://github.com/SebaaM/llave-extra/pull/20), borrador hacia `develop`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. Pruebas y límites en [verificación](docs/verification/16-backoffice-tienda-catalogo.md): QA visual del panel y CI pendientes; sandbox externo de pagos sigue pendiente.
+
+## Seed de actividad completa opcional — 02/11/2026
+
+El usuario pidió más volumen, consumos y escenarios para probar backoffice mediante un comando separado. `seed_activity_demo` agrega por defecto 300 Clientes, 30 negocios, 10 colaboradores y 12 productos; la prueba nueva generó 980 consumos, 205 pedidos en ocho estados y 20 ajustes abiertos. Cantidad configurable 20–3000 Clientes. Usa servicios E4/E5, redención QR válida, selección canónica, fake explícito sin HTTP externo, checkpoints y bloqueo PostgreSQL. No se ejecuta al iniciar ni cambia datos/configuración existentes. Accesos privados por base en archivo ignorado; guía en `docs/demo-activity.md`. Verificación en `docs/verification/15-seed-actividad-demo.md`; no se cargó la base principal ni se habilita compra React o integración externa.
 
 ## Arranque local en primer plano — 02/11/2026
 

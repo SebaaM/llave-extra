@@ -37,6 +37,7 @@ Ejecutar comprobaciones relevantes antes de cada commit: pruebas de backend sobr
 - Mantener `pnpm audit --audit-level moderate` activo en CI. El override temporal de minimatch en `frontend/pnpm-workspace.yaml` corrige GHSA-g3hv-75wg-m249; retirarlo solo cuando las dependencias ascendentes admitan versiones corregidas y se verifique el árbol bloqueado.
 - Docker Compose es la opción local predeterminada y no requiere Python, uv ni Node en el host. Una ejecución nativa de Django requiere PostgreSQL, Redis, SMTP local y variables de entorno configuradas para servicios accesibles desde el host; no uses `db`, `redis` ni `mailpit` como hostname fuera de Docker.
 - No montar entornos `.venv` ni `node_modules` del host en contenedores. No usar SQLite para validar el dominio.
+- `seed_activity_demo` es manual, requiere DEBUG/PostgreSQL/fake explícito y usa namespace propio, checkpoints y servicios de dominio. No incorporarlo a `up`, migraciones o `seed_demo`; no vaciar la outbox global, editar historia financiera ni restablecer configuración/datos existentes. Conservar el archivo privado de accesos por base. Ver `docs/demo-activity.md`.
 
 ## Delegación
 

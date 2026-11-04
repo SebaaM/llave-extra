@@ -16,3 +16,7 @@ La migración agrega categorías opcionales y umbral inicial 5, sin asignar cate
 - Revisión independiente: se detectaron y corrigieron versiones obsoletas en las categorías y sus productos; la revisión comprobó el orden Product → Category. Se corrigieron además el primer clic de orden, la etiqueta del filtro, respuestas tardías del selector y la posición de precios nulos. La revisión focal posterior no encontró defectos adicionales en esos cambios.
 
 La revisión automática rechazó crear un superusuario sintético para QA del panel por tratarse de acceso privilegiado. No se creó esa cuenta ni se probó el panel en navegador. La validación de Mercado Pago sandbox y la programación de workers siguen fuera del alcance.
+
+## Integración con develop
+
+Al abrir el [PR #20](https://github.com/SebaaM/llave-extra/pull/20), `develop` había avanzado a `4bb4300` con el comando de actividad demo. Se incorporó esa base a la rama y se conservaron ambos cambios de documentación. En PostgreSQL/Redis aislados, `pytest -q accounts/tests/test_activity_demo.py shop/tests/test_catalog_admin.py` aprobó 30 pruebas en 296,90 s; Ruff, migraciones sin drift y OpenAPI sin advertencias también aprobaron. El CI del commit anterior `b40f262` terminó correctamente; el CI del nuevo corte debe consultarse en el PR.
