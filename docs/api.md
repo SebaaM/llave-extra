@@ -100,13 +100,14 @@ La red agrupa prestadores únicos con al menos un beneficio publicado y vigente 
 
 ### Tienda E5
 
-Catálogo independiente de la red privada: productos activos y sus imágenes son públicos, sin carpetas, prestadores ni QR. Los medios permanecen fuera de MEDIA_ROOT; cada GET revalida que el producto siga activo. Todas las respuestas de tienda incluyen `Cache-Control: no-store`. La previsualización de imágenes inactivas en Admin usa sesión Django y requiere administrador activo, staff y superusuario.
+Catálogo independiente de la red privada: son públicos los productos activos sin categoría o con categoría activa. Listado, detalle e imagen aplican la misma política; desactivar una categoría oculta sus productos sin alterar sus datos y reactivarla recupera los que siguen activos. Los medios permanecen fuera de MEDIA_ROOT. Todas las respuestas de tienda incluyen `Cache-Control: no-store`. La previsualización de imágenes inactivas en Admin usa sesión Django y requiere administrador activo, staff y superusuario.
 
 | Ruta relativa a `/api/v1/shop/` | Entrada / resultado |
 | --- | --- |
-| `GET products/` | Página de 24 productos: `{count,next,previous,results}` |
-| `GET products/{uuid}/` | `{id,name,description,stock,price_money,price_credits,image_url}`; 404 si está inactivo |
-| `GET products/{uuid}/media/` | Imagen de producto activo; 404 si falta o se desactivó |
+| `GET products/` | `{count,next,previous,results}`; 24 por defecto, `page_size` hasta 100. Filtros `search`, `category` UUID y `ordering` (`name`, `price_money`, `price_credits`, con `-` para descendente); desempate por ID. La tienda solicita seis. |
+| `GET catalog/` | `{categories:[{id,name}],pickup}`; categorías completas con productos públicos, independientemente de la página; retiro `{name,address,hours}` solo si está habilitado, si no `null`. |
+| `GET products/{uuid}/` | `{id,name,description,category,stock,price_money,price_credits,image_url}`; `category` es `{id,name}` o `null`; 404 si no es público. |
+| `GET products/{uuid}/media/` | Imagen del producto público; 404 si falta o deja de ser visible. |
 | `GET orders/` | Pedidos del Cliente autenticado activo, paginados de 24 |
 | `POST orders/` | `Idempotency-Key` obligatorio y `{mode,items:[{product_id,quantity}]}`; 201 nuevo, 200 replay |
 | `GET orders/{uuid}/` | Pedido propio; 404 para ajeno |
@@ -124,6 +125,8 @@ El cliente solicita cancelación antes de entrega; una solicitud abierta bloquea
 
 PostgreSQL protege snapshots, identidad, líneas, claves, auditoría y payload externo. Valida totales contra líneas y existencia de clave al commit; una línea no puede insertarse después de confirmar la clave. Orden de locks: User → Wallet → Order → Product por UUID ascendente. Checkout de pedido nuevo bloquea User/Wallet antes de Product y crea el pedido todavía invisible para otras transacciones; los servicios E4 solo vuelven a adquirir locks ya poseídos. Trabajadores y transiciones sobre pedidos existentes deben usar `shop.services.locked_order` dentro de atomic; ninguna llamada HTTP dentro de esa transacción.
 
+Al comprar, el checkout bloquea las categorías involucradas por UUID después de todos los productos y rechaza las inactivas; una desactivación bloquea la categoría sin bloquear sus productos. El replay de un pedido anterior conserva su resultado aunque la categoría haya cambiado.
+
 Errores de tienda: 400 formato/campos/carrito; 401 sesión requerida; 403 rol o verificación; 404 producto/pedido no visible; 409 stock, billetera, retiro, modalidad, estado o idempotencia incompatibles. OpenAPI se genera desde serializers y vistas; no se versiona una copia estática.
 
 `POST /api/v1/shop/payments/webhook/?type=order&data.id={id}` exige HMAC específico Orders y devuelve 200 tras inbox durable o 401 genérico. No usa JWT ni acredita dinero por body. Query firmado único, manifest literal con casing/ts preservados, cuerpo máximo 8 KiB, ventana de 10 minutos y 60 segundos futuros. Dedupe por entrega, nunca por ID remoto permanente. Un body firmado dispara GET y cotejos completos; no prueba importes/estado. Inbox temprano y búsqueda por referencia recuperan CREATE incierto aun sin webhook. HTTP fuera de atomic, request/seller congelados y leases/versiones impiden aplicar respuestas obsoletas. Polling incluye PAID/READY/cancelados/vencidos y estados terminales; refund posterior a entrega genera incidencia financiera sin reponer inventario. Guía: [operación E5](shop-operations.md).
@@ -140,7 +143,7 @@ Las rutas siguientes son relativas a `/api/v1/`. Todas las rutas `/admin/` requi
 | `GET/PATCH /admin/settings/general/` | Los siete campos públicos más `version` |
 | `GET/PATCH /admin/settings/catalog/` | `enabled`, `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds`, `version` |
 | `GET/PATCH /admin/settings/credits/` | `base_reward`, `target_visits`, `version` |
-| `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `payment_provider` de solo lectura y `version` |
+| `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `low_stock_threshold` (por defecto 5), `payment_provider` de solo lectura y `version` |
 | `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`; 20 por defecto, máximo 100; orden fecha descendente, ID descendente y origen como desempates. `actor` es ID numérico positivo de usuario; acción/recurso exactos. Búsqueda en email del actor, acción, recurso y motivo |
 
 El DTO de actividad contiene solo `id`, `source`, `actor_email`, `action`, `resource`, `object_id`, `changed_fields`, `reason`, `created_at`. La identidad estable de actividad es el par `(source,id)`: `source="admin"` para AdminAudit y `source="order"` para OrderAudit, incluso cuando ambos tienen `resource="orders"`. La auditoría registra nombres de campos modificados, sin sus valores. Configuración usa acción `settings.update` y recurso `settings.general`, `settings.catalog`, `settings.credits` o `settings.shop`; guarda efecto y auditoría en la misma transacción. Una modificación sin cambios efectivos no crea actividad.
@@ -166,7 +169,8 @@ Todas las rutas de esta sección son relativas a `/api/v1/admin/` y aplican la m
 | `consumptions` | `id,tourist,tourist_email,provider,provider_name,collaborator,collaborator_email,award,rule_snapshot,state,created_at,annulled_at,annul_reason` | Solo lectura. Filtros `state,provider,tourist,collaborator`; búsqueda cliente/negocio. |
 | `wallets` | `id,tourist,tourist_email,balance,redemptions_frozen`; detalle agrega `movements:{count,next,previous,results}` con movimientos `id,kind,delta,reference,source_entry,created_at` | Solo lectura. Filtro `tourist`; búsqueda email. Movimientos usan la paginación de la URL de detalle. |
 | `adjustments` | `id,consumption,tourist_email,shortfall,funded_amount,forgiven_amount,created_at,resolved_at,resolved_by,resolution,resolution_reason` | Solo lectura. Filtros `tourist,resolved=true|false`; búsqueda email. |
-| `products` | `id,name,description,image_url,active,stock,price_money,price_credits,demo,version` | POST/PATCH `name,description,image,active,price_money,price_credits` (`version` solo PATCH). `stock` y `demo` son readonly; filtros `active,stock=0`, búsqueda nombre/descripción. |
+| `products` | `id,name,description,image_url,category,category_name,category_active,active,stock,price_money,price_credits,demo,version` | POST/PATCH `name,description,image,category,active,price_money,price_credits` (`version` solo PATCH). Alta en borrador y stock cero; exige al menos un precio. `stock` y `demo` son readonly. Filtros `active`, `stock=0`, `category`, `availability` (`in_stock`, `low`, `out`) y `price_mode` (`money`, `credits`, `both`); búsqueda nombre/descripción y `ordering` por columnas permitidas. |
+| `product-categories` | `id,name,active,published_products_count,version` | POST/PATCH `name,active`; PATCH exige `version`. Nombres únicos sin distinguir mayúsculas ni espacios exteriores; no se eliminan. Filtro `active`, búsqueda por nombre. |
 | `orders` | Lista resumida: `id,customer,customer_email,mode,state,currency,total_money,total_credits,created_at`. Detalle: los anteriores y `pickup_snapshot,reserved_until,stock_released,payment_provider,payment_confirmed,lines,cancellations,payment_operations,audit` | Solo lectura. Filtros `state,mode,customer`; búsqueda email. Líneas: `product,name,quantity,unit_money,unit_credits`; cancelaciones, operaciones y auditoría usan los DTO de sus recursos sin secretos. No se exponen `remote_id`, URL de checkout ni payload. |
 | `cancellations` | `id,order,customer_email,reason,state,created_at,resolved_at,resolved_by,resolution_reason` | Solo lectura. Filtro `state`; búsqueda email. |
 | `credit-rules` | `id,provider,provider_name,reward,version` | POST `provider,reward`; PATCH `reward,version` sin cambio de prestador; acción `remove`. Filtro `provider`; búsqueda negocio. |

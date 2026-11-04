@@ -7,6 +7,7 @@ urlpatterns = [
     path("payments/webhook/", OrderWebhook.as_view(), name="shop-payment-webhook"),
     path("admin/media/<path:name>", views.ProductAdminMedia.as_view(), name="shop-admin-media"),
     path("products/", views.ProductList.as_view(), name="shop-products"),
+    path("catalog/", views.PublicCatalog.as_view(), name="shop-catalog"),
     path("products/<uuid:pk>/", views.ProductDetail.as_view(), name="shop-product"),
     path("products/<uuid:pk>/media/", views.ProductMedia.as_view(), name="shop-product-media"),
     path("orders/", views.OrderList.as_view(), name="shop-orders"),
