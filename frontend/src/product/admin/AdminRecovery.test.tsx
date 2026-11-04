@@ -18,14 +18,18 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 describe('recuperación administrativa', () => {
   it('no rebasa una edición al actualizar la ficha después de una acción', async () => {
     const calls: RequestInit[] = []
-    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init: RequestInit) => { calls.push(init); return json({ id: 'p1' }) }))
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init: RequestInit) => {
+      if (String(url).includes('/product-categories/')) return json({ count: 0, results: [], next: null, previous: null })
+      if (String(url).endsWith('/image/')) return json({}, 404)
+      calls.push(init); return json({ id: 'p1' })
+    }))
     function Scenario() {
       const [data, setData] = useState<Row>(productRow)
       return <><RecordForm resource={product} data={data} back="/gestion/productos" onSaved={vi.fn()} onReload={async () => ({ ...productRow, version: 'v3', name: 'Nombre de otra persona' })} /><RecordActions resource="products" data={data} onSuccess={async () => { setData({ ...productRow, version: 'v3', name: 'Nombre de otra persona' }) }} /></>
     }
     render(<Scenario />)
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Mi edición' } })
-    fireEvent.change(screen.getByLabelText('Variación positiva o negativa'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Recuento' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajustar stock' }))
     await screen.findByText(/La ficha cambió mientras editabas/)
@@ -42,7 +46,7 @@ describe('recuperación administrativa', () => {
   })
 
   it('permite centavos mediante validación nativa y conserva su texto en el envío', async () => {
-    const fetch = vi.fn(async () => json(productRow))
+    const fetch = vi.fn(async (url: unknown) => String(url).includes('/product-categories/') ? json({ count: 0, results: [], next: null, previous: null }) : String(url).endsWith('/image/') ? json({}, 404) : json(productRow))
     const onSaved = vi.fn()
     vi.stubGlobal('fetch', fetch)
     render(<RecordForm resource={product} data={productRow} back="/gestion/productos" onSaved={onSaved} />)
@@ -51,21 +55,22 @@ describe('recuperación administrativa', () => {
     fireEvent.change(input, { target: { value: '123.45' } })
     expect(input.checkValidity()).toBe(true)
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     await waitFor(() => expect(onSaved).toHaveBeenCalledOnce())
-    expect(JSON.parse(String((fetch.mock.calls as unknown as Array<[unknown, RequestInit]>)[0][1].body)).price_money).toBe('123.45')
+    const writes = () => (fetch.mock.calls as unknown as Array<[unknown, RequestInit]>).filter(([, init]) => init?.method === 'PATCH')
+    expect(writes()).toHaveLength(1)
+    expect(JSON.parse(String(writes()[0][1].body)).price_money).toBe('123.45')
     fireEvent.change(input, { target: { value: '12.345' } })
     expect(input.validity.stepMismatch).toBe(true)
     fireEvent.change(screen.getByLabelText('Precio en créditos'), { target: { value: '1.5' } })
     expect((screen.getByLabelText('Precio en créditos') as HTMLInputElement).validity.stepMismatch).toBe(true)
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(fetch).toHaveBeenCalledOnce()
+    expect(writes()).toHaveLength(1)
   })
 
   it.each(['providers', 'benefits', 'products'])('preserva la eliminación de imagen y la versión ante 409 en %s', async key => {
     const requests: RequestInit[] = []
-    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init: RequestInit) => { requests.push(init); return json({ detail: 'Obsoleto' }, 409) }))
-    render(<RecordForm resource={resources.find(item => item.key === key)!} data={{ ...productRow, title: 'Oferta', slug: 'negocio', category: 'Paseos', status: 'PUBLISHED' }} back="/gestion" onSaved={vi.fn()} />)
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown, init: RequestInit) => { if (String(url).includes('/product-categories/')) return json({ count: 0, results: [], next: null, previous: null }); if (String(url).endsWith('/image/')) return json({}, 404); requests.push(init); return json({ detail: 'Obsoleto' }, 409) }))
+    render(<RecordForm resource={resources.find(item => item.key === key)!} data={{ ...productRow, title: 'Oferta', slug: 'negocio', category: key === 'products' ? null : 'Paseos', status: 'PUBLISHED' }} back="/gestion" onSaved={vi.fn()} />)
     fireEvent.click(screen.getByLabelText('Quitar imagen actual'))
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
     await screen.findByRole('alert')
@@ -101,7 +106,7 @@ describe('recuperación administrativa', () => {
     vi.stubGlobal('fetch', fetch)
     const refresh = vi.fn().mockRejectedValueOnce(new ApiError(503, 'GET falló')).mockResolvedValue(undefined)
     render(<RecordActions resource="products" data={productRow} onSuccess={refresh} />)
-    fireEvent.change(screen.getByLabelText('Variación positiva o negativa'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Recuento' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajustar stock' }))
     await screen.findByText(/GET falló/)

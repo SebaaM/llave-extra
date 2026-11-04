@@ -1,5 +1,7 @@
 # Pendientes
 
+- [ ] Implementar el [plan de backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md) en `feature/backoffice-tienda-catalogo`, con verificación PostgreSQL y visual y PR borrador a `develop`. No habilita compra ni canje desde la web; sandbox externo de pagos sigue pendiente.
+
 - [x] Arranque local con consola adjunta: PowerShell y Bash muestran todos los servicios al finalizar la preparación; `Ctrl+C` detiene los contenedores conservando volúmenes. Ver `DEV.md`.
 
 - [ ] Resolver antes del merge la continuidad del QR si una página retirada devuelve 404 y su recuperación falla por 503/red: la pista se borra y una carga completa requiere reabrir el QR para conservar atribución. La recuperación normal y la revocación real están cubiertas; [residual de revisión](docs/verification/14-seleccion-qr-contextual.md).

@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Backoffice de tienda y catálogo real — 04/11/2026
+
+Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` desde `develop`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. Pruebas y límites en [verificación](docs/verification/16-backoffice-tienda-catalogo.md): QA visual del panel y entrega final pendientes; sandbox externo de pagos sigue pendiente.
+
 ## Arranque local en primer plano — 02/11/2026
 
 Los scripts `dev.ps1 up` y `dev.sh up` preparan servicios, migraciones y demo opcional antes de mostrar el historial disponible y seguir los logs de todos los servicios mediante `docker compose logs --follow --tail all`. Corrección del usuario: adjuntarse con otro `compose up` después de iniciarlos no mostraba sus logs de inicio. `Ctrl+C` ejecuta `docker compose stop`, conservando volúmenes. Los errores de preparación se propagan antes de adjuntarse. No cambia el dominio ni OpenAPI.

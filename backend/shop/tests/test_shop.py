@@ -181,7 +181,7 @@ def test_public_catalog_media_revalidated(domain, tmp_path):
         domain.product.image.save("test.png", SimpleUploadedFile("test.png", image.getvalue(), content_type="image/png"))
     result = api().get("/api/v1/shop/products/")
     assert result.status_code == 200 and result.data["count"] == 1
-    assert set(result.data["results"][0]) == {"id", "name", "description", "stock", "price_money", "price_credits", "image_url"}
+    assert set(result.data["results"][0]) == {"id", "name", "description", "stock", "price_money", "price_credits", "image_url", "category"}
     url = result.data["results"][0]["image_url"]
     response = api().get(url)
     assert response.status_code == 200 and response["Cache-Control"] == "no-store"

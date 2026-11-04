@@ -1,5 +1,5 @@
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -13,8 +13,16 @@ from credits.services import Conflict
 from providers.catalog import catalog_benefits
 from providers.models import Benefit, Provider
 from referrals.models import CollaboratorProfile
-from shop.models import CancellationRequest, Order, PaymentOperation, Product, StockAdjustment
-from shop.services import require_admin
+from shop.models import (
+    CancellationRequest,
+    Order,
+    PaymentOperation,
+    Product,
+    ProductCategory,
+    ShopSettings,
+    StockAdjustment,
+)
+from shop.services import lock_product_categories, require_admin
 
 from .commands import record_audit
 from .permissions import IsProgramAdmin
@@ -34,6 +42,9 @@ from .resource_serializers import (
     OrderReadSerializer,
     OrderSummarySerializer,
     PaymentOperationReadSerializer,
+    ProductCategoryPatchRequestSerializer,
+    ProductCategoryReadSerializer,
+    ProductCategoryWriteSerializer,
     ProductPatchRequestSerializer,
     ProductReadSerializer,
     ProductWriteSerializer,
@@ -68,7 +79,7 @@ class ResourceView(generics.GenericAPIView):
     search_fields = ()
     id_filters = {"provider": serializers.UUIDField(), "tourist": serializers.IntegerField(min_value=1),
                   "collaborator": serializers.UUIDField(), "customer": serializers.IntegerField(min_value=1),
-                  "product": serializers.UUIDField()}
+                  "product": serializers.UUIDField(), "category": serializers.UUIDField()}
 
     def get_serializer_class(self):
         return self.read_serializer
@@ -85,7 +96,7 @@ class ResourceView(generics.GenericAPIView):
                                ("page", "page_size", "search", "role", "is_active", "email_verified", "status",
                                 "provider", "enabled", "state", "mode", "kind", "active", "product", "customer",
                                 "tourist", "collaborator", "created_from", "created_to", "current",
-                                "user_active", "stock", "resolved")])
+                                "user_active", "stock", "resolved", "category", "availability", "price_mode", "ordering")])
     def get(self, request, pk=None):
         if pk is not None:
             obj = get_object_or_404(self.queryset(), pk=pk)
@@ -122,6 +133,27 @@ class ResourceView(generics.GenericAPIView):
             if request.query_params["stock"] != "0":
                 raise ValidationError({"stock": "Solo se admite 0."})
             queryset = queryset.filter(stock=0)
+        if self.resource == "products":
+            availability = request.query_params.get("availability", "")
+            threshold = (ShopSettings.objects.filter(pk=1).values_list("low_stock_threshold", flat=True).first())
+            threshold = 5 if threshold is None else threshold
+            if availability == "in_stock":
+                queryset = queryset.filter(stock__gt=0)
+            elif availability == "low":
+                queryset = queryset.filter(stock__gt=0, stock__lte=threshold)
+            elif availability == "out":
+                queryset = queryset.filter(stock=0)
+            elif availability:
+                raise ValidationError({"availability": "Disponibilidad inválida."})
+            price_mode = request.query_params.get("price_mode", "")
+            if price_mode == "money":
+                queryset = queryset.filter(price_money__isnull=False, price_credits__isnull=True)
+            elif price_mode == "credits":
+                queryset = queryset.filter(price_money__isnull=True, price_credits__isnull=False)
+            elif price_mode == "both":
+                queryset = queryset.filter(price_money__isnull=False, price_credits__isnull=False)
+            elif price_mode:
+                raise ValidationError({"price_mode": "Modalidad inválida."})
         if self.resource == "adjustments" and request.query_params.get("resolved") is not None:
             if request.query_params["resolved"] not in ("true", "false"):
                 raise ValidationError({"resolved": "Usá true o false."})
@@ -143,7 +175,17 @@ class ResourceView(generics.GenericAPIView):
                     raise ValidationError({name: "Fecha inválida."}) from None
                 queryset = queryset.filter(**{lookup: parsed})
         page = AdminPagination()
-        items = page.paginate_queryset(queryset.order_by("-pk"), request, view=self)
+        ordering = "-pk"
+        if self.resource == "products":
+            ordering = request.query_params.get("ordering", "name")
+            if ordering.lstrip("-") not in ("name", "category", "active", "stock", "price_money", "price_credits") or ordering.startswith("--"):
+                raise ValidationError({"ordering": "Orden inválido."})
+            if ordering.lstrip("-") == "category":
+                ordering = ("-" if ordering.startswith("-") else "") + "category__name"
+            elif ordering.lstrip("-") in ("price_money", "price_credits"):
+                field = F(ordering.lstrip("-"))
+                ordering = field.desc(nulls_last=True) if ordering.startswith("-") else field.asc(nulls_last=True)
+        items = page.paginate_queryset(queryset.order_by(ordering, "pk"), request, view=self)
         return page.get_paginated_response((self.list_serializer or self.read_serializer)(items, many=True).data)
 
     def post(self, request, pk=None):
@@ -186,7 +228,11 @@ class ResourceView(generics.GenericAPIView):
                 setattr(obj, name, value)
             validate_model(obj)
             if changed:
-                obj.save(update_fields=changed)
+                try:
+                    with transaction.atomic():
+                        obj.save(update_fields=changed)
+                except IntegrityError:
+                    raise Conflict("Registro duplicado o vinculación incompatible.") from None
                 self.after_patch(obj, changed)
                 record_audit(request.user, f"{self.resource}.update", self.resource, obj.pk, changed)
         return Response(self.read_serializer(self.queryset().get(pk=obj.pk)).data)
@@ -315,8 +361,39 @@ class AdjustmentsView(ResourceView):
 class ProductsView(ResourceView):
     model, read_serializer, write_serializer = Product, ProductReadSerializer, ProductWriteSerializer
     resource, create_allowed, patch_allowed = "products", True, True
-    filters = {"active": "active"}
+    joins = ("category",)
+    filters = {"active": "active", "category": "category_id"}
     search_fields = ("name", "description")
+
+    def create_object(self, data):
+        category = data.get("category")
+        lock_product_categories([category.pk if category else None])
+        return super().create_object(data)
+
+    def lock_for_patch(self, pk):
+        obj = get_object_or_404(Product.objects.select_for_update(), pk=pk)
+        requested = self.request.data.get("category", obj.category_id)
+        if requested in (None, ""):
+            category_id = None
+        else:
+            try:
+                category_id = serializers.UUIDField().run_validation(requested)
+            except ValidationError:
+                raise ValidationError({"category": "Identificador inválido."}) from None
+        locked = lock_product_categories([obj.category_id, category_id])
+        if obj.category_id:
+            obj._state.fields_cache["category"] = locked[obj.category_id]
+        return obj
+
+
+class ProductCategoriesView(ResourceView):
+    model, read_serializer, write_serializer = ProductCategory, ProductCategoryReadSerializer, ProductCategoryWriteSerializer
+    resource, create_allowed, patch_allowed = "product-categories", True, True
+    filters = {"active": "active"}
+    search_fields = ("name",)
+
+    def queryset(self):
+        return super().queryset().annotate(published_products_count=Count("products", filter=Q(products__active=True)))
 
 
 class OrdersView(ResourceView):
@@ -395,6 +472,7 @@ def resource_endpoint(view_class, *, detail):
             BenefitsView: BenefitPatchRequestSerializer,
             CollaboratorsView: CollaboratorPatchRequestSerializer,
             ProductsView: ProductPatchRequestSerializer,
+            ProductCategoriesView: ProductCategoryPatchRequestSerializer,
             CreditRulesView: CreditRulePatchRequestSerializer,
         }[view_class]
 

@@ -101,3 +101,16 @@
 
 .admin-field-error { color:#8b3518; font-size:12px; }
 .admin-form [aria-invalid=true], .admin-action [aria-invalid=true] { border-color:#b34e29; }
+.admin-product-thumb { display: inline-block; width: 44px; height: 44px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-right: .65rem; }
+.admin-product-placeholder { background: #e9e6dd; text-align: center; line-height: 44px; color: #666; }
+.admin-image-preview { display: block; max-width: 180px; max-height: 140px; object-fit: contain; margin-bottom: .5rem; }
+.admin-product-published { color: #17603b; font-weight: 700; }
+.admin-stock-low { color: #855000; font-weight: 700; }
+.admin-stock-out { color: #a02626; font-weight: 700; }
+.admin-table td small { display: block; color: #855000; }
+.admin-table-scroll { max-height: 70vh; overflow: auto; }
+.admin-table thead th { position: sticky; top: 0; z-index: 1; background: #f5f3ed; }
+.admin-sort { color: inherit; font: inherit; border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; }
+.admin-sort:focus-visible { outline: 3px solid #287b53; outline-offset: 3px; }
+.admin-form-section { border: 0; padding: 0; margin: 0 0 1.5rem; min-width: 0; }
+.admin-form-section legend { font-weight: 700; font-size: 1.1rem; margin-bottom: .8rem; }

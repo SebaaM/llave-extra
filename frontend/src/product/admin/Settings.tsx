@@ -27,7 +27,7 @@ const catalog: Field[] = [
   { name: 'network_interval_seconds', label: 'Intervalo de la red (8–60 segundos)', kind: 'number' },
 ]
 const credits: Field[] = [{ name: 'base_reward', label: 'Créditos por primera visita', kind: 'number' }, { name: 'target_visits', label: 'Meta de visitas', kind: 'number' }]
-const shop: Field[] = [{ name: 'pickup_name', label: 'Punto de retiro' }, { name: 'pickup_address', label: 'Dirección de retiro' }, { name: 'pickup_hours', label: 'Horarios de retiro' }, { name: 'pickup_enabled', label: 'Retiro habilitado', kind: 'boolean' }]
+const shop: Field[] = [{ name: 'pickup_name', label: 'Punto de retiro' }, { name: 'pickup_address', label: 'Dirección de retiro' }, { name: 'pickup_hours', label: 'Horarios de retiro' }, { name: 'pickup_enabled', label: 'Retiro habilitado', kind: 'boolean' }, { name: 'low_stock_threshold', label: 'Umbral de stock bajo', kind: 'number', required: true }]
 const tabs = [
   { key: 'general', api: 'general', label: 'General', fields: general, note: 'Estos textos y contactos se muestran en el sitio público.' },
   { key: 'catalogo', api: 'catalog', label: 'Catálogo y red', fields: catalog, note: 'El interruptor solo afecta la visibilidad pública. Las carpetas privadas y los consumos elegibles siguen funcionando.' },

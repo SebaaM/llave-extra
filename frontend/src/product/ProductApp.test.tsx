@@ -41,9 +41,14 @@ async function prepareApp(path: string, fragment = '') {
 describe('recorridos F2 del Cliente', () => {
   it.each([false, true])('abre la tienda pública sin consultar saldo ni operaciones (sesión: %s)', async signedIn => {
     const calls: string[] = []
+    const id = '550e8400-e29b-41d4-a716-446655440000'
+    const product = { id, name: 'Faro del Beagle', description: '', category: null, stock: 1, price_money: '100.00', price_credits: null, image_url: null }
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
       calls.push(url)
+      if (url.endsWith('/shop/catalog/')) return json({ categories: [], pickup: null })
+      if (url.includes('/shop/products/?')) return json({ count: 1, next: null, previous: null, results: [product] })
+      if (url.endsWith(`/shop/products/${id}/`)) return json(product)
       if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
       if (url.endsWith('/auth/refresh/')) return signedIn ? json({ access: 'access-demo' }) : json({}, 401)
       if (url.endsWith('/auth/me/')) return json(tourist)
@@ -55,13 +60,11 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.getByRole('heading', { name: /Un pedacito del fin/ })).toBeTruthy()
     if (signedIn) await screen.findByText(tourist.email)
     else await waitFor(() => expect(calls.some(url => url.endsWith('/auth/refresh/'))).toBe(true))
-    expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
-    fireEvent.click(screen.getByRole('link', { name: 'Ver Faro del Beagle' }))
+    expect(calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
+    fireEvent.click(await screen.findByRole('link', { name: 'Ver Faro del Beagle' }))
     await screen.findByRole('heading', { name: 'Faro del Beagle' })
-    expect(window.location.pathname).toBe('/tienda/faro-del-beagle')
-    fireEvent.click(screen.getByRole('button', { name: 'Ampliar ilustración' }))
-    expect(screen.getByRole('button', { name: 'Reducir ilustración' }).getAttribute('aria-expanded')).toBe('true')
-    expect(calls.filter(url => /\/shop\/|\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
+    expect(window.location.pathname).toBe(`/tienda/${id}`)
+    expect(calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url))).toEqual([])
   })
 
   it('anuncia el contenido de Cuenta después de navegar desde el menú con teclado', async () => {
