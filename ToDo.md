@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Comando opcional `seed_activity_demo` con volumen para web/backoffice: consumos directos/referidos, créditos, ajustes, canjes y pagos fake, sin carga automática ni cambios de datos previos. [Guía](docs/demo-activity.md); [evidencia](docs/verification/15-seed-actividad-demo.md).
+
 - [x] Arranque local con consola adjunta: PowerShell y Bash muestran todos los servicios al finalizar la preparación; `Ctrl+C` detiene los contenedores conservando volúmenes. Ver `DEV.md`.
 
 - [ ] Resolver antes del merge la continuidad del QR si una página retirada devuelve 404 y su recuperación falla por 503/red: la pista se borra y una carga completa requiere reabrir el QR para conservar atribución. La recuperación normal y la revocación real están cubiertas; [residual de revisión](docs/verification/14-seleccion-qr-contextual.md).

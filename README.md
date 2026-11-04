@@ -14,6 +14,14 @@ En macOS/Linux: `./scripts/dev.sh up --demo`. Se genera `.env` local ignorado co
 
 Al finalizar la preparación, `up` muestra los logs de inicio disponibles de todos los servicios y sigue los nuevos en primer plano mediante `docker compose logs --follow --tail all`. `Ctrl+C` detiene los contenedores y devuelve la consola, conservando los volúmenes.
 
+Actividad abundante y ficticia opcional, con el entorno iniciado y desde otra consola:
+
+```powershell
+docker compose exec -e SHOP_PAYMENT_PROVIDER=fake backend python manage.py seed_activity_demo
+```
+
+Crea 300 Clientes, 30 negocios, 10 colaboradores y escenarios de consumos, créditos y pedidos para probar backoffice. Admite `--customers 1000`; repetir conserva la actividad previa. Sin cobros externos ni carga automática. [Escenarios, accesos y requisitos](docs/demo-activity.md).
+
 ### Cuentas de prueba locales
 
 El seed crea las siguientes cuentas sintéticas y genera sus contraseñas en `docs/cuentas-prueba.local.md` (ignorado por Git). Consultá ese archivo local: no hay contraseñas fijas versionadas. Una ejecución normal no cambia contraseñas existentes; si falta el archivo, la recuperación explícita está en [DEV.md](DEV.md). No usar estas cuentas en producción.

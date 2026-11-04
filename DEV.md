@@ -1,5 +1,7 @@
 # Guía de desarrollo
 
+Actividad demo completa opcional: `docker compose exec -e SHOP_PAYMENT_PROVIDER=fake backend python manage.py seed_activity_demo`. Admite `--customers 20` a `--customers 3000` (300 por defecto), requiere DEBUG/PostgreSQL y conserva datos existentes. No forma parte de `up` ni del seed básico. El retiro existente debe estar habilitado. [Escenarios y accesos privados](docs/demo-activity.md).
+
 La guía vigente de inicio, puertos, cuentas, roles y producción está en [README.md](README.md); el acceso recomendado es Nginx en `http://localhost:8080`. Los enlaces de email usan `PUBLIC_APP_URL`: en instalaciones anteriores puede seguir apuntando a 5173; cambialo en `.env` si querés usar 8080 y reiniciá el backend.
 
 El entorno local predeterminado corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24.19.0, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. Vite usa polling de un segundo para detectar cambios en bind mounts de Docker Desktop en Windows. Las dependencias se instalan desde los locks con uv 0.11.3 y pnpm 11.22.0; el nombre del directorio puede contener espacios. En Docker, npm se usa solo como bootstrap para instalar globalmente pnpm 11.22.0; las dependencias del proyecto se instalan con `pnpm install --frozen-lockfile`.
