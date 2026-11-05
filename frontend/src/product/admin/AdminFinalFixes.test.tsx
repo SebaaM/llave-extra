@@ -14,7 +14,7 @@ import { resources } from './data'
 const resource = (key: string) => resources.find(item => item.key === key)!
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 const page = (results: unknown[] = []) => ({ count: results.length, results, next: null, previous: null })
-const product = { id: 'p1', name: 'Recuerdo', version: 'v1', active: true, price_money: '12.50', price_credits: 10, description: '', image_url: '/api/v1/admin/products/p1/image/' }
+const product = { id: 'p1', name: 'Recuerdo', version: 'v1', active: true, stock: 2, price_money: '12.50', price_credits: 10, description: '', image_url: '/api/v1/admin/products/p1/image/' }
 const catalog = { version: 'v1', enabled: true, network_title: 'Red local', network_layout: 'ORBIT', network_theme: 'SAND', network_background: 'HARBOR', network_page_size: 12, network_interval_seconds: 10 }
 const admin = { id: 1, email: 'admin@example.test', role: 'ADMIN', is_active: true, is_staff: true, is_superuser: true, email_verified: true } as User
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done }); return { resolve, promise } }
@@ -50,7 +50,7 @@ describe('correcciones finales del panel', () => {
   })
 
   it('asocia varios errores del registro a sus controles y conserva los valores', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ name: ['Ingresá un nombre válido.'], price_credits: ['El valor supera el máximo permitido.'], non_field_errors: ['No se guardó el registro.'], secret: 'oculto' }, 400)))
+    vi.stubGlobal('fetch', vi.fn(async (url: unknown) => String(url).includes('/product-categories/') ? json(page()) : String(url).endsWith('/image/') ? json({}, 404) : json({ name: ['Ingresá un nombre válido.'], price_credits: ['El valor supera el máximo permitido.'], non_field_errors: ['No se guardó el registro.'], secret: 'oculto' }, 400)))
     render(<RecordForm resource={resource('products')} data={product} back="/gestion/productos" onSaved={vi.fn()} />)
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Mi nombre' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
@@ -75,17 +75,18 @@ describe('correcciones finales del panel', () => {
     view.unmount()
     vi.stubGlobal('fetch', vi.fn(async () => json({ delta: ['La variación no puede ser cero.'], reason: ['Completá el motivo.'] }, 400)))
     render(<RecordActions resource="products" data={product} onSuccess={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText('Variación positiva o negativa'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Cantidad'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'motivo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ajustar stock' }))
     await screen.findByText('La variación no puede ser cero.')
     expect(screen.getByLabelText('Motivo').getAttribute('aria-invalid')).toBe('true')
-    expect(screen.getByLabelText('Variación positiva o negativa').getAttribute('aria-describedby')).toBeTruthy()
+    expect(screen.getByLabelText('Cantidad').getAttribute('aria-describedby')).toBeTruthy()
   })
 
   it('bloquea campos, archivo y eliminación de imagen durante el guardado del registro', async () => {
     const pending = deferred<Response>()
-    vi.stubGlobal('fetch', vi.fn(() => pending.promise))
+    vi.stubGlobal('URL', class extends URL { static createObjectURL = vi.fn(() => 'blob:preview'); static revokeObjectURL = vi.fn() })
+    vi.stubGlobal('fetch', vi.fn((url: unknown) => String(url).includes('/product-categories/') ? Promise.resolve(json(page())) : String(url).endsWith('/image/') ? Promise.resolve(json({}, 404)) : pending.promise))
     render(<RecordForm resource={resource('products')} data={product} back="/gestion/productos" onSaved={vi.fn()} />)
     const file = screen.getByLabelText('Imagen') as HTMLInputElement
     await userEvent.upload(file, new File(['synthetic'], 'image.png', { type: 'image/png' }))
