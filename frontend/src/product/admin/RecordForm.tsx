@@ -16,11 +16,12 @@ function initial(fields: readonly Field[], data: Row | null) {
 }
 export function RecordForm({ resource, data, back, onSaved, onReload, onCancel }: { resource: Resource; data: Row | null; back: string; onSaved: (row: Row) => void; onReload?: () => Promise<Row>; onCancel?: () => void }) {
   const fields = (resource.fields ?? []).filter(field => data ? !field.createOnly : !field.editOnly)
+  const identityFields = ['name', 'category', 'description']
   const groups = resource.key === 'products' ? [
-    { title: 'Datos del producto', fields: fields.filter(field => ['name', 'description', 'category'].includes(field.name)) },
+    { title: 'Datos del producto', fields: identityFields.flatMap(name => fields.filter(field => field.name === name)) },
     { title: 'Imagen', fields: fields.filter(field => field.name === 'image') },
     { title: 'Precios y publicación', fields: fields.filter(field => ['price_money', 'price_credits', 'active'].includes(field.name)) },
-  ] : [{ title: '', fields }]
+  ] : null
   const [values, setValues] = useState(() => initial(fields, data))
   const [baseline, setBaseline] = useState(() => initial(fields, data))
   const [baselineVersion, setBaselineVersion] = useState(data?.version)
@@ -94,9 +95,7 @@ export function RecordForm({ resource, data, back, onSaved, onReload, onCancel }
       else setErrors(formErrors(cause, fields.map(field => field.name)))
     } finally { if (version === currentSessionVersion()) setSaving(false) }
   }
-  return <form className="admin-panel admin-form" onSubmit={submit}>
-    <div className="admin-form-heading"><div><p className="eyebrow">{data ? 'EDITAR REGISTRO' : 'NUEVO REGISTRO'}</p><h2>{data ? `Editar ${resource.singular.toLowerCase()}` : `Nuevo ${resource.singular.toLowerCase()}`}</h2></div>{onCancel ? <button type="button" className="button button-ghost" disabled={saving} onClick={onCancel}>Cancelar</button> : <ProductLink href={back}>Cancelar</ProductLink>}</div>
-    {groups.map(group => <fieldset className="admin-form-section" key={group.title}><legend>{group.title}</legend><div className="admin-form-grid">{group.fields.map(field => {
+  const renderFields = (groupFields: readonly Field[]) => <div className="admin-form-grid">{groupFields.map(field => {
       const accessibility = fieldErrorProps(errors, field.name, prefix)
       const feedback = <FieldError errors={errors} name={field.name} prefix={prefix} />
       if (field.kind === 'lookup' && field.lookup) return <div key={field.name} className="admin-field"><span>{field.label}</span><ReferencePicker {...accessibility} disabled={saving} required={Boolean(field.required)} label={field.label} kind={field.lookup} query={field.lookupQuery} value={String(values[field.name] ?? '')} onChange={value => setValues(current => ({ ...current, [field.name]: field.lookup === 'users' ? Number(value) : value }))} />{feedback}</div>
@@ -106,7 +105,10 @@ export function RecordForm({ resource, data, back, onSaved, onReload, onCancel }
         : field.kind === 'select' ? <select {...accessibility} id={`${prefix}-${field.name}`} disabled={saving} value={String(values[field.name] ?? field.options?.[0]?.[0] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.value }))}>{field.options?.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>
           : field.kind === 'boolean' ? <span className="admin-check"><input {...accessibility} id={`${prefix}-${field.name}`} disabled={saving} type="checkbox" checked={Boolean(values[field.name])} onChange={event => setValues(current => ({ ...current, [field.name]: event.target.checked }))} />{values[field.name] ? 'Sí' : 'No'}</span>
             : <input {...accessibility} id={`${prefix}-${field.name}`} disabled={saving} type={field.kind ?? 'text'} step={field.kind === 'number' ? field.precision === 2 ? '0.01' : '1' : undefined} min={field.kind === 'number' ? 0 : undefined} required={field.required} value={String(values[field.name] ?? '')} onChange={event => setValues(current => ({ ...current, [field.name]: field.kind === 'number' && field.precision !== 2 ? (event.target.value === '' ? '' : Number(event.target.value)) : event.target.value }))} />}{feedback}
-    </div>})}</div></fieldset>)}
+    </div>})}</div>
+  return <form className="admin-panel admin-form" onSubmit={submit}>
+    <div className="admin-form-heading"><div><p className="eyebrow">{data ? 'EDITAR REGISTRO' : 'NUEVO REGISTRO'}</p><h2>{data ? `Editar ${resource.singular.toLowerCase()}` : `Nuevo ${resource.singular.toLowerCase()}`}</h2></div>{onCancel ? <button type="button" className="button button-ghost" disabled={saving} onClick={onCancel}>Cancelar</button> : <ProductLink href={back}>Cancelar</ProductLink>}</div>
+    {groups ? groups.map(group => <fieldset className="admin-form-section" key={group.title}><legend>{group.title}</legend>{renderFields(group.fields)}</fieldset>) : renderFields(fields)}
     {stale && <Status error>La ficha cambió mientras editabas. Tus datos siguen aquí; compará con la versión actual antes de guardar.</Status>}{stale && <button type="button" disabled={saving} className="button button-ghost" onClick={() => void reloadCurrent()}>Descartar cambios y cargar ficha actual</button>}
     <ErrorSummary errors={errors} />{error && <Status error>{error}</Status>}{conflict && !stale && <button type="button" disabled={saving} className="button button-ghost" onClick={() => void reloadCurrent()}>Descartar cambios y cargar ficha actual</button>}{saved && <Status>Los cambios se guardaron.</Status>}
     <div className="admin-actions"><button className="button button-orange" disabled={saving || stale || (Boolean(data) && !dirty)}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>{data && !dirty && <span className="admin-muted">No hay cambios sin guardar.</span>}</div>

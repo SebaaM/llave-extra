@@ -17,9 +17,13 @@ const extraFilters: Record<string, readonly [string, string, 'text' | 'number' |
   'credit-rules': [['provider', 'ID del prestador', 'text']], 'stock-adjustments': [['product', 'ID del producto', 'text']],
 }
 const dated = new Set(['consumptions', 'adjustments', 'orders', 'cancellations', 'stock-adjustments', 'payment-operations'])
+const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
 
 export function ResourceList({ resource, search }: { resource: Resource; search: string }) {
   const query = new URLSearchParams(search)
+  const isProducts = resource.key === 'products'
+  const isCategories = resource.key === 'product-categories'
+  const ordering = query.get('ordering') ?? 'name'
   const [searchInput, setSearchInput] = useState({ source: search, value: query.get('search') ?? '' })
   const [categoryInput, setCategoryInput] = useState({ source: search, value: query.get('category') ?? '' })
   const term = searchInput.source === search ? searchInput.value : query.get('search') ?? ''
@@ -59,15 +63,49 @@ export function ResourceList({ resource, search }: { resource: Resource; search:
   const sort = (name: string) => {
     const field = name === 'category_name' ? 'category' : name
     const next = new URLSearchParams(search)
-    next.set('ordering', (query.get('ordering') ?? 'name') === field ? `-${field}` : field)
+    next.set('ordering', ordering === field ? `-${field}` : field)
     next.delete('page')
     window.dispatchEvent(new CustomEvent('llave:navigate', { detail: `${base}?${next}` }))
   }
+  const columnLabel = (name: string) => name === 'active' && (isProducts || isCategories) ? (isProducts ? 'Publicación' : 'Estado') : fieldLabels[name] ?? name.replaceAll('_', ' ')
   return <>
-    <div className="admin-section-lead"><p>{resource.description ?? `Consultá y gestioná ${resource.title.toLowerCase()} de la red.`}</p>{resource.fields && <ProductLink className="button button-orange" href={`${base}/nuevo${search}`}>+ Nuevo {resource.singular.toLowerCase()}</ProductLink>}</div>
-    <form key={search} className="admin-filters" onSubmit={submit}><label>Buscar<input name="search" value={term} onChange={event => setSearchInput({ source: search, value: event.target.value })} placeholder={`Buscar ${resource.title.toLowerCase()}`} /></label>{resource.key === 'products' && <div className="admin-field"><span>Categoría</span><ReferencePicker kind="product-categories" label="Categoría" required={false} emptyLabel="Todas las categorías" value={categoryInput.source === search ? categoryInput.value : query.get('category') ?? ''} onChange={value => setCategoryInput({ source: search, value })} /><input type="hidden" name="category" value={categoryInput.source === search ? categoryInput.value : query.get('category') ?? ''} /></div>}{(extraFilters[resource.key] ?? []).map(([name, label, kind]) => <label key={name}>{label}<input name={name} type={kind} defaultValue={query.get(name) ?? ''} /></label>)}{dated.has(resource.key) && <><label>Desde<input name="created_from" type="date" defaultValue={query.get('created_from') ?? ''} /></label><label>Hasta<input name="created_to" type="date" defaultValue={query.get('created_to') ?? ''} /></label></>}{resource.filters?.map(filter => <label key={filter.name}>{filter.label}<select name={filter.name} defaultValue={query.get(filter.name) ?? ''}><option value="">Todos</option>{filter.options.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>)}<button className="button button-dark" type="submit">Aplicar filtros</button>{resource.key === 'products' && <ProductLink className="button button-ghost" href={base}>Limpiar filtros</ProductLink>}</form>
+    <div className="admin-section-lead"><p>{resource.description ?? `Consultá y gestioná ${resource.title.toLowerCase()} de la red.`}</p>{resource.fields && <ProductLink className="button button-orange" href={`${base}/nuevo${search}`}>{isCategories ? '+ Nueva categoría' : `+ Nuevo ${resource.singular.toLowerCase()}`}</ProductLink>}</div>
+    <form key={search} className={`admin-filters${isProducts ? ' admin-product-filters' : ''}`} onSubmit={submit}>
+      <label>Buscar<input name="search" value={term} onChange={event => setSearchInput({ source: search, value: event.target.value })} placeholder={`Buscar ${resource.title.toLowerCase()}`} /></label>
+      {isProducts && <div className="admin-field admin-category-filter">
+        <span>Categoría</span>
+        <ReferencePicker kind="product-categories" label="Categoría" required={false} emptyLabel="Todas las categorías" value={categoryInput.source === search ? categoryInput.value : query.get('category') ?? ''} onChange={value => setCategoryInput({ source: search, value })} />
+        <input type="hidden" name="category" value={categoryInput.source === search ? categoryInput.value : query.get('category') ?? ''} />
+      </div>}
+      {(extraFilters[resource.key] ?? []).map(([name, label, kind]) => <label key={name}>{label}<input name={name} type={kind} defaultValue={query.get(name) ?? ''} /></label>)}
+      {dated.has(resource.key) && <><label>Desde<input name="created_from" type="date" defaultValue={query.get('created_from') ?? ''} /></label><label>Hasta<input name="created_to" type="date" defaultValue={query.get('created_to') ?? ''} /></label></>}
+      {resource.filters?.map(filter => <label key={filter.name}>{filter.label}<select name={filter.name} defaultValue={query.get(filter.name) ?? ''}><option value="">Todos</option>{filter.options.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>)}
+      {isProducts ? <div className="admin-filter-actions">
+        <button className="button button-dark" type="submit">Aplicar filtros</button>
+        <ProductLink className="button button-ghost" href={base}>Limpiar filtros</ProductLink>
+      </div> : <button className="button button-dark" type="submit">Aplicar filtros</button>}
+    </form>
     <LoadState loading={loading} error={error} retry={reload} />
-    {data && <><p className="admin-result-count">{resource.key === 'products' && data.count ? `${(page - 1) * 20 + 1}–${Math.min(page * 20, data.count)} de ${data.count} productos` : `${data.count.toLocaleString('es-AR')} registros`}</p>{data.results.length === 0 ? <section className="admin-panel"><h2>Sin resultados</h2><p>No hay registros que coincidan con estos filtros.</p></section> : <div className="admin-table-scroll"><table className="admin-table"><thead><tr>{resource.columns.map(name => <th key={name} scope="col" aria-sort={resource.key === 'products' && (query.get('ordering') ?? 'name').replace(/^-/, '') === (name === 'category_name' ? 'category' : name) ? (query.get('ordering')?.startsWith('-') ? 'descending' : 'ascending') : undefined}>{resource.key === 'products' ? <button type="button" className="admin-sort" onClick={() => sort(name)}>{fieldLabels[name] ?? name.replaceAll('_', ' ')} ↕</button> : fieldLabels[name] ?? name.replaceAll('_', ' ')}</th>)}<th scope="col">Ficha</th></tr></thead><tbody>{data.results.map(row => <tr key={String(row.id)}>{resource.columns.map(name => <td data-label={fieldLabels[name] ?? name} key={name}>{resource.key === 'products' && name === 'name' ? <><ProductThumbnail path={typeof row.image_url === 'string' ? row.image_url : null} />{String(row.name)}</> : resource.key === 'products' && name === 'active' ? <><span className={row.active ? 'admin-product-published' : ''}>{row.active ? 'Publicado' : 'Borrador'}</span>{row.active && row.category_active === false && <small>Oculto por categoría inactiva</small>}</> : resource.key === 'products' && name === 'stock' ? <span className={Number(row.stock) === 0 ? 'admin-stock-out' : shopSettings.data && Number(row.stock) <= shopSettings.data.low_stock_threshold ? 'admin-stock-low' : ''}>{Number(row.stock) === 0 ? 'Agotado' : shopSettings.data && Number(row.stock) <= shopSettings.data.low_stock_threshold ? `${row.stock} · Stock bajo` : `${row.stock} · Con stock`}</span> : formatValue(row[name])}</td>)}<td data-label="Ficha"><ProductLink href={`${base}/${row.id}${detailQuery.size ? `?${detailQuery}` : ''}`}>Ver detalle →</ProductLink></td></tr>)}</tbody></table></div>}
+    {data && <><p className="admin-result-count" role={isProducts ? 'status' : undefined}>{isProducts && data.count ? `${(page - 1) * 20 + 1}–${Math.min(page * 20, data.count)} de ${data.count} productos` : `${data.count.toLocaleString('es-AR')} ${data.count === 1 ? 'registro' : 'registros'}`}</p>
+      {data.results.length === 0 ? <section className="admin-panel"><h2>Sin resultados</h2><p>No hay registros que coincidan con estos filtros.</p></section> : <>
+        {isProducts && <p className="admin-product-scroll-hint">Deslizá para ver más columnas.</p>}
+        <div className={`admin-table-scroll${isProducts ? ' admin-product-table' : ''}`} role={isProducts ? 'region' : undefined} aria-label={isProducts ? 'Tabla de productos' : undefined} tabIndex={isProducts ? 0 : undefined}>
+          <table className="admin-table">
+            <thead><tr>{resource.columns.map(name => {
+              const field = name === 'category_name' ? 'category' : name
+              const direction = isProducts && ordering.replace(/^-/, '') === field ? (ordering.startsWith('-') ? 'descending' : 'ascending') : undefined
+              return <th key={name} scope="col" aria-sort={direction}>{isProducts ? <button type="button" className="admin-sort" onClick={() => sort(name)}>{columnLabel(name)}<span aria-hidden="true">{direction === 'ascending' ? '↑' : direction === 'descending' ? '↓' : '↕'}</span></button> : columnLabel(name)}</th>
+            })}<th scope="col">Ficha</th></tr></thead>
+            <tbody>{data.results.map(row => <tr key={String(row.id)}>{resource.columns.map(name => <td data-label={columnLabel(name)} key={name}>
+              {isProducts && name === 'name' ? <div className="admin-product-name"><ProductThumbnail path={typeof row.image_url === 'string' ? row.image_url : null} /><span>{String(row.name)}</span></div>
+                : isProducts && name === 'active' ? <><span className={row.active ? 'admin-product-published' : ''}>{row.active ? 'Publicado' : 'Borrador'}</span>{row.active && row.category_active === false && <small>Oculto por categoría inactiva</small>}</>
+                  : isProducts && name === 'stock' ? <span className={Number(row.stock) === 0 ? 'admin-stock-out' : shopSettings.data && Number(row.stock) <= shopSettings.data.low_stock_threshold ? 'admin-stock-low' : ''}>{Number(row.stock) === 0 ? 'Agotado' : shopSettings.data && Number(row.stock) <= shopSettings.data.low_stock_threshold ? `${row.stock} · Stock bajo` : `${row.stock} · Con stock`}</span>
+                    : isProducts && name === 'price_money' && typeof row[name] === 'string' ? pesos.format(Number(row[name]))
+                      : isCategories && name === 'active' ? (row.active ? 'Activa' : 'Inactiva') : formatValue(row[name])}
+            </td>)}<td data-label="Ficha"><ProductLink href={`${base}/${row.id}${detailQuery.size ? `?${detailQuery}` : ''}`}>Ver detalle →</ProductLink></td></tr>)}</tbody>
+          </table>
+        </div>
+      </>}
       <nav className="admin-pagination" aria-label="Páginas"><button disabled={!data.previous} onClick={() => goto(page - 1)}>← Anterior</button><span>Página {page}</span><button disabled={!data.next} onClick={() => goto(page + 1)}>Siguiente →</button></nav></>}
   </>
 }

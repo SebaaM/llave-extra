@@ -24,7 +24,11 @@ function Notice() {
 
 function Prices({ product }: { product: Product }) {
   const pesos = product.price_money === null ? null : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(product.price_money))
-  return <div className="shop-prices">{pesos && <strong>{pesos} <small>ARS</small></strong>}{product.price_credits !== null && <span>{pesos ? 'o ' : ''}{product.price_credits.toLocaleString('es-AR')} créditos</span>}</div>
+  const credits = product.price_credits === null ? null : `${product.price_credits.toLocaleString('es-AR')} créditos`
+  return <div className="shop-prices">
+    {pesos ? <strong>{pesos} <small>ARS</small></strong> : credits && <strong>{credits}</strong>}
+    {pesos && credits && <span>o {credits}</span>}
+  </div>
 }
 
 function ProductPhoto({ product }: { product: Product }) {
@@ -37,8 +41,17 @@ function ProductPhoto({ product }: { product: Product }) {
 
 function ProductCard({ product }: { product: Product }) {
   return <article className="shop-card">
-    <ProductLink href={`/tienda/${product.id}`} className="shop-art-link" aria-label={`Ver ${product.name}`}><ProductPhoto product={product} /></ProductLink>
-    <div className="shop-card-copy"><p className="shop-category">{product.category?.name ?? 'Tienda'}</p><h3><ProductLink href={`/tienda/${product.id}`}>{product.name}</ProductLink></h3><p>{product.description}</p>{product.stock === 0 && <p className="shop-out-of-stock">Sin stock</p>}<Prices product={product} /><ProductLink href={`/tienda/${product.id}`} className="shop-detail-link">Conocer el producto <span aria-hidden="true">↗</span></ProductLink></div>
+    <div className="shop-card-media">
+      <ProductLink href={`/tienda/${product.id}`} className="shop-art-link" aria-label={`Ver ${product.name}`}><ProductPhoto product={product} /></ProductLink>
+      {product.stock === 0 && <span className="shop-stock-label">Sin stock</span>}
+    </div>
+    <div className="shop-card-copy">
+      <p className="shop-category">{product.category?.name ?? 'Tienda'}</p>
+      <h3><ProductLink href={`/tienda/${product.id}`}>{product.name}</ProductLink></h3>
+      {product.description && <p className="shop-card-description">{product.description}</p>}
+      <Prices product={product} />
+      <ProductLink href={`/tienda/${product.id}`} className="shop-detail-link">Conocer el producto <span aria-hidden="true">↗</span></ProductLink>
+    </div>
   </article>
 }
 
@@ -93,7 +106,7 @@ export function ShopPage() {
   const reset = () => { setQuery(''); setCategory(''); setSort('name'); setPage(1) }
   const pageCount = Math.max(1, Math.ceil((data?.count ?? 0) / pageSize))
   return <main ref={main} id="contenido" className="shop-page">
-    <section className="shop-hero"><div className="content-width shop-hero-grid"><div><p className="eyebrow">LA TIENDA DE LLAVE EXTRA</p><h1>Un pedacito del fin <br />del mundo, con vos.</h1><p>Recuerdos que cuentan tu viaje. Descubrí nuestra propuesta de objetos en 3D inspirados en Ushuaia y empezá a elegir tu favorito.</p><a className="button button-orange" href="#catalogo-tienda">Explorar el catálogo <span aria-hidden="true">↘</span></a><div className="shop-hero-tags"><span>Inspiración fueguina</span><span>Diseños en 3D</span></div></div><div className="shop-hero-art" aria-hidden="true"><div className="shop-orbit" /><ProductArt product={shopExamples[0]} /><span className="shop-hero-stamp">UN RECUERDO<br /><strong>MIL HISTORIAS</strong><span>54° S · USHUAIA</span></span><span className="shop-hero-caption">Ilustración decorativa</span></div></div></section>
+    <section className="shop-hero"><div className="content-width shop-hero-grid"><div><p className="eyebrow">LA TIENDA DE LLAVE EXTRA</p><h1>Un pedacito del fin del mundo, con vos.</h1><p>Recuerdos que cuentan tu viaje. Descubrí nuestra propuesta de objetos en 3D inspirados en Ushuaia y empezá a elegir tu favorito.</p><a className="button button-orange" href="#catalogo-tienda">Explorar el catálogo <span aria-hidden="true">↘</span></a><div className="shop-hero-tags"><span>Inspiración fueguina</span><span>Diseños en 3D</span></div></div><div className="shop-hero-art" aria-hidden="true"><div className="shop-orbit" /><ProductArt product={shopExamples[0]} /><span className="shop-hero-stamp">UN RECUERDO<br /><strong>MIL HISTORIAS</strong><span>54° S · USHUAIA</span></span><span className="shop-hero-caption">Ilustración decorativa</span></div></div></section>
     <div className="content-width"><Notice />
       <section id="catalogo-tienda" className="shop-catalog" aria-labelledby="shop-catalog-title">
         <div className="shop-catalog-heading"><div><p className="eyebrow">RECUERDOS PARA LLEVAR</p><h2 id="shop-catalog-title">Encontrá tu próximo recuerdo.</h2></div></div>
@@ -127,5 +140,18 @@ export function ShopDetail({ slug }: { slug: string }) {
   if (current?.error) return <main ref={main} id="contenido" className="content-width shop-not-found"><h1>No pudimos cargar el producto.</h1><button className="button button-dark" onClick={() => setRetry(value => value + 1)}>Reintentar</button> <ProductLink href="/tienda">Volver a la tienda</ProductLink></main>
   const product = current?.product
   if (!product) return <main ref={main} id="contenido" className="content-width shop-not-found"><h1>No encontramos ese producto.</h1><p>Es posible que ya no esté disponible. Podés seguir explorando el catálogo.</p><ProductLink href="/tienda" className="button button-dark">Volver a la tienda</ProductLink></main>
-  return <main ref={main} id="contenido" className="content-width shop-detail"><ProductLink href="/tienda" className="back-link">← Volver a la tienda</ProductLink><Notice /><div className="shop-detail-grid"><div className="shop-detail-art"><ProductPhoto key={product.id} product={product} /></div><div className="shop-detail-copy"><p className="eyebrow">{product.category?.name ?? 'TIENDA'} / LLAVE EXTRA</p><h1>{product.name}</h1><p>{product.description}</p>{product.stock === 0 && <p className="shop-out-of-stock">Sin stock</p>}<Prices product={product} /><div className="shop-coming"><strong>La compra y el canje todavía no están habilitados.</strong><p>Por ahora podés seguir explorando el catálogo.</p></div><ProductLink href="/tienda" className="shop-detail-link">Seguir explorando <span aria-hidden="true">→</span></ProductLink></div></div></main>
+  return <main ref={main} id="contenido" className="content-width shop-detail">
+    <ProductLink href="/tienda" className="back-link">← Volver a la tienda</ProductLink>
+    <div className="shop-detail-grid">
+      <div className="shop-detail-art"><ProductPhoto key={product.id} product={product} /></div>
+      <div className="shop-detail-copy">
+        <p className="eyebrow">{product.category?.name ?? 'TIENDA'} / LLAVE EXTRA</p>
+        <h1>{product.name}</h1>
+        {product.description && <p>{product.description}</p>}
+        {product.stock === 0 && <p className="shop-out-of-stock">Sin stock</p>}
+        <Prices product={product} />
+        <div className="shop-coming"><strong>La compra y el canje todavía no están habilitados.</strong><p>Por ahora podés seguir explorando el catálogo.</p></div>
+      </div>
+    </div>
+  </main>
 }
