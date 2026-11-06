@@ -45,9 +45,11 @@ class LlaveUserAdmin(AdminRoleOnlyMixin, UserAdmin):
             return super().save_model(request, obj, form, change)
 
         with transaction.atomic():
-            current = User.objects.select_for_update().only("email", "is_active").get(pk=obj.pk)
+            current = User.objects.select_for_update().only("email", "is_active", "password").get(pk=obj.pk)
             active_changed = current.is_active != obj.is_active
             email_changed = current.email != obj.email.strip().lower()
+            # Password changes have a separate view. A profile edit keeps the current hash.
+            obj.password = current.password
             if email_changed:
                 obj.email_verified = False
             super().save_model(request, obj, form, change)
