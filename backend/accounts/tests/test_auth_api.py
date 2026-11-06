@@ -30,6 +30,19 @@ def emailed_token():
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("endpoint", [
+    "register", "login", "verify-email", "resend-verification", "forgot-password", "reset-password",
+])
+@pytest.mark.parametrize("body", ["123", "[{}]"])
+def test_auth_requires_json_object(endpoint, body):
+    response = browser().post(f"/api/v1/auth/{endpoint}/", body, content_type="application/json")
+    assert response.status_code == 400
+    assert not User.objects.exists()
+    assert not AuthSession.objects.exists()
+    assert not OneTimeToken.objects.exists()
+
+
+@pytest.mark.django_db
 def test_register_rejects_privilege_fields_and_normalizes_email():
     client = browser()
     response = client.post("/api/v1/auth/register/", {
