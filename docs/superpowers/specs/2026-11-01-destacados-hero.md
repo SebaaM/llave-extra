@@ -1,5 +1,7 @@
 # Beneficios destacados del inicio
 
+Actualización del 05/11/2026: [la sección de Beneficios destacados](../plans/2026-11-05-limite-destacados-inicio.md) permite elegir hasta cinco beneficios de todos los existentes. PostgreSQL limita la selección a cinco. La ficha de Django Admin presenta la marca como dato de solo lectura. Esta actualización reemplaza el límite abierto y la edición en Django Admin descritos en el diseño original.
+
 Pedido del usuario del 1/11/2026: el carrusel del hero muestra los beneficios destacados por el administrador, configurables en el backoffice. Se incorpora al trabajo autorizado de feature/cliente-qr-destacados y su nueva PR hacia develop, sin merge; PR #16 ya fue integrada el 31/10.
 
 Pedido adicional: «Cómo funciona» en el catálogo de beneficios, explicando que las visitas confirmadas generan créditos para canjear en la tienda de la web. Se reutiliza el componente del inicio con título propio, enlace de salto junto a la introducción y bloque después de los resultados. La explicación de créditos se ve sin abrir un paso, conserva una acreditación por negocio y enlaza la tienda; como el canje de la UI aún no funciona, se informa brevemente sin ofrecer «Canjear ahora». No se implementa checkout en este alcance.

@@ -1,0 +1,3 @@
+.admin-featured-selection ul { display:grid; gap:8px; padding:0; list-style:none; }
+.admin-featured-selection li { display:flex; justify-content:space-between; align-items:center; gap:12px; overflow-wrap:anywhere; }
+.admin-featured-selection li button { flex-shrink:0; }

@@ -155,7 +155,7 @@ def bootstrap(credentials):
                     status=Publication.DRAFT if variant == 3 else Publication.PUBLISHED,
                     valid_from=today + timedelta(days=15) if variant == 2 else today - timedelta(days=30),
                     valid_until=today - timedelta(days=1) if variant == 1 else today + timedelta(days=180),
-                    featured=not offer and index < 6, demo=True)
+                    demo=True)
                 if not offer and index < 24:
                     primary.append(benefit)
             AdminAudit.objects.create(actor=admin, action="DEMO_SETUP", resource="providers", object_id=str(pk),

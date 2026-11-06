@@ -12,6 +12,12 @@ Los selectores de relaciones permiten buscar por nombre o email. Seleccionar un 
 
 Los QR se consultan y descargan desde la ficha correspondiente. Renovarlos invalida las referencias anteriores. El PIN se ingresa en su formulario protegido; nunca se muestra su valor guardado. No compartir capturas de QR, PIN ni datos de cuentas reales.
 
+## Beneficios destacados
+
+Entrá en **Beneficios destacados** para buscar por beneficio o prestador y ver todos los registros, incluidos borradores e inactivos. La selección actual y el contador aparecen encima del listado. Usá **Destacar** para sumar un beneficio y **Quitar** para liberar uno de los cinco cupos. Cada acción se guarda en el momento.
+
+Un beneficio seleccionado ocupa un cupo aunque todavía no aparezca en el inicio. El carrusel muestra solo los beneficios publicados y vigentes de prestadores publicados cuando el catálogo público está habilitado.
+
 ## Configuración del sitio
 
 Cada pestaña se guarda de manera independiente:
