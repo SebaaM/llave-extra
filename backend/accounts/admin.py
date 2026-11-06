@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.db import transaction
+from django.utils import timezone
 
-from .models import User
+from .models import AuthSession, User
 
 admin.site.site_header = "Administración de Llave Extra"
 admin.site.site_title = "Llave Extra · Administración"
@@ -37,6 +39,19 @@ class LlaveUserAdmin(AdminRoleOnlyMixin, UserAdmin):
                  ("Perfil", {"fields": ("first_name", "last_name", "role", "email_verified")}),
                  ("Permisos", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}))
     add_fieldsets = ((None, {"classes": ("wide",), "fields": ("email", "password1", "password2", "role")}),)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            return super().save_model(request, obj, form, change)
+
+        with transaction.atomic():
+            current = User.objects.select_for_update().only("is_active").get(pk=obj.pk)
+            active_changed = current.is_active != obj.is_active
+            super().save_model(request, obj, form, change)
+            if active_changed:
+                AuthSession.objects.filter(user_id=obj.pk, revoked_at__isnull=True).update(
+                    revoked_at=timezone.now(),
+                )
 
     def has_delete_permission(self, request, obj=None):
         return False
