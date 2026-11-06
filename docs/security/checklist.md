@@ -1,6 +1,6 @@
 # Checklist de seguridad
 
-Fecha inicial: 24/10/2026. Estado: **NO INICIADA**. Incluye 85 controles agrupados que se expandirán por endpoint y caso. Esta lista fue preparada como parte del plan; no acredita que la aplicación haya superado ninguno de estos controles.
+Fecha inicial 24/10/2026. Estado **EN CURSO** desde el 05/11/2026 sobre el corte `7467838`. Los 85 controles agrupados se amplían por endpoint y caso. Ver [inventario](inventario.md) y [corrida](runs/20261105-1823-7467838/resumen.md).
 
 Plan: [auditoría](../superpowers/plans/2026-10-24-auditoria-seguridad.md). Registro: [hallazgos](hallazgos.md). Inicio/reanudación: [prompt del auditor](prompt-auditor.md).
 
@@ -19,7 +19,7 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 
 | ID | Qué comprobar | Chequeado | Resultado | Hallazgo | Solución / evidencia |
 |---|---|---|---|---|---|
-| B01 | Inventario completo de rutas, métodos, comandos, Admin, medios y superficies fuera de OpenAPI | NO | PENDIENTE | NO_EVALUADO | — |
+| B01 | Inventario completo de rutas, métodos, comandos, Admin, medios y superficies fuera de OpenAPI | PARCIAL | EN_CURSO | NO_EVALUADO | [Inventario](inventario.md) |
 | B02 | Entorno auditado aislado: PG/Redis/SMTP/storage, claves, cuentas y puertos propios | NO | PENDIENTE | NO_EVALUADO | — |
 | B03 | Producción rechaza claves vacías/compartidas, DEBUG y configuración insegura según requisitos | NO | PENDIENTE | NO_EVALUADO | — |
 | B04 | Host/proxy: headers de cliente falsificados no evaden límites ni generan URLs inseguras | NO | PENDIENTE | NO_EVALUADO | — |
@@ -35,12 +35,12 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | A02 | Email normalizado, validación/password hashing y respuestas sin contraseña/hash | NO | PENDIENTE | NO_EVALUADO | — |
 | A03 | Login inválido/inactivo, enumeración de cuentas y mensajes de error | NO | PENDIENTE | NO_EVALUADO | — |
 | A04 | Verificación: token válido, caducado, usado, alterado, usuario ajeno e inactivo | NO | PENDIENTE | NO_EVALUADO | — |
-| A05 | Reset: propósito, caducidad, un solo uso, atomicidad y revocación de sesiones tras contraseña | NO | PENDIENTE | NO_EVALUADO | — |
+| A05 | Reset: propósito, caducidad, un solo uso, atomicidad y revocación de sesiones tras contraseña | PARCIAL | FAIL | SEC-006 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | A06 | Recuperación/reenvío no revelan existencia de emails; SMTP fallido sin resultado engañoso | NO | PENDIENTE | NO_EVALUADO | — |
-| A07 | Cuotas Redis por operación/IP/email y resistencia a headers falsos; fallo Redis cerrado | NO | PENDIENTE | NO_EVALUADO | — |
+| A07 | Cuotas Redis por operación/IP/email y resistencia a headers falsos; fallo Redis cerrado | PARCIAL | FAIL | SEC-004 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | A08 | Usuario no verificado no consume/canjea; desactivación afecta sesiones y acciones protegidas | NO | PENDIENTE | NO_EVALUADO | — |
 | A09 | CSRF/origin en login, refresh, logout y acciones de sesión Django Admin | NO | PENDIENTE | NO_EVALUADO | — |
-| A10 | Inputs nulos/Unicode/JSON corrupto/tipos erróneos/longitudes extremas sin 500 ni bypass | NO | PENDIENTE | NO_EVALUADO | — |
+| A10 | Inputs nulos/Unicode/JSON corrupto/tipos erróneos/longitudes extremas sin 500 ni bypass | PARCIAL | FAIL | SEC-002, SEC-005, SEC-006 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 
 ## E2/F2: tokens y sesiones
 
@@ -49,11 +49,11 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | T01 | JWT alterado/sin firma/algoritmo no permitido/clave errónea/caducado/tipo equivocado | NO | PENDIENTE | NO_EVALUADO | — |
 | T02 | sid/pwd/user_id ausentes, ajenos o revocados no autentican | NO | PENDIENTE | NO_EVALUADO | — |
 | T03 | Refresh rotado: replay y doble refresh concurrente no abren sesiones ilegítimas | NO | PENDIENTE | NO_EVALUADO | — |
-| T04 | Logout revoca servidor y borra cookie; fallback bearer y logout fallido no resucitan sesión | NO | PENDIENTE | NO_EVALUADO | — |
+| T04 | Logout revoca servidor y borra cookie; fallback bearer y logout fallido no resucitan sesión | PARCIAL | FAIL | SEC-003 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | T05 | Cambio de contraseña/usuario y revocación afectan tokens previamente emitidos | NO | PENDIENTE | NO_EVALUADO | — |
 | T06 | Cookie refresh HttpOnly/SameSite/path y Secure en prod; CORS no abre credenciales a terceros | NO | PENDIENTE | NO_EVALUADO | — |
 | T07 | Access solo memoria; tokens/PIN/QR fuera de storage, query, logs, referrer y bundles | NO | PENDIENTE | NO_EVALUADO | — |
-| T08 | Multi-tab/login/refresh/logout y respuestas tardías no cruzan identidades ni cookies | NO | PENDIENTE | NO_EVALUADO | — |
+| T08 | Multi-tab/login/refresh/logout y respuestas tardías no cruzan identidades ni cookies | PARCIAL | FAIL | SEC-001, SEC-003 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 
 ## E2/E3/07/08: QR, carpetas y recomendaciones privadas
 
@@ -133,9 +133,9 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 |---|---|---|---|---|---|
 | F01 | XSS almacenado/reflejado/DOM en textos, datos editables, errores y enlaces/esquemas URL | NO | PENDIENTE | NO_EVALUADO | — |
 | F02 | Navegación directa, deep links y rutas por rol respaldadas por permisos del servidor | NO | PENDIENTE | NO_EVALUADO | — |
-| F03 | Logout/cambio de usuario desmonta datos, aborta respuestas viejas y revoca blobs privados | NO | PENDIENTE | NO_EVALUADO | — |
+| F03 | Logout/cambio de usuario desmonta datos, aborta respuestas viejas y revoca blobs privados | PARCIAL | FAIL | SEC-001 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | F04 | QR se limpia de fragmento antes de recursos; credenciales fuera de referrer/log/terceros | NO | PENDIENTE | NO_EVALUADO | — |
-| F05 | SQL/ORM/filtros/JSON/multipart/headers/métodos no soportados sin inyección ni efectos | NO | PENDIENTE | NO_EVALUADO | — |
+| F05 | SQL/ORM/filtros/JSON/multipart/headers/métodos no soportados sin inyección ni efectos | PARCIAL | FAIL | SEC-002, SEC-005 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | F06 | Redirecciones y enlaces externos configurables sin open redirect ni esquemas ejecutables | NO | PENDIENTE | NO_EVALUADO | — |
 
 ## Operación, evidencia y límites

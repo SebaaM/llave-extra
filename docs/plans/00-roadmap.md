@@ -2,6 +2,8 @@
 
 # Plan de implementación aprobado
 
+Campaña de auditoría iniciada el 05/11/2026 en un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838`. El [registro de la corrida](../security/runs/20261105-1823-7467838/resumen.md) distingue controles ejecutados, hallazgos y pendientes.
+
 Pedido del 04/11/2026: [backoffice de tienda y catálogo real](../superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en rama propia desde `develop`. Comprende categorías, productos, stock, retiro y catálogo público conectado; no habilita compra ni canje web. La revisión visual del 05/11 cubrió panel y catálogo en escritorio y móvil con respuestas sintéticas. [Verificación y límites](../verification/16-backoffice-tienda-catalogo.md).
 
 Estado del 2/11/2026: QR contextual, renovación manual, resumen Admin, destacados configurables y «Cómo funciona» en catálogo implementados en `feature/cliente-qr-destacados`, con base develop `054342e` incorporada localmente. Corte frontend integrado: 366 UI + 1 proxy, lint/tipos/build/auditoría aprobados; backend conserva 383 PostgreSQL/Redis del producto y seis casos focales nuevos aprobados. Revisión integral realizada con un residual Important de continuidad ante 404→503/red, pendiente antes del merge; QA visual manual pendiente. Entrega en [PR #18](https://github.com/SebaaM/llave-extra/pull/18), borrador hacia develop sin merge; PR #16 ya se integró externamente. Resolver el residual y obtener aprobación antes de integrar. [Plan público](../superpowers/plans/2026-11-01-destacados-hero.md) y [evidencia](../verification/14-seleccion-qr-contextual.md).

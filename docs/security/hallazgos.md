@@ -1,6 +1,6 @@
 # Registro de hallazgos de seguridad
 
-Estado inicial, 24/10/2026: **auditoría no iniciada; cero hallazgos registrados por esta campaña**. Esto no significa que haya cero vulnerabilidades. No reutilizar problemas históricos como hallazgos nuevos sin reproducirlos en el corte auditado.
+Auditoría en curso sobre `7467838` desde el 05/11/2026. Los casos y resultados se registran por corrida. Los problemas históricos requieren una reproducción en el corte auditado.
 
 Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [checklist](checklist.md), [prompt](prompt-auditor.md).
 
@@ -8,8 +8,12 @@ Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [ch
 
 | ID | Feature / controles | Severidad | Estado | Problema / impacto | Solución | Revisión / evidencia |
 |---|---|---|---|---|---|---|
-
-La tabla empieza vacía deliberadamente. Agregar una fila por hallazgo real; IDs `SEC-001` en adelante, permanentes. Varias observaciones con la misma causa pueden compartir hallazgo si la reproducción cubre todos los endpoints afectados.
+| SEC-001 | E2/F2, T08/F03 | Alta | EN_CORRECCION | Una pestaña adopta una sesión de otra pestaña al reintentar un 401. | En curso | [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-002 | Catálogos, A10/F05 | Baja | CONFIRMADO | Filtros públicos con NUL provocan 500 de PostgreSQL. | Pendiente | [Casos](runs/20261105-1823-7467838/casos.md#http-público) |
+| SEC-003 | E2/F2, T04/T08 | Media | CONFIRMADO | Cierre con access vencido falla con cookie válida. Bearer y cookie de sesiones distintas pueden revocar la equivocada. | Pendiente | [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-004 | E2, A07 | Media | CONFIRMADO | El alta sin QR crea cuentas y envía emails sin cuota Redis. | Pendiente | [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-005 | E2, A10/F05 | Baja | CONFIRMADO | Cuerpos JSON que no son objetos provocan 500 en endpoints de cuenta. | Pendiente | [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-006 | E2, A05/A10 | Baja | CONFIRMADO | Reset con contraseña similar al email provoca 500 y revierte el consumo del token. | Pendiente | [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
 
 ## Estados y prioridad
 
