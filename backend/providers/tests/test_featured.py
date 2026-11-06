@@ -1,7 +1,10 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 
 import pytest
 from django.contrib.admin.sites import AdminSite
+from django.db import IntegrityError, connections
 from django.test import RequestFactory
 from django.utils import timezone
 from drf_spectacular.generators import SchemaGenerator
@@ -62,6 +65,64 @@ def test_admin_featured_patch_requires_current_version_and_audits_once(featured_
 
 
 @pytest.mark.django_db
+def test_admin_can_list_replace_and_never_add_a_sixth_featured_benefit(featured_domain):
+    provider, benefit, _, client = featured_domain
+    Benefit.objects.bulk_create([
+        Benefit(provider=provider, title=f"Oferta {index}", featured=True)
+        for index in range(5)
+    ])
+    url = "/api/v1/admin/benefits/"
+    detail = f"{url}{benefit.pk}/"
+    selection = client.get(url, {"featured": "true"}).data
+    assert selection["count"] == 5
+    assert client.get(url).data["count"] == 6
+    assert client.get(url, {"featured": "false"}).data["count"] == 1
+    assert client.get(url, {"featured": "invalid"}).status_code == 400
+
+    payload = {"featured": True, "version": client.get(detail).data["version"]}
+    rejected = client.patch(detail, payload, format="json")
+    assert rejected.status_code == 409
+    assert "cinco beneficios destacados" in rejected.data["detail"]
+    rejected_create = client.post(url, {"provider": str(provider.pk), "title": "Nueva", "featured": True}, format="json")
+    assert rejected_create.status_code == 409
+    assert "cinco beneficios destacados" in rejected_create.data["detail"]
+    assert not AdminAudit.objects.exists()
+
+    remove = selection["results"][0]
+    assert client.patch(f'{url}{remove["id"]}/', {"featured": False, "version": remove["version"]}, format="json").status_code == 200
+    assert client.patch(detail, payload, format="json").status_code == 200
+    assert client.get(url, {"featured": "true"}).data["count"] == 5
+    assert AdminAudit.objects.count() == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_selections_compete_for_the_last_featured_slot():
+    provider = Provider.objects.create(slug="slots", name="Negocio")
+    Benefit.objects.bulk_create([
+        Benefit(provider=provider, title=f"Destacada {index}", featured=True)
+        for index in range(4)
+    ])
+    candidates = Benefit.objects.bulk_create([
+        Benefit(provider=provider, title=f"Candidata {index}") for index in range(2)
+    ])
+    ready = Barrier(2)
+
+    def select(benefit):
+        try:
+            ready.wait(timeout=10)
+            Benefit.objects.filter(pk=benefit.pk).update(featured=True)
+            return "selected"
+        except IntegrityError as error:
+            return error.__cause__.diag.constraint_name
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(select, candidates)) == ["benefit_featured_slots_exhausted", "selected"]
+    assert Benefit.objects.filter(featured=True).count() == 5
+
+
+@pytest.mark.django_db
 def test_provider_cannot_write_featured_on_own_benefit_or_admin_api(featured_domain):
     provider, benefit, _, admin_client = featured_domain
     owner = User.objects.create_user("featured-owner@example.test", "password", role=User.Role.PROVIDER)
@@ -104,7 +165,8 @@ def test_django_admin_exposes_featured_field_and_filter(featured_domain):
     request.user = admin
     assert model_admin.has_change_permission(request, benefit)
     assert "featured" in model_admin.list_display and "featured" in model_admin.list_filter
-    assert "featured" in model_admin.get_form(request, benefit).base_fields
+    assert "featured" in model_admin.get_readonly_fields(request, benefit)
+    assert "featured" not in model_admin.get_form(request, benefit).base_fields
     assert Benefit._meta.get_field("featured").verbose_name == "Destacado en el inicio"
 
 
@@ -113,24 +175,24 @@ def test_public_featured_filter_keeps_complete_catalog_and_paginates_stably(feat
     provider, ordinary, _, _ = featured_domain
     offers = Benefit.objects.bulk_create([
         Benefit(provider=provider, title=f"Destacada {index:02d}", conditions="Sí", status=Publication.PUBLISHED, featured=True)
-        for index in range(27)
+        for index in range(5)
     ])
     client = APIClient()
     url = "/api/v1/catalog/benefits/"
-    assert client.get(url).data["count"] == 28
+    assert client.get(url).data["count"] == 6
     not_featured = client.get(url, {"featured": "false"})
     assert not_featured.status_code == 200 and not_featured.data["count"] == 1
     assert not_featured.data["results"][0]["id"] == str(ordinary.pk)
-    first = client.get(url, {"featured": "true"})
+    first = client.get(url, {"featured": "true", "page_size": 3})
     second = client.get(first.data["next"])
     assert first.status_code == second.status_code == 200
-    assert first.data["count"] == second.data["count"] == 27
-    assert len(first.data["results"]) == 24 and len(second.data["results"]) == 3
+    assert first.data["count"] == second.data["count"] == 5
+    assert len(first.data["results"]) == 3 and len(second.data["results"]) == 2
     assert second.data["next"] is None
     assert [row["id"] for row in first.data["results"] + second.data["results"]] == [str(offer.pk) for offer in offers]
     assert "featured=true" in first.data["next"]
     assert "featured" not in first.data["results"][0]
-    assert client.get(url, {"featured": "true", "search": "26"}).data["count"] == 1
+    assert client.get(url, {"featured": "true", "search": "04"}).data["count"] == 1
 
 
 @pytest.mark.django_db
@@ -156,15 +218,16 @@ def test_featured_never_bypasses_publication_validity_or_catalog_switch(featured
     benefit.valid_from = benefit.valid_until = today
     benefit.save()
     hidden = Provider.objects.create(slug="featured-hidden", name="Oculto", status=Publication.DRAFT)
+    client = APIClient()
+    url = "/api/v1/catalog/benefits/"
     for overrides in (
         {"status": Publication.DRAFT}, {"status": Publication.INACTIVE}, {"provider": hidden},
         {"valid_from": today + timedelta(days=1)}, {"valid_until": today - timedelta(days=1)},
     ):
-        Benefit.objects.create(**{"provider": provider, "title": "No elegible", "conditions": "Sí",
-                                 "status": Publication.PUBLISHED, "featured": True, **overrides})
-    client = APIClient()
-    url = "/api/v1/catalog/benefits/"
-    assert client.get(url, {"featured": "true"}).data["count"] == 1
+        unavailable = Benefit.objects.create(**{"provider": provider, "title": "No elegible", "conditions": "Sí",
+                                               "status": Publication.PUBLISHED, "featured": True, **overrides})
+        assert client.get(url, {"featured": "true"}).data["count"] == 1
+        unavailable.delete()
     benefit.featured = False
     benefit.save(update_fields=["featured"])
     assert client.get(url, {"featured": "true"}).data["count"] == 0
@@ -186,6 +249,8 @@ def test_featured_openapi_is_optional_public_filter_and_admin_only_attribute():
     parameters = schema["paths"]["/api/v1/catalog/benefits/"]["get"]["parameters"]
     featured = next(row for row in parameters if row["name"] == "featured")
     assert featured["schema"]["type"] == "boolean" and not featured.get("required", False)
+    admin_parameters = schema["paths"]["/api/v1/admin/benefits/"]["get"]["parameters"]
+    assert next(row for row in admin_parameters if row["name"] == "featured")["schema"]["type"] == "boolean"
     components = schema["components"]["schemas"]
     for name in ("AdminBenefitRead", "AdminBenefitWrite", "PatchedAdminBenefitPatchRequest"):
         assert components[name]["properties"]["featured"]["type"] == "boolean"

@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Agregar la sección de Beneficios destacados con búsqueda, selección manual y límite de cinco protegido en PostgreSQL. [Plan](docs/superpowers/plans/2026-11-05-limite-destacados-inicio.md).
+
 - [x] Revisar y ajustar visualmente el panel y el catálogo del [PR #20](https://github.com/SebaaM/llave-extra/pull/20) en escritorio y móvil, con respuestas sintéticas. [Evidencia](docs/verification/16-backoffice-tienda-catalogo.md).
 - [x] Confirmar el CI del PR #20, integrado en develop en `7467838`.
 - [x] Ajustar el menú de `/gestion` con accesos directos, grupos por tarea y scroll ajustado al espacio disponible. [Guía](docs/panel-administracion.md) y [verificación](docs/verification/16-backoffice-tienda-catalogo.md).

@@ -160,6 +160,8 @@ Infraestructura para próximos comandos sensibles: `Idempotency-Key` obligatorio
 
 ### Gestión operativa administrativa
 
+La colección `GET /api/v1/admin/benefits/?featured=true` lista la selección completa de hasta cinco beneficios del carrusel, aunque alguno no sea público o vigente. `featured=false` lista los no seleccionados. Al alcanzar cinco, POST o PATCH con una marca nueva responde `409`; desmarcar un beneficio libera su cupo. El catálogo público sigue aplicando publicación, vigencia e interruptor al leer la selección.
+
 Todas las rutas de esta sección son relativas a `/api/v1/admin/` y aplican la misma guarda estricta ADMIN/activo/staff/superusuario a listas, detalles, acciones y archivos. Las colecciones usan `GET <recurso>/?page=1&page_size=20&search=...` y responden `{count,next,previous,results}`; 20 por defecto, máximo 100 y orden por PK descendente. `GET <recurso>/{id}/` devuelve un objeto. Los recursos de solo lectura rechazan POST/PATCH/DELETE con 405. Los IDs de usuarios, billeteras, ajustes, reglas, cancelaciones y ajustes de stock son enteros; prestadores, beneficios, colaboradores, consumos, productos, pedidos y operaciones de pago usan UUID. `image_url` es una ruta local autorizada y puede ser `null`.
 
 Los filtros de texto de las colecciones administrativas devuelven 400 si contienen caracteres nulos.

@@ -53,7 +53,7 @@ class CatalogBenefitsView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, description="24 por defecto; máximo 48"),
             OpenApiParameter("search", OpenApiTypes.STR),
             OpenApiParameter("category", OpenApiTypes.STR),
-            OpenApiParameter("featured", OpenApiTypes.BOOL, description="Opcional; solo true o false. Filtra destacados antes de paginar, sin alterar publicación ni vigencia."),
+            OpenApiParameter("featured", OpenApiTypes.BOOL, description="Opcional; solo true o false. La selección tiene hasta cinco beneficios y sigue sujeta a publicación y vigencia."),
         ],
         responses={200: PublicBenefitPageSerializer, 400: OpenApiTypes.OBJECT},
     )

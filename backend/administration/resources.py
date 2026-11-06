@@ -64,6 +64,8 @@ from .resource_serializers import (
 from .resource_versions import require_admin_resource_version
 from .views import AdminPagination, validate_model
 
+BenefitConflictSchema = inline_serializer("AdminBenefitConflict", fields={"detail": serializers.CharField()})
+
 
 class ResourceView(generics.GenericAPIView):
     permission_classes = [IsProgramAdmin]
@@ -115,7 +117,7 @@ class ResourceView(generics.GenericAPIView):
             value = request.query_params.get(name)
             if value is None or value == "":
                 continue
-            if name in ("is_active", "email_verified", "enabled", "active", "user_active"):
+            if name in ("is_active", "email_verified", "enabled", "active", "user_active", "featured"):
                 if value not in ("true", "false"):
                     raise ValidationError({name: "Usá true o false."})
                 value = value == "true"
@@ -201,8 +203,8 @@ class ResourceView(generics.GenericAPIView):
             validate_model(obj)
             try:
                 obj.save()
-            except IntegrityError:
-                raise Conflict("Registro duplicado o vinculación incompatible.") from None
+            except IntegrityError as error:
+                raise self.write_conflict(error) from None
             record_audit(request.user, f"{self.resource}.create", self.resource, obj.pk,
                          serializer.validated_data.keys())
         return Response(self.read_serializer(self.queryset().get(pk=obj.pk)).data, status=status.HTTP_201_CREATED)
@@ -233,8 +235,8 @@ class ResourceView(generics.GenericAPIView):
                 try:
                     with transaction.atomic():
                         obj.save(update_fields=changed)
-                except IntegrityError:
-                    raise Conflict("Registro duplicado o vinculación incompatible.") from None
+                except IntegrityError as error:
+                    raise self.write_conflict(error) from None
                 self.after_patch(obj, changed)
                 record_audit(request.user, f"{self.resource}.update", self.resource, obj.pk, changed)
         return Response(self.read_serializer(self.queryset().get(pk=obj.pk)).data)
@@ -244,6 +246,9 @@ class ResourceView(generics.GenericAPIView):
 
     def patch_data(self, obj, data):
         return data
+
+    def write_conflict(self, error):
+        return Conflict("Registro duplicado o vinculación incompatible.")
 
     def after_patch(self, obj, changed):
         pass
@@ -299,7 +304,7 @@ class BenefitsView(ResourceView):
     model, read_serializer, write_serializer = Benefit, BenefitReadSerializer, BenefitWriteSerializer
     resource, create_allowed, patch_allowed = "benefits", True, True
     joins = ("provider",)
-    filters = {"status": "status", "provider": "provider_id"}
+    filters = {"status": "status", "provider": "provider_id", "featured": "featured"}
     search_fields = ("title", "description", "provider__name")
 
     def create_object(self, data):
@@ -317,6 +322,12 @@ class BenefitsView(ResourceView):
         provider_id = get_object_or_404(Benefit.objects.only("provider_id"), pk=pk).provider_id
         Provider.objects.select_for_update().get(pk=provider_id)
         return get_object_or_404(Benefit.objects.select_for_update(), pk=pk, provider_id=provider_id)
+
+    def write_conflict(self, error):
+        diagnostics = getattr(error.__cause__, "diag", None)
+        if getattr(diagnostics, "constraint_name", None) == "benefit_featured_slots_exhausted":
+            return Conflict("Ya hay cinco beneficios destacados. Quitá uno para destacar otro.")
+        return super().write_conflict(error)
 
 
 class CollaboratorsView(ResourceView):
@@ -461,7 +472,13 @@ def resource_endpoint(view_class, *, detail):
                 "results": (view_class.list_serializer or view_class.read_serializer)(many=True)},
     )
 
-    @extend_schema(operation_id=f"admin_{name}_{'retrieve' if detail else 'list'}", responses=response)
+    parameters = (
+        [OpenApiParameter("featured", bool, description="Filtra por selección en el carrusel, sin exigir publicación ni vigencia.")]
+        if view_class is BenefitsView and not detail else []
+    )
+    write_conflicts = {409: BenefitConflictSchema} if view_class is BenefitsView else {}
+
+    @extend_schema(operation_id=f"admin_{name}_{'retrieve' if detail else 'list'}", parameters=parameters, responses=response)
     def get(self, request, pk=None):
         return view_class.get(self, request, pk)
 
@@ -479,7 +496,7 @@ def resource_endpoint(view_class, *, detail):
         }[view_class]
 
         @extend_schema(operation_id=f"admin_{name}_update", request=request_serializer,
-                       responses=view_class.read_serializer)
+                       responses={200: view_class.read_serializer, **write_conflicts})
         def patch(self, request, pk=None):
             return view_class.patch(self, request, pk)
 
@@ -488,7 +505,7 @@ def resource_endpoint(view_class, *, detail):
         method_names.append("post")
 
         @extend_schema(operation_id=f"admin_{name}_create", request=view_class.write_serializer,
-                       responses={201: view_class.read_serializer})
+                       responses={201: view_class.read_serializer, **write_conflicts})
         def post(self, request, pk=None):
             return view_class.post(self, request, pk)
 

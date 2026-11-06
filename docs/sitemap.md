@@ -11,7 +11,7 @@ Estado de la interfaz disponible; las rutas privadas requieren sesión y control
 - `/espacio`: deriva al panel correspondiente.
 - `/prestador`: resumen; `/prestador/negocio`, `/prestador/beneficios`, `/prestador/qr`, `/prestador/cuenta`.
 - `/colaborador`: resumen; `/colaborador/recomendaciones`, `/colaborador/catalogo`, `/colaborador/qr`, `/colaborador/cuenta`.
-- `/gestion`: panel Admin; secciones usuarios, prestadores, beneficios, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas-creditos, movimientos-stock, operaciones-pago, actividad y configuracion.
+- `/gestion`: panel Admin; secciones usuarios, prestadores, beneficios, beneficios-destacados, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas-creditos, movimientos-stock, operaciones-pago, actividad y configuracion.
 - `/admin/`: Django Admin, sesión independiente.
 - `/creditos-imagenes`: fuentes de imágenes.
 - `/api/v1/`: API; `/api/v1/health/`: salud; `/api/schema/`: OpenAPI; `/api/docs/`: documentación interactiva.

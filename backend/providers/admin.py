@@ -113,7 +113,7 @@ class FolderBenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 class BenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     list_display = ("title", "provider", "status", "featured", "valid_from", "valid_until", "demo")
     list_filter = ("status", "featured", "demo")
-    readonly_fields = ("id", "demo", "provenance")
+    readonly_fields = ("id", "demo", "provenance", "featured")
 
     def get_readonly_fields(self, request, obj=None):
         fields = super().get_readonly_fields(request, obj)
@@ -121,4 +121,7 @@ class BenefitAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         obj.full_clean()
-        super().save_model(request, obj, form, change)
+        if change:
+            obj.save(update_fields=form.changed_data)
+        else:
+            super().save_model(request, obj, form, change)
