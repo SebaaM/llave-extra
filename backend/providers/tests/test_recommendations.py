@@ -106,7 +106,7 @@ def test_concrete_selection_is_only_authority_for_all_private_routes(selection_d
 def test_private_catalog_dto_filters_pagination_and_public_switch(selection_domain):
     d = selection_domain
     client = authorized(d.collaborator)
-    CatalogConfig.objects.filter(singleton=1).update(enabled=False)
+    CatalogConfig.objects.update_or_create(singleton=1, defaults={"enabled": False})
     assert APIClient().get("/api/v1/catalog/benefits/").status_code == 404
     Benefit.objects.bulk_create([Benefit(provider=d.provider, title=f"Extra {i:02}", conditions="Reserva", status=Publication.PUBLISHED) for i in range(50)])
     root = "/api/v1/collaborator/catalog/benefits/"
