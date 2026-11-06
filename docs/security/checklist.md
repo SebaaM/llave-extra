@@ -52,8 +52,8 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | T04 | Logout revoca servidor y borra cookie; fallback bearer y logout fallido no resucitan sesión | PARCIAL | EN_CURSO | SEC-003, SEC-008 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | T05 | Cambio de contraseña/usuario y revocación afectan tokens previamente emitidos | PARCIAL | EN_CURSO | SEC-009, SEC-010, SEC-013, SEC-014 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | T06 | Cookie refresh HttpOnly/SameSite/path y Secure en prod; CORS no abre credenciales a terceros | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
-| T07 | Access solo memoria; tokens/PIN/QR fuera de storage, query, logs, referrer y bundles | NO | PENDIENTE | NO_EVALUADO | — |
-| T08 | Multi-tab/login/refresh/logout y respuestas tardías no cruzan identidades ni cookies | PARCIAL | EN_CURSO | SEC-001, SEC-003 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
+| T07 | Access solo memoria; tokens/PIN/QR fuera de storage, query, logs, referrer y bundles | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| T08 | Multi-tab/login/refresh/logout y respuestas tardías no cruzan identidades ni cookies | PARCIAL | EN_CURSO | SEC-001, SEC-003 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## E2/E3/07/08: QR, carpetas y recomendaciones privadas
 
@@ -72,14 +72,14 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 
 | ID | Qué comprobar | Chequeado | Resultado | Hallazgo | Solución / evidencia |
 |---|---|---|---|---|---|
-| P01 | Prestador solo lee/edita negocio/ofertas propios; manipular UUID/body/query no cruza ownership | PARCIAL | EN_CURSO | SEC-007 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
+| P01 | Prestador solo lee/edita negocio/ofertas propios; manipular UUID/body/query no cruza ownership | PARCIAL | EN_CURSO | SEC-007, SEC-017 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | P02 | Un negocio por usuario Prestador; solo Admin asigna, publica y habilita | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | P03 | Escrituras rechazan campos sensibles/extra y edición publicada vuelve a revisión | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | P04 | Catálogo público expone solo publicados/vigentes y DTO explícito sin relaciones/credenciales | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | P05 | Interruptor público afecta solo catálogo; selector privado y consumo conservan sus políticas | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | P06 | Medios revalidan autorización/publicación/vigencia; no hay acceso directo a storage privado | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | P07 | Upload: formato real/tamaño/dimensiones/nombre/ruta; sin traversal, ejecución ni fuga | PARCIAL | EN_CURSO | SEC-011 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
-| P08 | Red/paginación/filtros y errores no revelan carpetas, objetos ajenos o contadores privados | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
+| P08 | Red/paginación/filtros y errores no revelan carpetas, objetos ajenos o contadores privados | PARCIAL | EN_CURSO | SEC-016 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## E4: consumos, créditos y progreso
 
@@ -92,7 +92,7 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | C05 | Idempotencia por actor/carga, replay estable y 409 al cambiar carga o modo | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | C06 | Importe/regla/progreso del servidor; snapshots históricos y movimientos protegidos en PG | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | C07 | Anulación/reintegro una vez; saldo insuficiente genera ajuste/bloqueo de canjes | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
-| C08 | Wallet/historial/progreso/credenciales solo al actor apropiado; PIN hash/write-only | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
+| C08 | Wallet/historial/progreso/credenciales solo al actor apropiado; PIN hash/write-only | PARCIAL | EN_CURSO | SEC-017 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## E5: tienda, stock y pagos
 
@@ -125,18 +125,18 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | M05 | Comandos sensibles idempotentes, actor/acción/carga aislados y efecto/auditoría atómicos | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | M06 | QR/PIN/roles/reglas/reasignación solo mediante acciones autorizadas y sin historia sensible en replay | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | M07 | Sin PATCH/DELETE genérico de historia financiera, estado monetario o stock absoluto | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
-| M08 | GET de defaults no escribe; auditoría mínima sin secretos; filtros y actividad autorizados | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
+| M08 | GET de defaults no escribe; auditoría mínima sin secretos; filtros y actividad autorizados | PARCIAL | EN_CURSO | SEC-016 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## F2/paneles: navegador e inputs
 
 | ID | Qué comprobar | Chequeado | Resultado | Hallazgo | Solución / evidencia |
 |---|---|---|---|---|---|
-| F01 | XSS almacenado/reflejado/DOM en textos, datos editables, errores y enlaces/esquemas URL | NO | PENDIENTE | NO_EVALUADO | — |
-| F02 | Navegación directa, deep links y rutas por rol respaldadas por permisos del servidor | NO | PENDIENTE | NO_EVALUADO | — |
+| F01 | XSS almacenado/reflejado/DOM en textos, datos editables, errores y enlaces/esquemas URL | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| F02 | Navegación directa, deep links y rutas por rol respaldadas por permisos del servidor | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | F03 | Logout/cambio de usuario desmonta datos, aborta respuestas viejas y revoca blobs privados | PARCIAL | EN_CURSO | SEC-001 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
-| F04 | QR se limpia de fragmento antes de recursos; credenciales fuera de referrer/log/terceros | NO | PENDIENTE | NO_EVALUADO | — |
-| F05 | SQL/ORM/filtros/JSON/multipart/headers/métodos no soportados sin inyección ni efectos | PARCIAL | EN_CURSO | SEC-002, SEC-005 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
-| F06 | Redirecciones y enlaces externos configurables sin open redirect ni esquemas ejecutables | NO | PENDIENTE | NO_EVALUADO | — |
+| F04 | QR se limpia de fragmento antes de recursos; credenciales fuera de referrer/log/terceros | SI | PASS | SEC-018 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| F05 | SQL/ORM/filtros/JSON/multipart/headers/métodos no soportados sin inyección ni efectos | PARCIAL | EN_CURSO | SEC-002, SEC-005, SEC-016 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| F06 | Redirecciones y enlaces externos configurables sin open redirect ni esquemas ejecutables | PARCIAL | EN_CURSO | SEC-015 | [Casos del 06/11](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## Operación, evidencia y límites
 
@@ -152,4 +152,4 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 
 ## Estado de la corrida
 
-Los casos parciales mantienen su evidencia y los hallazgos asociados. La comprobación de TLS real está bloqueada hasta contar con un despliegue autorizado. Las suites y QA históricos siguen en `docs/verification/` y sirven de insumo para repetir casos.
+La segunda pasada agregó evidencia a los cinco controles que figuraban pendientes. F04 aprobó en ambas rutas QR canónicas sobre el build integrado. Los controles parciales conservan las variantes sin ejecutar y los hallazgos asociados. La comprobación de TLS real está bloqueada hasta contar con un despliegue autorizado. Las suites y QA históricos siguen en `docs/verification/` y sirven de insumo para repetir casos.

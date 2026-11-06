@@ -104,6 +104,35 @@ Las familias marcadas parcialmente verificadas en el checklist tienen evidencia 
 
 Se recreó el backend del laboratorio con la imagen final y se reinició su Nginx. Salud respondió HTTP 200 en el backend directo. Las 20 comprobaciones del smoke HTTP por Nginx repitieron los estados esperados y el medio privado conservó `Cache-Control: no-store`.
 
+## Continuación del 06/11/2026
+
+Se retomó el corte `5e90b72` en el mismo laboratorio. Edge se abrió en un contexto desechable con Playwright Core 1.58.2. Las pruebas limitaron las solicitudes reales al loopback e interceptaron la carga de fuentes externas. Los marcadores, las contraseñas y los tokens sintéticos se mantuvieron fuera del registro.
+
+| Caso | Comprobación y resultado |
+| --- | --- |
+| CAS-T07-001 | Con Cliente autenticado, Edge eliminó el fragmento de un QR real del laboratorio. La URL y el referrer quedaron sin el QR. El almacenamiento local quedó vacío y el almacenamiento por pestaña conservó solo la pista permitida, con IDs de cuenta y colaborador. La cookie de refresh tenía HttpOnly y el access usado en el login no apareció en el almacenamiento. La búsqueda de 15 contraseñas o QR sintéticos dio cero coincidencias exactas en logs recientes y JavaScript compilado. |
+| CAS-T08-003 | Dos pestañas en el mismo contexto de Edge iniciaron sesión con cuentas Cliente diferentes. Tras revocar la primera sesión por API, el GET de billetera devolvió 401 y el refresh compartido devolvió 200. La primera pestaña retiró su identidad y no adoptó la segunda. La segunda conservó acceso a `/auth/me/`. |
+| CAS-F01-001 | La prueba DOM del pie muestra contenido semejante a HTML como texto literal, sin insertar un nodo con handler. La suite independiente de configuración aprobó 37 pruebas en PostgreSQL/Redis. Nueve variantes inválidas de la configuración devolvieron 400 sin reflejar el valor ni persistir datos. |
+| CAS-F06-001 | SEC-015. Django acepta direcciones con `?`, `#` y `%` en la parte local. El enlace anterior interpretó el primero como parámetros, el segundo como fragmento y el tercero como codificación. Con `e1a4dd7`, las regresiones preservan una sola dirección, incluido un alias con `+` y una parte local entre comillas con `@`. La reejecución independiente de `Layout.test.tsx` aprobó seis pruebas. [RFC 6068](https://www.rfc-editor.org/rfc/rfc6068.html) |
+| CAS-F02-001 | Nginx aprobó 57 comprobaciones, con 21 de autenticación y 36 de alcance, usando siete cuentas sintéticas y solicitudes anónimas. Se verificaron Prestador titular y ajeno, Colaborador propio, ajeno y deshabilitado, Cliente con y sin concesión, y ADMIN completo, parcial y otros roles. El navegador abrió directamente `/gestion/beneficios` como Cliente y la API administrativa devolvió 403. Queda pendiente extender navegación en navegador a todos los roles y la matriz de escritura por objeto. |
+| CAS-F05-004–010 | SEC-016. Un NUL devolvía 500 en los filtros `search` y `category` del catálogo del Colaborador, en `search`, `action` y `resource` de actividad administrativa y en `search` y `status` de colecciones administrativas. RED reproducido en PostgreSQL. Los dos casos del Colaborador también se observaron por Nginx. El segundo login ADMIN recibió 429, por lo que los casos administrativos se comprobaron con APIClient autenticado. |
+| CAS-P01-004 | SEC-017 `ae908bb`. Dos conexiones PostgreSQL comprobaron el bloqueo con `pg_blocking_pids`. Antes del fix, el PUT devolvía 200 y cambiaba el hash después de confirmar la baja de la membresía. Después devuelve 404 y el hash se conserva. Pasaron 23 pruebas de créditos, Ruff y OpenAPI. |
+| CAS-F04-001–002 | SEC-018. En el build anterior, Vite iniciaba la solicitud de Google Fonts desde CSS antes de limpiar el fragmento en `/referencia` y `/consumo`, con 800 ms de demora simulada del JS. No apareció el marcador en red o consola. En el build corregido, Edge observó cero solicitudes externas antes de la limpieza y cero encabezados Referer en la solicitud inicial de fuentes. Las familias, los pesos y `display=swap` se conservan. |
+
+La prueba de redención automática bajo StrictMode que falló el 05/11 pasó de forma aislada y dentro de una suite de 381 pruebas de frontend. Otra corrida focal mostró una falla intermitente de foco al cambiar de página, reproducida con el código anterior de `Layout.tsx`. El control de acceso y la desaparición de la página anterior permanecieron efectivos en ese caso.
+
+El lote de SEC-016 aprobado tras `859e94d` incluyó `config/tests/test_private_query_inputs.py`, `providers/tests/test_public_catalog_inputs.py`, `providers/tests/test_recommendations.py`, `administration/tests/test_management.py` y `administration/tests/test_security_matrix.py`. Pasaron 42 pruebas. La corrida previa expuso que una prueba de recomendaciones daba por existente la fila del interruptor de catálogo en una base reutilizada. `2c21145` prepara esa fila en el propio caso. La reejecución independiente de SEC-016 y SEC-017 aprobó ocho pruebas.
+
+En SEC-018 pasaron dos pruebas nuevas de `src/main.test.tsx` en Docker, también reejecutadas por un revisor independiente. Se comprobó el artefacto integrado con `node work/security/browser-harness/qr-prod-preview.cjs f04-static-integrated --expect-clean-first` sobre loopback. El harness retrasa la carga del JS, registra el orden relativo de `history.replaceState` y la solicitud de fuentes, e intercepta las salidas externas.
+
+La repetición integrada de CAS-T07-001 y CAS-T08-003 agregó una entrada de PIN sintético en `/consumo`, sin enviar el formulario. El PIN quedó fuera de URL, Referer y almacenamiento. El escaneo de valores completos incluyó contraseñas, QR, el PIN ingresado y access emitidos durante los dos logins. No encontró coincidencias en los logs recientes ni en el JavaScript compilado.
+
+En CAS-F06-002 se inició sesión técnica con una cuenta sintética en dos contextos nuevos. Django Admin devolvió 302 al mismo origen ante un `next` HTTPS externo y otro que empezaba con `//`. Edge bloqueó toda solicitud externa de la prueba.
+
+En el corte de frontend con `5793a59` pasaron `pnpm run lint`, `pnpm run typecheck`, `pnpm run build` y `pnpm run test --maxWorkers=2 --testTimeout=30000 --reporter=dot --no-color`. Resultado de la suite final: 383 Vitest en 33 archivos y una prueba de proxy, incluidos los casos de redención bajo StrictMode y foco al paginar.
+
+Sobre `859e94d`, `python -m pytest --ds=config.settings.test --reuse-db -q` aprobó 462 casos en 385,84 s, con una base PostgreSQL nueva de pytest y Redis aislado. También aprobaron `ruff check .`, `manage.py check`, `makemigrations --check --dry-run` sobre la base existente del laboratorio y `spectacular --validate --fail-on-warn`.
+
 ## Configuración y dependencias
 
 - Seis verificaciones en procesos Python aislados aprobaron. La configuración de producción rechazó ausencia o reutilización de claves, falta de hosts y adaptador fake. Con configuración válida mantuvo DEBUG apagado, redirección HTTPS, cookies Secure y HSTS configurados. Esta comprobación evalúa settings locales.

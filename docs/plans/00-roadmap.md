@@ -2,7 +2,7 @@
 
 # Plan de implementación aprobado
 
-Campaña de auditoría iniciada el 05/11/2026 en un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838`. El [registro de la corrida](../security/runs/20261105-1823-7467838/resumen.md) distingue controles ejecutados, hallazgos y pendientes.
+Campaña de auditoría iniciada el 05/11/2026 en un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838`. La continuación del 06/11 verificó variantes de navegador y permisos, y sumó cuatro correcciones. El [registro de la corrida](../security/runs/20261105-1823-7467838/resumen.md) distingue controles ejecutados, hallazgos y pendientes.
 
 Pedido del 04/11/2026: [backoffice de tienda y catálogo real](../superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en rama propia desde `develop`. Comprende categorías, productos, stock, retiro y catálogo público conectado; no habilita compra ni canje web. La revisión visual del 05/11 cubrió panel y catálogo en escritorio y móvil con respuestas sintéticas. [Verificación y límites](../verification/16-backoffice-tienda-catalogo.md).
 

@@ -15,14 +15,18 @@ Compose v5.5.1 construyó backend y frontend con los locks del corte. La migraci
 
 ## Resultado y alcance pendiente
 
-Se registraron 14 hallazgos con un commit de corrección por hallazgo. Cuatro son de severidad alta, seis media y cuatro baja. El último commit de producto es `71e5e54`. [Hallazgos](../../hallazgos.md) · [Casos](casos.md).
+Se registraron 18 hallazgos con un commit de corrección por hallazgo. Cuatro son de severidad alta, siete media y siete baja. La continuación del 06/11 agregó cuatro correcciones y verificó sus regresiones con revisores independientes. [Hallazgos](../../hallazgos.md) · [Casos](casos.md).
 
-De los 85 controles agrupados, uno aprobó con cobertura completa, 77 tienen evidencia parcial, cinco quedaron pendientes y dos bloqueados. Los hallazgos cerrados no convierten por sí solos el control agrupado en aprobado.
+De los 85 controles agrupados, dos aprobaron con cobertura completa, 81 tienen evidencia parcial y dos están bloqueados. La continuación agregó evidencia a los cinco que figuraban pendientes. Los hallazgos cerrados no convierten por sí solos el control agrupado en aprobado.
 
 La matriz Django verificó 59 rutas de la API administrativa con 521 comprobaciones de estado HTTP y conteos persistidos. El smoke final por Nginx aprobó 20 comprobaciones de identidad, QR, carpetas, medios privados y permisos de Prestador y Administrador. Las pruebas focales de sesión aprobaron con PostgreSQL y Redis. `uv audit --locked` y `pnpm audit --audit-level moderate` terminaron sin avisos conocidos en los paquetes revisados.
 
 La imagen de backend reconstruida en `71e5e54` aprobó 72 pruebas de reservas, conciliación y pagos simulados en PostgreSQL y Redis. Los casos explicitan su cobertura de webhook, stock y recuperación. [Evidencia de reservas y pagos](casos.md#reservas-y-pagos-simulados).
 
-La suite de backend aprobó 452 pruebas en PostgreSQL/Redis sobre `750191d` con el lock final. El cambio posterior `71e5e54` pasó sus regresiones focales y su reejecución independiente. En frontend aprobaron lint, tipos y build. La suite obtuvo 374 aprobadas y una falla del flujo QR, reproducida también en la imagen original de `develop`. [Regresión integrada](casos.md#regresión-integrada) · [Frontend](casos.md#frontend).
+En la primera pasada, la suite de backend aprobó 452 pruebas en PostgreSQL/Redis sobre `750191d` con el lock final. El cambio posterior `71e5e54` pasó sus regresiones focales y su reejecución independiente. [Regresión integrada](casos.md#regresión-integrada).
 
-Quedan pendientes la matriz completa de roles y objetos por endpoint, las comprobaciones en navegador real y la validación de TLS, HSTS y CSP del despliegue. El sandbox real de Mercado Pago queda para una campaña externa. Django reportó `security.W005` y `security.W021` al revisar el perfil de producción. Extender HSTS a subdominios y habilitar preload requiere validar la política del dominio desplegado. [Checklist](../../checklist.md).
+En la segunda pasada, Edge confirmó el aislamiento de cuentas entre pestañas, la redención automática de un QR real del laboratorio y el orden de saneamiento en ambas rutas QR del build. La matriz por Nginx aprobó 57 comprobaciones adicionales de identidad y alcance. Aprobaron lint, tipos, build, proxy y 383 pruebas Vitest, incluido el caso de redención que había fallado el 05/11. [Casos del 06/11](casos.md#continuación-del-06112026).
+
+La suite completa de backend sobre el último commit de producto, `859e94d`, aprobó 462 pruebas en PostgreSQL y Redis. Ruff, Django, migraciones y OpenAPI también aprobaron.
+
+Quedan pendientes la matriz completa de roles y objetos por método, las variantes de navegador de los controles parciales y la validación de TLS, HSTS y CSP del despliegue. El sandbox real de Mercado Pago queda para una campaña externa. Django reportó `security.W005` y `security.W021` al revisar el perfil de producción. Extender HSTS a subdominios y habilitar preload requiere validar la política del dominio desplegado. [Checklist](../../checklist.md).

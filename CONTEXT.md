@@ -2,7 +2,7 @@
 
 ## Avance de la auditoría de seguridad — 05/11/2026
 
-La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838` y un laboratorio Docker independiente. Integró 14 correcciones con un commit por hallazgo. La auditoría sigue incompleta. El [resumen de la corrida](docs/security/runs/20261105-1823-7467838/resumen.md) y el [registro de hallazgos](docs/security/hallazgos.md) detallan la cobertura y los pendientes.
+La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838` y un laboratorio Docker independiente. Al 06/11 integró 18 correcciones con un commit por hallazgo. La segunda pasada agregó comprobaciones en Edge y una matriz HTTP de alcance. La auditoría sigue incompleta. El [resumen de la corrida](docs/security/runs/20261105-1823-7467838/resumen.md) y el [registro de hallazgos](docs/security/hallazgos.md) detallan la cobertura y los pendientes.
 
 ## Backoffice de tienda y catálogo real — 04/11/2026
 
