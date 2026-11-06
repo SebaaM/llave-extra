@@ -5,6 +5,7 @@ from ipaddress import ip_address
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.middleware.csrf import get_token
 from django.utils import timezone
@@ -257,7 +258,10 @@ class ResetView(APIView):
         rate_limit("reset_submit", f"origin:{client_origin(request)}")
         with transaction.atomic():
             user = consume_one_time_token(data.validated_data["token"], OneTimeToken.Purpose.RESET)
-            validate_password(data.validated_data["password"], user)
+            try:
+                validate_password(data.validated_data["password"], user)
+            except DjangoValidationError as error:
+                raise ValidationError({"password": error.messages}) from error
             user.set_password(data.validated_data["password"])
             user.save(update_fields=["password"])
             now = timezone.now()
