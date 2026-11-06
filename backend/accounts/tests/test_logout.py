@@ -6,14 +6,17 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.models import AuthSession, User
-from accounts.security import issue_session
+from accounts.security import issue_session, rotate_session
 
 
 def logout(access, refresh):
     client = APIClient(enforce_csrf_checks=True)
     csrf = client.get("/api/v1/auth/csrf/").data["csrfToken"]
     client.cookies[settings.REFRESH_COOKIE_NAME] = refresh
-    return client.post("/api/v1/auth/logout/", HTTP_X_CSRFTOKEN=csrf, HTTP_AUTHORIZATION=f"Bearer {access}")
+    headers = {"HTTP_X_CSRFTOKEN": csrf}
+    if access is not None:
+        headers["HTTP_AUTHORIZATION"] = f"Bearer {access}"
+    return client.post("/api/v1/auth/logout/", **headers)
 
 
 def expired(access):
@@ -55,3 +58,37 @@ def test_logout_valid_bearer_still_revokes_its_session_with_invalid_cookie():
     response = logout(access, "invalid-cookie")
     assert response.status_code == 204
     assert AuthSession.objects.get(user=user).revoked_at is not None
+
+
+@pytest.mark.django_db
+def test_logout_without_bearer_rejects_rotated_refresh_cookie_and_preserves_current_refresh():
+    user = User.objects.create_user("logout-rotated-cookie@example.test")
+    _, previous_refresh = issue_session(user)
+    _, current_refresh = rotate_session(previous_refresh)
+
+    response = logout(None, previous_refresh)
+
+    assert response.status_code == 401
+    assert settings.REFRESH_COOKIE_NAME not in response.cookies
+    session = AuthSession.objects.get(user=user)
+    assert session.revoked_at is None
+    # The current cookie remains usable after the stale cookie was rejected.
+    _, next_refresh = rotate_session(current_refresh)
+    assert next_refresh
+
+
+@pytest.mark.django_db
+def test_logout_with_expired_access_and_rotated_refresh_does_not_revoke_session():
+    user = User.objects.create_user("logout-rotated-expired@example.test")
+    access, previous_refresh = issue_session(user)
+    _, current_refresh = rotate_session(previous_refresh)
+
+    response = logout(expired(access), previous_refresh)
+
+    assert response.status_code == 401
+    assert settings.REFRESH_COOKIE_NAME not in response.cookies
+    session = AuthSession.objects.get(user=user)
+    assert session.revoked_at is None
+    # The current refresh still rotates successfully.
+    _, next_refresh = rotate_session(current_refresh)
+    assert next_refresh

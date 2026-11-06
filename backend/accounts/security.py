@@ -13,7 +13,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import password_fingerprint
-from .models import AuthSession, OneTimeToken
+from .models import AuthSession, OneTimeToken, User
 
 RATE_SCRIPT = """local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n"""
 
@@ -52,26 +52,59 @@ def issue_session(user):
     return str(refresh.access_token), str(refresh)
 
 
+def _locked_current_refresh_session(old):
+    """Lock User then AuthSession, matching password reset/admin lock order."""
+    try:
+        sid = str(UUID(str(old["sid"])))
+        user_id = int(old["user_id"])
+        token_jti = old["jti"]
+    except (KeyError, TypeError, ValueError):
+        return None
+    if type(token_jti) is not str or not token_jti:
+        return None
+    user = User.objects.select_for_update().filter(pk=user_id).first()
+    if user is None:
+        return None
+    session = AuthSession.objects.select_for_update().filter(id=sid, user_id=user.pk).first()
+    if (session is None or session.revoked_at or not user.is_active
+            or old.get("pwd") != password_fingerprint(user.password)
+            or session.refresh_jti_hash != hashlib.sha256(token_jti.encode()).hexdigest()):
+        return None
+    return session, user
+
+
 def rotate_session(raw_token: str):
     try:
         old = RefreshToken(raw_token)
-        sid = old["sid"]
-        user_id = old["user_id"]
-    except (TokenError, KeyError, ValueError):
+    except TokenError:
         raise InvalidSession() from None
     with transaction.atomic():
-        session = AuthSession.objects.select_for_update().select_related("user").filter(id=sid).first()
-        if (session is None or session.revoked_at or str(session.user_id) != str(user_id)
-                or not session.user.is_active
-                or old.get("pwd") != password_fingerprint(session.user.password)
-                or session.refresh_jti_hash != hashlib.sha256(old["jti"].encode()).hexdigest()):
+        locked = _locked_current_refresh_session(old)
+        if locked is None:
             raise InvalidSession()
-        refresh = RefreshToken.for_user(session.user)
+        session, user = locked
+        refresh = RefreshToken.for_user(user)
         refresh["sid"] = str(session.id)
-        refresh["pwd"] = password_fingerprint(session.user.password)
+        refresh["pwd"] = password_fingerprint(user.password)
         session.refresh_jti_hash = hashlib.sha256(refresh["jti"].encode()).hexdigest()
         session.save(update_fields=["refresh_jti_hash"])
         return str(refresh.access_token), str(refresh)
+
+
+def revoke_refresh_session(raw_token: str) -> bool:
+    """Revoke only when this signed refresh token is still the session's current one."""
+    try:
+        refresh = RefreshToken(raw_token)
+    except TokenError:
+        return False
+    with transaction.atomic():
+        locked = _locked_current_refresh_session(refresh)
+        if locked is None:
+            return False
+        session, _user = locked
+        session.revoked_at = timezone.now()
+        session.save(update_fields=["revoked_at"])
+        return True
 
 
 def logout_token_identity(raw_token, token_class, *, verify=True):

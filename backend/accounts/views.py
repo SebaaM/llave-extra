@@ -30,6 +30,7 @@ from .security import (
     logout_token_identity,
     make_one_time_token,
     rate_limit,
+    revoke_refresh_session,
     revoke_session,
     rotate_session,
     send_token_email,
@@ -187,8 +188,10 @@ class LogoutView(APIView):
 
     @extend_schema(request=None, responses={204: None, 401: OpenApiResponse(description="Sesión inválida")}, auth=[])
     def post(self, request):
-        cookie = logout_token_identity(request.COOKIES.get(settings.REFRESH_COOKIE_NAME), RefreshToken)
+        raw_cookie = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
+        cookie = logout_token_identity(raw_cookie, RefreshToken)
         authenticator = SessionJWTAuthentication()
+        revoked_by_refresh = False
         try:
             credentials = authenticator.authenticate(request)
         except AuthenticationFailed:
@@ -200,11 +203,17 @@ class LogoutView(APIView):
             # Los claims sin verificar solo sirven para comparar con una cookie firmada.
             if cookie is None or logout_token_identity(raw_access, AccessToken, verify=False) != cookie:
                 raise InvalidSession() from None
+            if not revoke_refresh_session(raw_cookie):
+                raise InvalidSession() from None
+            revoked_by_refresh = True
             credentials = None
 
         bearer = (str(credentials[1]["sid"]), str(credentials[0].pk)) if credentials else None
-        if identity := bearer or cookie:
-            revoke_session(*identity)
+        if bearer:
+            revoke_session(*bearer)
+        elif not revoked_by_refresh:
+            if cookie is None or not revoke_refresh_session(raw_cookie):
+                raise InvalidSession() from None
         response = private_response(None, status.HTTP_204_NO_CONTENT)
         if bearer is None or cookie in (None, bearer):
             response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/v1/auth/", samesite=settings.REFRESH_COOKIE_SAMESITE)
