@@ -14,9 +14,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from referrals.access import redeem_qr
 
@@ -26,6 +27,7 @@ from .security import (
     InvalidSession,
     consume_one_time_token,
     issue_session,
+    logout_token_identity,
     make_one_time_token,
     rate_limit,
     revoke_session,
@@ -181,17 +183,31 @@ class RefreshView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
-    authentication_classes = [SessionJWTAuthentication]
+    authentication_classes = []
 
-    @extend_schema(request=None, responses={204: None}, auth=[])
+    @extend_schema(request=None, responses={204: None, 401: OpenApiResponse(description="Sesión inválida")}, auth=[])
     def post(self, request):
-        raw = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
-        if raw:
-            revoke_session(raw)
-        elif request.auth:
-            AuthSession.objects.filter(id=request.auth["sid"], user=request.user).update(revoked_at=timezone.now())
+        cookie = logout_token_identity(request.COOKIES.get(settings.REFRESH_COOKIE_NAME), RefreshToken)
+        authenticator = SessionJWTAuthentication()
+        try:
+            credentials = authenticator.authenticate(request)
+        except AuthenticationFailed:
+            header = authenticator.get_header(request)
+            try:
+                raw_access = authenticator.get_raw_token(header) if header else None
+            except AuthenticationFailed:
+                raise InvalidSession() from None
+            # Los claims sin verificar solo sirven para comparar con una cookie firmada.
+            if cookie is None or logout_token_identity(raw_access, AccessToken, verify=False) != cookie:
+                raise InvalidSession() from None
+            credentials = None
+
+        bearer = (str(credentials[1]["sid"]), str(credentials[0].pk)) if credentials else None
+        if identity := bearer or cookie:
+            revoke_session(*identity)
         response = private_response(None, status.HTTP_204_NO_CONTENT)
-        response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/v1/auth/", samesite=settings.REFRESH_COOKIE_SAMESITE)
+        if bearer is None or cookie in (None, bearer):
+            response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/v1/auth/", samesite=settings.REFRESH_COOKIE_SAMESITE)
         return response
 
 

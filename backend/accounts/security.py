@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import timedelta
+from uuid import UUID
 
 import redis
 from django.conf import settings
@@ -73,13 +74,21 @@ def rotate_session(raw_token: str):
         return str(refresh.access_token), str(refresh)
 
 
-def revoke_session(raw_token: str) -> None:
+def logout_token_identity(raw_token, token_class, *, verify=True):
+    if not raw_token:
+        return None
     try:
-        old = RefreshToken(raw_token)
-        sid = old["sid"]
-    except (TokenError, KeyError, ValueError):
-        return
-    AuthSession.objects.filter(id=sid, user_id=old["user_id"]).update(revoked_at=timezone.now())
+        token = token_class(raw_token, verify=verify)
+        user_id = token["user_id"]
+        if token.get("token_type") != token_class.token_type or type(user_id) not in (int, str):
+            return None
+        return str(UUID(str(token["sid"]))), str(int(user_id))
+    except (TokenError, KeyError, TypeError, ValueError):
+        return None
+
+
+def revoke_session(sid: str, user_id: str) -> None:
+    AuthSession.objects.filter(id=sid, user_id=user_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
 
 
 def make_one_time_token(user, purpose: str) -> str:
