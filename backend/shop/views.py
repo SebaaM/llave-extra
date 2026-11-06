@@ -56,6 +56,8 @@ class ProductList(NoStoreMixin, generics.ListAPIView):
         search = self.request.query_params.get("search", "").strip()
         if len(search) > 160:
             raise ValidationError({"search": "Búsqueda demasiado larga."})
+        if "\x00" in search:
+            raise ValidationError({"search": "La búsqueda contiene un carácter inválido."})
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         if category := self.request.query_params.get("category"):

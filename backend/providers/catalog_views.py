@@ -65,6 +65,9 @@ class CatalogBenefitsView(APIView):
             raise ValidationError({"featured": "Usá true o false."})
         search = request.query_params.get("search", "").strip()
         category = request.query_params.get("category", "")
+        for name, value in (("search", search), ("category", category)):
+            if "\x00" in value:
+                raise ValidationError({name: "El filtro contiene un carácter inválido."})
         trimmed_category = category.strip()
         if trimmed_category:
             if category != trimmed_category and not benefits.filter(provider__category__iexact=category).exists():
