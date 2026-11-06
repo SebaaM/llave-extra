@@ -1,7 +1,9 @@
 # Pendientes
 
 - [x] Revisar y ajustar visualmente el panel y el catálogo del [PR #20](https://github.com/SebaaM/llave-extra/pull/20) en escritorio y móvil, con respuestas sintéticas. [Evidencia](docs/verification/16-backoffice-tienda-catalogo.md).
-- [ ] Confirmar el CI del corte vigente del PR #20 y obtener aprobación antes de integrar. Compra y canje web continúan deshabilitados y el sandbox externo de pagos sigue pendiente.
+- [x] Confirmar el CI del PR #20, integrado en develop en `7467838`.
+- [x] Ajustar el menú de `/gestion` con accesos directos, grupos por tarea y scroll ajustado al espacio disponible. [Guía](docs/panel-administracion.md) y [verificación](docs/verification/16-backoffice-tienda-catalogo.md).
+- [ ] Validar el sandbox externo de pagos. Compra y canje web continúan deshabilitados.
 
 - [x] Comando opcional `seed_activity_demo` con volumen para web/backoffice: consumos directos/referidos, créditos, ajustes, canjes y pagos fake, sin carga automática ni cambios de datos previos. [Guía](docs/demo-activity.md); [evidencia](docs/verification/15-seed-actividad-demo.md).
 

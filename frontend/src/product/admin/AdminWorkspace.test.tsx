@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { invalidatePrivateState, setAccessToken } from '../api'
 import { RecordActions } from './Actions'
+import { AdminWorkspace } from './AdminWorkspace'
 import { resources } from './data'
 import { RecordForm } from './RecordForm'
 
@@ -29,6 +30,27 @@ describe('gestión administrativa', () => {
     expect(requests[0]).toMatchObject({ method: 'PATCH', body: { version: 'v1', featured: true } })
     expect(requests[0].url).toContain('/admin/benefits/b1/')
   })
+  it('abre el grupo de la ficha activa y lo restaura al regresar a su ruta', async () => {
+    const user = { id: 1, email: 'admin@example.test', role: 'ADMIN' as const, email_verified: true }
+    vi.stubGlobal('fetch', vi.fn(async () => json({ id: 'cat-1', version: 'v1', name: 'Recuerdos', active: true })))
+    const path = '/gestion/categorias-tienda/cat-1'
+    const view = render(<AdminWorkspace user={user} path={path} search="" />)
+    await screen.findByRole('heading', { name: 'Recuerdos' })
+    const nav = within(screen.getByRole('navigation', { name: 'Panel de administración' }))
+    expect(nav.getByRole('link', { name: 'Pedidos' }).getAttribute('href')).toBe('/gestion/pedidos')
+    expect(nav.getByRole('button', { name: 'Tienda' }).getAttribute('aria-expanded')).toBe('true')
+    expect(nav.getByRole('link', { name: 'Categorías de tienda' }).getAttribute('aria-current')).toBe('page')
+    fireEvent.click(nav.getByRole('button', { name: 'Créditos y visitas' }))
+    expect(nav.queryByRole('link', { name: 'Categorías de tienda' })).toBeNull()
+    expect(nav.getByRole('link', { name: 'Consumos' }).getAttribute('href')).toBe('/gestion/consumos')
+    view.rerender(<AdminWorkspace user={user} path="/gestion/cuenta" search="" />)
+    expect(screen.getByRole('link', { name: /Mi cuenta/ }).getAttribute('aria-current')).toBe('page')
+    view.rerender(<AdminWorkspace user={user} path={path} search="" />)
+    expect(nav.getByRole('link', { name: 'Categorías de tienda' }).getAttribute('aria-current')).toBe('page')
+    expect(nav.getByRole('button', { name: 'Créditos y visitas' }).getAttribute('aria-expanded')).toBe('false')
+    await screen.findByRole('heading', { name: 'Recuerdos' })
+  })
+
   it('conserva el texto del formulario ante una versión obsoleta', async () => {
     const user = resources.find(item => item.key === 'users')!
     const onSaved = vi.fn()

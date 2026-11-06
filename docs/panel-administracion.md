@@ -6,7 +6,14 @@ El espacio habitual del Administrador está en `/gestion`. Ingresar con una cuen
 
 Inicio muestra el estado actual de la red, las bandejas de trabajo, la configuración vigente y la actividad reciente. Cada tarjeta abre los registros con su filtro correspondiente. **Actualizar** consulta otra vez al servidor. Esta información es operativa; las analíticas se incorporarán en otra etapa.
 
-El menú permite consultar usuarios, prestadores, beneficios, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas de créditos, movimientos de stock, operaciones de pago y actividad. Las listas admiten búsqueda, filtros disponibles por recurso y paginación. La ficha permite editar los campos habilitados y ejecutar las acciones compatibles con su estado actual.
+**Inicio, Pedidos, Productos y Beneficios** tienen acceso directo. El resto del menú se organiza en cuatro grupos desplegables:
+
+- **Red y usuarios** reúne usuarios, prestadores y colaboradores.
+- **Tienda** reúne categorías de tienda, movimientos de stock, cancelaciones y operaciones de pago.
+- **Créditos y visitas** reúne consumos, billeteras, ajustes y reglas de créditos.
+- **Administración** reúne actividad y configuración.
+
+El menú abre automáticamente el grupo de la sección actual al entrar a una lista o ficha. **Mi cuenta** queda en la cabecera, junto a **Salir**. Las listas admiten búsqueda, filtros disponibles por recurso y paginación. La ficha permite editar los campos habilitados y ejecutar las acciones compatibles con su estado actual.
 
 Los selectores de relaciones permiten buscar por nombre o email. Seleccionar un beneficio para un colaborador agrega únicamente esa oferta concreta a su carpeta. Asignar un usuario Prestador requiere respetar su único negocio; la reasignación debe ser explícita.
 
