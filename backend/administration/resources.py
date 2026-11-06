@@ -8,6 +8,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from accounts.models import AuthSession, User
+from config.query_params import reject_null_filters
 from credits.models import AdjustmentCase, Consumption, ProviderCreditRule, Wallet
 from credits.services import Conflict
 from providers.catalog import catalog_benefits
@@ -108,6 +109,7 @@ class ResourceView(generics.GenericAPIView):
                 data["movements"] = paginator.get_paginated_response(
                     WalletEntryReadSerializer(page, many=True).data).data
             return Response(data)
+        reject_null_filters(request.query_params, "search", *self.filters)
         queryset = self.queryset()
         for name, lookup in self.filters.items():
             value = request.query_params.get(name)

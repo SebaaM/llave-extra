@@ -2,6 +2,7 @@ from io import BytesIO
 
 import qrcode
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -11,7 +12,7 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from accounts.views import client_origin, private_response
-from providers.access import owned_provider
+from providers.access import locked_owned_provider, owned_provider
 from referrals.views import private
 
 from .models import Consumption, CreditPolicy, ProviderConsumptionCredential, Wallet
@@ -107,12 +108,20 @@ class ProviderCredentialView(APIView):
         token = sign_provider_qr(credential)
         return private_response({"configured": True, "qr_url": f"{settings.PUBLIC_APP_URL}/consumo#token={token}"})
 
-    @extend_schema(request=PinSerializer, responses={200: ProviderCredentialResponseSerializer})
+    @extend_schema(
+        request=PinSerializer,
+        responses={
+            200: ProviderCredentialResponseSerializer,
+            403: OpenApiResponse(description="Se requiere un Prestador activo"),
+            404: OpenApiResponse(description="El negocio no pertenece al Prestador"),
+        },
+    )
     def put(self, request, provider_id):
-        owned_provider(request.user, provider_id)
-        serializer = PinSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        set_provider_pin(provider_id, serializer.validated_data["pin"])
+        with transaction.atomic():
+            locked_owned_provider(request.user, provider_id)
+            serializer = PinSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            set_provider_pin(provider_id, serializer.validated_data["pin"])
         return private_response({"configured": True})
 
 

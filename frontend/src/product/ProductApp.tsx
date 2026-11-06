@@ -124,6 +124,16 @@ export default function ProductApp() {
   }, [path, authReady, user, site.settings.site_name, site.settings.home_title, qr.state.status, qr.state.collaborator?.name])
 
   useEffect(() => {
+    const handler = () => {
+      clearAccount()
+      setPageError('')
+      setNotice('Tu sesión cambió. Volvé a ingresar para continuar.')
+    }
+    window.addEventListener('llave:session-replaced', handler)
+    return () => window.removeEventListener('llave:session-replaced', handler)
+  }, [clearAccount])
+
+  useEffect(() => {
     let active = true
     restoreSession().then(async current => {
       if (!active) return

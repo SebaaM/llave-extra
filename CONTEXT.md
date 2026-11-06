@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Avance de la auditoría de seguridad — 05/11/2026
+
+La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838` y un laboratorio Docker independiente. Al 06/11 integró 18 correcciones con un commit por hallazgo. La segunda pasada agregó comprobaciones en Edge y una matriz HTTP de alcance. La auditoría sigue incompleta. El [resumen de la corrida](docs/security/runs/20261105-1823-7467838/resumen.md) y el [registro de hallazgos](docs/security/hallazgos.md) detallan la cobertura y los pendientes.
+
 ## Backoffice de tienda y catálogo real — 04/11/2026
 
 Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` y publicado en [PR #20](https://github.com/SebaaM/llave-extra/pull/20), borrador hacia `develop`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. La revisión visual del 05/11 agrupó filtros, formularios e inventario, recuperó el ordenamiento de productos en móvil y ajustó las fotos y precios de la tienda. QA visual en navegador con respuestas sintéticas documentada en [verificación](docs/verification/16-backoffice-tienda-catalogo.md). El CI vigente se consulta en el PR y el sandbox externo de pagos sigue pendiente.

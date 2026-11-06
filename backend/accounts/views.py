@@ -5,28 +5,33 @@ from ipaddress import ip_address
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from referrals.access import redeem_qr
 
 from .authentication import SessionJWTAuthentication
 from .models import AuthSession, OneTimeToken
 from .security import (
+    InvalidOneTimeToken,
     InvalidSession,
     consume_one_time_token,
     issue_session,
+    logout_token_identity,
     make_one_time_token,
     rate_limit,
+    revoke_refresh_session,
     revoke_session,
     rotate_session,
     send_token_email,
@@ -100,11 +105,19 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
-    @extend_schema(request=RegisterSerializer, responses={201: None}, auth=[])
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={
+            201: None,
+            429: OpenApiResponse(description="Cuota de registro excedida o control de intentos no disponible"),
+        },
+        auth=[],
+    )
     def post(self, request):
         data = RegisterSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
+        limit_auth_operation("register", request, email)
         if data.validated_data.get("referral_token"):
             rate_limit("redeem", identity(request))
         try:
@@ -134,10 +147,13 @@ class LoginView(APIView):
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
         limit_auth_operation("login", request, email)
-        user = authenticate(request, email=email, password=data.validated_data["password"])
-        if user is None or not user.is_active:
-            raise InvalidSession("Credenciales inválidas")
-        access, refresh = issue_session(user)
+        with transaction.atomic():
+            # Serialize authentication and session creation with account changes and revocation.
+            locked_user = User.objects.select_for_update().filter(email=email).first()
+            user = authenticate(request, email=email, password=data.validated_data["password"])
+            if locked_user is None or user is None or user.pk != locked_user.pk or not user.is_active:
+                raise InvalidSession("Credenciales inválidas")
+            access, refresh = issue_session(user)
         response = private_response({"access": access, "token_type": "Bearer", "expires_in": 300})
         set_refresh_cookie(response, refresh)
         return response
@@ -172,17 +188,39 @@ class RefreshView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
-    authentication_classes = [SessionJWTAuthentication]
+    authentication_classes = []
 
-    @extend_schema(request=None, responses={204: None}, auth=[])
+    @extend_schema(request=None, responses={204: None, 401: OpenApiResponse(description="Sesión inválida")}, auth=[])
     def post(self, request):
-        raw = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
-        if raw:
-            revoke_session(raw)
-        elif request.auth:
-            AuthSession.objects.filter(id=request.auth["sid"], user=request.user).update(revoked_at=timezone.now())
+        raw_cookie = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
+        cookie = logout_token_identity(raw_cookie, RefreshToken)
+        authenticator = SessionJWTAuthentication()
+        revoked_by_refresh = False
+        try:
+            credentials = authenticator.authenticate(request)
+        except AuthenticationFailed:
+            header = authenticator.get_header(request)
+            try:
+                raw_access = authenticator.get_raw_token(header) if header else None
+            except AuthenticationFailed:
+                raise InvalidSession() from None
+            # Los claims sin verificar solo sirven para comparar con una cookie firmada.
+            if cookie is None or logout_token_identity(raw_access, AccessToken, verify=False) != cookie:
+                raise InvalidSession() from None
+            if not revoke_refresh_session(raw_cookie):
+                raise InvalidSession() from None
+            revoked_by_refresh = True
+            credentials = None
+
+        bearer = (str(credentials[1]["sid"]), str(credentials[0].pk)) if credentials else None
+        if bearer:
+            revoke_session(*bearer)
+        elif not revoked_by_refresh:
+            if cookie is None or not revoke_refresh_session(raw_cookie):
+                raise InvalidSession() from None
         response = private_response(None, status.HTTP_204_NO_CONTENT)
-        response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/v1/auth/", samesite=settings.REFRESH_COOKIE_SAMESITE)
+        if bearer is None or cookie in (None, bearer):
+            response.delete_cookie(settings.REFRESH_COOKIE_NAME, path="/api/v1/auth/", samesite=settings.REFRESH_COOKIE_SAMESITE)
         return response
 
 
@@ -199,9 +237,11 @@ class ResendView(APIView):
         limit_auth_operation("resend", request, email)
         user = User.objects.filter(email=email, is_active=True, email_verified=False).first()
         if user:
-            raw = make_one_time_token(user, OneTimeToken.Purpose.VERIFY)
             try:
+                raw = make_one_time_token(user, OneTimeToken.Purpose.VERIFY)
                 send_token_email(user, OneTimeToken.Purpose.VERIFY, raw)
+            except InvalidOneTimeToken:
+                pass
             except Exception:
                 logger.exception("Fallo reenvio de verificacion para user_id=%s", user.pk)
         return private_response({"detail": "Si corresponde, recibirás un email"}, status.HTTP_202_ACCEPTED)
@@ -237,9 +277,11 @@ class ForgotView(APIView):
         limit_auth_operation("reset", request, email)
         user = User.objects.filter(email=email, is_active=True).first()
         if user:
-            raw = make_one_time_token(user, OneTimeToken.Purpose.RESET)
             try:
+                raw = make_one_time_token(user, OneTimeToken.Purpose.RESET)
                 send_token_email(user, OneTimeToken.Purpose.RESET, raw)
+            except InvalidOneTimeToken:
+                pass
             except Exception:
                 logger.exception("Fallo envio de reset para user_id=%s", user.pk)
         return private_response({"detail": "Si corresponde, recibirás un email"}, status.HTTP_202_ACCEPTED)
@@ -257,7 +299,10 @@ class ResetView(APIView):
         rate_limit("reset_submit", f"origin:{client_origin(request)}")
         with transaction.atomic():
             user = consume_one_time_token(data.validated_data["token"], OneTimeToken.Purpose.RESET)
-            validate_password(data.validated_data["password"], user)
+            try:
+                validate_password(data.validated_data["password"], user)
+            except DjangoValidationError as error:
+                raise ValidationError({"password": error.messages}) from error
             user.set_password(data.validated_data["password"])
             user.save(update_fields=["password"])
             now = timezone.now()

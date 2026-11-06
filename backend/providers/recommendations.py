@@ -3,13 +3,19 @@
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
 from rest_framework import permissions, serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from config.query_params import reject_null_filters
 from referrals.models import CollaboratorProfile
 from referrals.views import current_profile, private
 
@@ -78,9 +84,10 @@ class CollaboratorCatalogView(PrivateCollaboratorView):
         OpenApiParameter("page", OpenApiTypes.INT),
         OpenApiParameter("page_size", OpenApiTypes.INT, description="24 por defecto; máximo 48"),
         OpenApiParameter("search", OpenApiTypes.STR), OpenApiParameter("category", OpenApiTypes.STR),
-    ], responses=SelectionPageSerializer)
+    ], responses={200: SelectionPageSerializer, 400: OpenApiResponse(description="Filtro de texto inválido")})
     def get(self, request):
         current_profile(request.user)
+        reject_null_filters(request.query_params, "search", "category")
         benefits = catalog_benefits()
         search = request.query_params.get("search", "").strip()
         category = request.query_params.get("category", "").strip()

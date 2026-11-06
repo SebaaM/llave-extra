@@ -14,7 +14,13 @@ from referrals.access import active_folder_access
 from referrals.models import CollaboratorProfile
 from referrals.views import current_profile, qr_url
 
-from .access import owned_provider, selected_benefits, selected_providers, visible_provider
+from .access import (
+    locked_owned_provider,
+    owned_provider,
+    selected_benefits,
+    selected_providers,
+    visible_provider,
+)
 from .models import Benefit, Provider, ProviderMembership, Publication
 from .serializers import (
     BenefitReadSerializer,
@@ -128,10 +134,11 @@ class OwnProviderView(APIView):
 
     @extend_schema(request=ProviderWriteSerializer, responses={200: ProviderReadSerializer})
     def patch(self, request, provider_id):
-        provider = owned_provider(request.user, provider_id)
-        serializer = ProviderWriteSerializer(provider, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        provider = serializer.save()
+        with transaction.atomic():
+            provider = locked_owned_provider(request.user, provider_id)
+            serializer = ProviderWriteSerializer(provider, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            provider = serializer.save()
         return Response(ProviderReadSerializer(provider).data)
 
 
@@ -153,10 +160,11 @@ class OwnBenefitsView(APIView):
 
     @extend_schema(request=BenefitWriteSerializer, responses={201: BenefitReadSerializer})
     def post(self, request, provider_id):
-        provider = owned_provider(request.user, provider_id)
-        serializer = BenefitWriteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        benefit = serializer.save(provider=provider, demo=provider.demo)
+        with transaction.atomic():
+            provider = locked_owned_provider(request.user, provider_id)
+            serializer = BenefitWriteSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            benefit = serializer.save(provider=provider, demo=provider.demo)
         return Response(BenefitReadSerializer(benefit).data, status=status.HTTP_201_CREATED)
 
 
@@ -177,10 +185,14 @@ class OwnBenefitView(APIView):
 
     @extend_schema(request=BenefitWriteSerializer, responses={200: BenefitReadSerializer})
     def patch(self, request, provider_id, benefit_id):
-        benefit = owned_benefit(request.user, provider_id, benefit_id)
-        serializer = BenefitWriteSerializer(benefit, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        benefit = serializer.save()
+        with transaction.atomic():
+            provider = locked_owned_provider(request.user, provider_id)
+            benefit = provider.benefits.select_for_update().filter(pk=benefit_id).first()
+            if benefit is None:
+                raise NotFound()
+            serializer = BenefitWriteSerializer(benefit, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            benefit = serializer.save()
         return Response(BenefitReadSerializer(benefit).data)
 
     @extend_schema(responses={204: None, 409: OpenApiTypes.OBJECT})

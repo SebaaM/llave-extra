@@ -2,13 +2,19 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import CharField, F, JSONField, Q, Value
 from django.db.models.functions import Cast
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
 from rest_framework import permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from config.query_params import reject_null_filters
 from credits.models import CreditPolicy
 from providers.models import CatalogConfig
 from shop.models import OrderAudit, ShopSettings
@@ -106,13 +112,17 @@ class ActivityView(APIView):
     permission_classes = [IsProgramAdmin]
 
     @extend_schema(parameters=[OpenApiParameter(name, str) for name in ("search", "actor", "action", "resource")],
-                   responses=inline_serializer("AdminActivityPage", fields={
-                       "count": serializers.IntegerField(), "next": serializers.URLField(allow_null=True),
-                       "previous": serializers.URLField(allow_null=True),
-                       "results": AdminAuditSerializer(many=True),
-                   }))
+                   responses={
+                       200: inline_serializer("AdminActivityPage", fields={
+                           "count": serializers.IntegerField(), "next": serializers.URLField(allow_null=True),
+                           "previous": serializers.URLField(allow_null=True),
+                           "results": AdminAuditSerializer(many=True),
+                       }),
+                       400: OpenApiResponse(description="Identificador o filtro inválido"),
+                   })
     def get(self, request):
         params = request.query_params
+        reject_null_filters(params, "search", "action", "resource")
         admin_rows = AdminAudit.objects.all()
         order_rows = OrderAudit.objects.all()
         if value := params.get("actor"):

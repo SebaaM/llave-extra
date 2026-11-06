@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from datetime import timedelta
+from uuid import UUID
 
 import redis
 from django.conf import settings
@@ -12,7 +13,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .authentication import password_fingerprint
-from .models import AuthSession, OneTimeToken
+from .models import AuthSession, OneTimeToken, User
 
 RATE_SCRIPT = """local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('EXPIRE',KEYS[1],ARGV[1]) end; return n"""
 
@@ -51,56 +52,106 @@ def issue_session(user):
     return str(refresh.access_token), str(refresh)
 
 
+def _locked_current_refresh_session(old):
+    """Lock User then AuthSession, matching password reset/admin lock order."""
+    try:
+        sid = str(UUID(str(old["sid"])))
+        user_id = int(old["user_id"])
+        token_jti = old["jti"]
+    except (KeyError, TypeError, ValueError):
+        return None
+    if type(token_jti) is not str or not token_jti:
+        return None
+    user = User.objects.select_for_update().filter(pk=user_id).first()
+    if user is None:
+        return None
+    session = AuthSession.objects.select_for_update().filter(id=sid, user_id=user.pk).first()
+    if (session is None or session.revoked_at or not user.is_active
+            or old.get("pwd") != password_fingerprint(user.password)
+            or session.refresh_jti_hash != hashlib.sha256(token_jti.encode()).hexdigest()):
+        return None
+    return session, user
+
+
 def rotate_session(raw_token: str):
     try:
         old = RefreshToken(raw_token)
-        sid = old["sid"]
-        user_id = old["user_id"]
-    except (TokenError, KeyError, ValueError):
+    except TokenError:
         raise InvalidSession() from None
     with transaction.atomic():
-        session = AuthSession.objects.select_for_update().select_related("user").filter(id=sid).first()
-        if (session is None or session.revoked_at or str(session.user_id) != str(user_id)
-                or not session.user.is_active
-                or old.get("pwd") != password_fingerprint(session.user.password)
-                or session.refresh_jti_hash != hashlib.sha256(old["jti"].encode()).hexdigest()):
+        locked = _locked_current_refresh_session(old)
+        if locked is None:
             raise InvalidSession()
-        refresh = RefreshToken.for_user(session.user)
+        session, user = locked
+        refresh = RefreshToken.for_user(user)
         refresh["sid"] = str(session.id)
-        refresh["pwd"] = password_fingerprint(session.user.password)
+        refresh["pwd"] = password_fingerprint(user.password)
         session.refresh_jti_hash = hashlib.sha256(refresh["jti"].encode()).hexdigest()
         session.save(update_fields=["refresh_jti_hash"])
         return str(refresh.access_token), str(refresh)
 
 
-def revoke_session(raw_token: str) -> None:
+def revoke_refresh_session(raw_token: str) -> bool:
+    """Revoke only when this signed refresh token is still the session's current one."""
     try:
-        old = RefreshToken(raw_token)
-        sid = old["sid"]
-    except (TokenError, KeyError, ValueError):
-        return
-    AuthSession.objects.filter(id=sid, user_id=old["user_id"]).update(revoked_at=timezone.now())
+        refresh = RefreshToken(raw_token)
+    except TokenError:
+        return False
+    with transaction.atomic():
+        locked = _locked_current_refresh_session(refresh)
+        if locked is None:
+            return False
+        session, _user = locked
+        session.revoked_at = timezone.now()
+        session.save(update_fields=["revoked_at"])
+        return True
+
+
+def logout_token_identity(raw_token, token_class, *, verify=True):
+    if not raw_token:
+        return None
+    try:
+        token = token_class(raw_token, verify=verify)
+        user_id = token["user_id"]
+        if token.get("token_type") != token_class.token_type or type(user_id) not in (int, str):
+            return None
+        return str(UUID(str(token["sid"]))), str(int(user_id))
+    except (TokenError, KeyError, TypeError, ValueError):
+        return None
+
+
+def revoke_session(sid: str, user_id: str) -> None:
+    AuthSession.objects.filter(id=sid, user_id=user_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
 
 
 def make_one_time_token(user, purpose: str) -> str:
-    raw = secrets.token_urlsafe(32)
-    OneTimeToken.objects.create(
-        user=user, purpose=purpose, token_hash=hashlib.sha256(raw.encode()).hexdigest(),
-        expires_at=timezone.now() + timedelta(hours=24 if purpose == OneTimeToken.Purpose.VERIFY else 1),
-    )
+    with transaction.atomic():
+        current = User.objects.select_for_update().filter(pk=user.pk, email=user.email, is_active=True).first()
+        if current is None:
+            raise InvalidOneTimeToken()
+        raw = secrets.token_urlsafe(32)
+        OneTimeToken.objects.create(
+            user=current, purpose=purpose, token_hash=hashlib.sha256(raw.encode()).hexdigest(),
+            expires_at=timezone.now() + timedelta(hours=24 if purpose == OneTimeToken.Purpose.VERIFY else 1),
+        )
     return raw
 
 
 def consume_one_time_token(raw: str, purpose: str):
     digest = hashlib.sha256(raw.encode()).hexdigest()
-    token = OneTimeToken.objects.select_for_update().select_related("user").filter(
-        token_hash=digest, purpose=purpose, used_at__isnull=True, expires_at__gt=timezone.now(),
-    ).first()
-    if token is None or not token.user.is_active:
+    pending = OneTimeToken.objects.filter(token_hash=digest, purpose=purpose, used_at__isnull=True)
+    user_id = pending.filter(expires_at__gt=timezone.now()).values_list("user_id", flat=True).first()
+    if user_id is None:
+        raise InvalidOneTimeToken()
+    user = User.objects.select_for_update().filter(pk=user_id, is_active=True).first()
+    if user is None:
+        raise InvalidOneTimeToken()
+    token = pending.select_for_update().filter(user=user, expires_at__gt=timezone.now()).first()
+    if token is None:
         raise InvalidOneTimeToken()
     token.used_at = timezone.now()
     token.save(update_fields=["used_at"])
-    return token.user
+    return user
 
 
 def send_token_email(user, purpose: str, raw: str) -> None:

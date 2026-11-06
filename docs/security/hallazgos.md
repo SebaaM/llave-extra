@@ -1,6 +1,6 @@
 # Registro de hallazgos de seguridad
 
-Estado inicial, 24/10/2026: **auditoría no iniciada; cero hallazgos registrados por esta campaña**. Esto no significa que haya cero vulnerabilidades. No reutilizar problemas históricos como hallazgos nuevos sin reproducirlos en el corte auditado.
+Auditoría iniciada sobre `7467838` el 05/11/2026. El estado de cada corrección se refiere al caso reproducido de ese hallazgo. Los casos y resultados se registran por corrida. Los problemas históricos requieren una reproducción en el corte auditado.
 
 Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [checklist](checklist.md), [prompt](prompt-auditor.md).
 
@@ -8,8 +8,24 @@ Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [ch
 
 | ID | Feature / controles | Severidad | Estado | Problema / impacto | Solución | Revisión / evidencia |
 |---|---|---|---|---|---|---|
-
-La tabla empieza vacía deliberadamente. Agregar una fila por hallazgo real; IDs `SEC-001` en adelante, permanentes. Varias observaciones con la misma causa pueden compartir hallazgo si la reproducción cubre todos los endpoints afectados.
+| SEC-001 | E2/F2, T08/F03 | Alta | CERRADO | Una pestaña adopta una sesión de otra pestaña al reintentar un 401. | `6490060` | Regresión pasó. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-002 | Catálogos, A10/F05 | Baja | CERRADO | Filtros públicos con NUL provocan 500 de PostgreSQL. | `78df20a` | Regresión y HTTP pasaron. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#http-público) |
+| SEC-003 | E2/F2, T04/T08 | Media | CERRADO | Cierre con access vencido falla con cookie válida. Bearer y cookie de sesiones distintas pueden revocar la equivocada. | `eb97132` | Regresiones pasaron. La revisión detectó el caso independiente SEC-008. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-004 | E2, A07 | Media | CERRADO | El alta sin QR crea cuentas y envía emails sin cuota Redis. | `d4b1531` | 43 pruebas y revisión estática independiente aprobadas. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-005 | E2, A10/F05 | Baja | CERRADO | Cuerpos JSON que no son objetos provocan 500 en endpoints de cuenta. | `4ae6cc9` | Regresión pasó. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-006 | E2, A05/A10 | Baja | CERRADO | Reset con contraseña similar al email provoca 500 y revierte el consumo del token. | `d9facd2` | Regresión pasó. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
+| SEC-007 | E3/08, P01/P03 | Media | CERRADO | Una escritura del Prestador continúa después de confirmar la baja de su membresía. | `49efef7` | 15 pruebas PostgreSQL y revisión estática independiente aprobadas. [Casos](runs/20261105-1823-7467838/casos.md#autorización-por-objeto) |
+| SEC-008 | E2, T03/T04 | Media | CERRADO | Una cookie de refresh rotada puede revocar el SID vigente. | `783da70` | Dos casos RED, ocho GREEN y revisión estática independiente. |
+| SEC-009 | E2/Admin, A04/A05/T05 | Alta | CERRADO | Enlaces de verificación o recuperación emitidos antes de un cambio administrativo de email siguen válidos para la cuenta. | `0173874` | Pruebas RED/GREEN con sesión técnica y PostgreSQL. Revisión estática independiente. |
+| SEC-010 | E2/Admin, A08/T05 | Media | CERRADO | Una sesión anterior puede volver a autenticar tras desactivar y reactivar la cuenta en Django Admin. | `b1108cb` | Prueba RED/GREEN. La revisión detectó SEC-013 en la emisión concurrente de sesiones. |
+| SEC-011 | Dependencias, B06/P07/O05 | Alta | CERRADO | Pillow 11.3.0 figura afectado por avisos de decodificación de imágenes. | `b2e9402` | Sin avisos de Pillow después de actualizar a 13.0.0. Pasaron 16 pruebas de medios y QR. [Versión corregida](https://github.com/python-pillow/Pillow/releases/tag/13.0.0). |
+| SEC-012 | Dependencias de desarrollo, B06/O05 | Baja | CERRADO | pytest 8.4.2 figura afectado por manejo inseguro de directorios temporales. | `5342110` | GHSA-6w46-j5rx-g56g/PYSEC-2026-1845 ausente tras actualizar a 9.0.3. Pasaron 44 pruebas focales con el lock final. |
+| SEC-013 | E2/Admin, A03/A08/T05 | Media | CERRADO | Un login puede validar credenciales con el estado anterior y emitir la sesión después de la revocación administrativa. | `6077439` | RED 200, GREEN 401 y sin sesión. Revisión estática independiente aprobada. |
+| SEC-014 | E2/Admin, A05/T05 | Alta | CERRADO | Una edición de perfil que conserva el hash anterior puede restaurar la contraseña después de un reset exitoso. | `71e5e54` | RED y GREEN en PostgreSQL. Pasaron cinco pruebas de reset y Admin, con dos casos reejecutados por un revisor independiente. |
+| SEC-015 | Frontend, F01/F06 | Baja | CERRADO | El enlace de contacto interpretaba caracteres válidos del email como parámetros, fragmento o secuencias de escape. | `e1a4dd7` | Tres RED. Seis pruebas focales aprobadas y reejecutadas de forma independiente. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| SEC-016 | Catálogo privado/Admin, P08/F05/M08 | Baja | CERRADO | Los filtros privados con NUL enviaban datos inválidos a PostgreSQL y devolvían 500. | `859e94d` | Siete RED 500 y siete GREEN 400. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| SEC-017 | Prestadores, P01/C08 | Media | CERRADO | El cambio de PIN podía completarse después de confirmar la revocación de la membresía. | `ae908bb` | RED 200 con hash cambiado. GREEN 404 con hash intacto. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| SEC-018 | QR/Frontend, F04 | Baja | CERRADO | El build podía solicitar fuentes externas antes de limpiar el fragmento del QR. Los marcadores no aparecieron en tráfico ni referrer. | `5793a59` | Edge RED/GREEN en dos rutas sobre build real. Dos regresiones de bootstrap reejecutadas por un revisor independiente. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 
 ## Estados y prioridad
 
