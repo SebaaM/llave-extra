@@ -147,10 +147,13 @@ class LoginView(APIView):
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
         limit_auth_operation("login", request, email)
-        user = authenticate(request, email=email, password=data.validated_data["password"])
-        if user is None or not user.is_active:
-            raise InvalidSession("Credenciales inválidas")
-        access, refresh = issue_session(user)
+        with transaction.atomic():
+            # Serialize authentication and session creation with account changes and revocation.
+            locked_user = User.objects.select_for_update().filter(email=email).first()
+            user = authenticate(request, email=email, password=data.validated_data["password"])
+            if locked_user is None or user is None or user.pk != locked_user.pk or not user.is_active:
+                raise InvalidSession("Credenciales inválidas")
+            access, refresh = issue_session(user)
         response = private_response({"access": access, "token_type": "Bearer", "expires_in": 300})
         set_refresh_cookie(response, refresh)
         return response
