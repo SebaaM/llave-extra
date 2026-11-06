@@ -27,3 +27,16 @@ Al abrir el [PR #20](https://github.com/SebaaM/llave-extra/pull/20), `develop` h
 - En la tienda probaron catálogo y ficha a 320, 390, 768 y 1440 px. Las fotos verticales muestran la pieza completa en el detalle, los precios principales coinciden en altura cuando hay tarjetas en la misma fila y los nombres largos se ajustan al ancho disponible. La ficha presenta un único aviso de compra y canje pendientes.
 - `pnpm run lint`, `pnpm run typecheck` y `pnpm run build` aprobaron. `pnpm exec vitest run src/product/admin/ShopAdmin.test.tsx src/product/shop/ShopPage.test.tsx --maxWorkers=1 --reporter=dot` aprobó nueve pruebas focales.
 - El ajuste corresponde a presentación y navegación de la interfaz. La QA visual utiliza un servidor de fixtures y el alcance de las comprobaciones PostgreSQL y OpenAPI se registra en las secciones anteriores.
+
+## Navegación lateral local del 05/11/2026
+
+- `docker compose up -d --build --wait` levantó la rama y `docker compose exec -T backend python manage.py migrate --noinput` aplicó `shop.0006_product_categories` al entorno local. `/gestion` devolvió HTTP 200 y `/api/v1/health/` devolvió `ok` desde `localhost:8080`.
+- En Edge con respuestas sintéticas, «Mi cuenta» a 1366 × 768 pasó de una página de 879 px y un menú con scroll interno a 768 px y un menú sin desborde. A 1440 × 900 y 1366 × 768 caben todos los enlaces con Tienda desplegada. A 1024 × 600 el menú se desplaza al superar el espacio disponible. A 768 y 390 px de ancho el menú abierto se desplaza con la página y se cierra al elegir un enlace.
+- Las URL de lista y ficha mantienen la sección activa. Al volver a la ruta, se vuelve a desplegar su grupo. La organización propuesta usa accesos directos según el flujo operativo previsto.
+- Aprobaron `docker compose exec -T frontend pnpm run lint`, `docker compose exec -T frontend pnpm run typecheck`, `pnpm run build` y `docker compose exec -T frontend pnpm exec vitest run src/product/admin/AdminWorkspace.test.tsx --maxWorkers=1 --reporter=verbose` con 10 pruebas.
+- La ejecución integral encontró fallos en `QrFlow.test.tsx`. La prueba focal del QR aprobó 35 de 36 casos; el primero tampoco encontró el encabezado esperado en la imagen compilada antes del cambio de menú, mediante `docker run --rm --network none llaveextra-frontend pnpm exec vitest run src/product/QrFlow.test.tsx -t 'redime una vez' --maxWorkers=1 --testTimeout=15000 --reporter=dot`.
+
+## Revalidación del 06/11/2026 sobre develop
+
+- Base `ae0c2bf`, con los PR #20 de catálogo y #21 de seguridad integrados. El CI de #20 aprobó frontend y backend.
+- En Docker aprobaron `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:proxy`, `pnpm exec vitest run src/product/admin src/product/workspace/Workspace.test.tsx --maxWorkers=2 --testTimeout=20000 --reporter=dot` con 93 pruebas, y `pnpm run build`.

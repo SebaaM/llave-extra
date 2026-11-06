@@ -6,7 +6,9 @@ La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/devel
 
 ## Backoffice de tienda y catálogo real — 04/11/2026
 
-Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` y publicado en [PR #20](https://github.com/SebaaM/llave-extra/pull/20), borrador hacia `develop`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. La revisión visual del 05/11 agrupó filtros, formularios e inventario, recuperó el ordenamiento de productos en móvil y ajustó las fotos y precios de la tienda. QA visual en navegador con respuestas sintéticas documentada en [verificación](docs/verification/16-backoffice-tienda-catalogo.md). El CI vigente se consulta en el PR y el sandbox externo de pagos sigue pendiente.
+Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` y publicado en [PR #20](https://github.com/SebaaM/llave-extra/pull/20), integrado a `develop` en `7467838`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. La revisión visual del 05/11 agrupó filtros, formularios e inventario, recuperó el ordenamiento de productos en móvil y ajustó las fotos y precios de la tienda. QA visual en navegador con respuestas sintéticas documentada en [verificación](docs/verification/16-backoffice-tienda-catalogo.md). El CI vigente se consulta en el PR y el sandbox externo de pagos sigue pendiente.
+
+Ajuste del 05/11 para `/gestion`: acceso directo a Inicio, Pedidos, Productos y Beneficios; grupos desplegables por tarea y Mi cuenta en la cabecera. La barra lateral en escritorio usa la altura disponible y en móvil el menú abierto fluye con la página. La [guía del panel](docs/panel-administracion.md) describe la nueva distribución.
 
 ## Seed de actividad completa opcional — 02/11/2026
 
