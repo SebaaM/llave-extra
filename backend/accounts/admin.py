@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.db import transaction
 from django.utils import timezone
 
-from .models import AuthSession, User
+from .models import AuthSession, OneTimeToken, User
 
 admin.site.site_header = "Administración de Llave Extra"
 admin.site.site_title = "Llave Extra · Administración"
@@ -45,12 +45,18 @@ class LlaveUserAdmin(AdminRoleOnlyMixin, UserAdmin):
             return super().save_model(request, obj, form, change)
 
         with transaction.atomic():
-            current = User.objects.select_for_update().only("is_active").get(pk=obj.pk)
+            current = User.objects.select_for_update().only("email", "is_active").get(pk=obj.pk)
             active_changed = current.is_active != obj.is_active
+            email_changed = current.email != obj.email.strip().lower()
+            if email_changed:
+                obj.email_verified = False
             super().save_model(request, obj, form, change)
-            if active_changed:
+            now = timezone.now()
+            if email_changed:
+                OneTimeToken.objects.filter(user_id=obj.pk, used_at__isnull=True).update(used_at=now)
+            if active_changed or email_changed:
                 AuthSession.objects.filter(user_id=obj.pk, revoked_at__isnull=True).update(
-                    revoked_at=timezone.now(),
+                    revoked_at=now,
                 )
 
     def has_delete_permission(self, request, obj=None):

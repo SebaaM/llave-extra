@@ -125,24 +125,33 @@ def revoke_session(sid: str, user_id: str) -> None:
 
 
 def make_one_time_token(user, purpose: str) -> str:
-    raw = secrets.token_urlsafe(32)
-    OneTimeToken.objects.create(
-        user=user, purpose=purpose, token_hash=hashlib.sha256(raw.encode()).hexdigest(),
-        expires_at=timezone.now() + timedelta(hours=24 if purpose == OneTimeToken.Purpose.VERIFY else 1),
-    )
+    with transaction.atomic():
+        current = User.objects.select_for_update().filter(pk=user.pk, email=user.email, is_active=True).first()
+        if current is None:
+            raise InvalidOneTimeToken()
+        raw = secrets.token_urlsafe(32)
+        OneTimeToken.objects.create(
+            user=current, purpose=purpose, token_hash=hashlib.sha256(raw.encode()).hexdigest(),
+            expires_at=timezone.now() + timedelta(hours=24 if purpose == OneTimeToken.Purpose.VERIFY else 1),
+        )
     return raw
 
 
 def consume_one_time_token(raw: str, purpose: str):
     digest = hashlib.sha256(raw.encode()).hexdigest()
-    token = OneTimeToken.objects.select_for_update().select_related("user").filter(
-        token_hash=digest, purpose=purpose, used_at__isnull=True, expires_at__gt=timezone.now(),
-    ).first()
-    if token is None or not token.user.is_active:
+    pending = OneTimeToken.objects.filter(token_hash=digest, purpose=purpose, used_at__isnull=True)
+    user_id = pending.filter(expires_at__gt=timezone.now()).values_list("user_id", flat=True).first()
+    if user_id is None:
+        raise InvalidOneTimeToken()
+    user = User.objects.select_for_update().filter(pk=user_id, is_active=True).first()
+    if user is None:
+        raise InvalidOneTimeToken()
+    token = pending.select_for_update().filter(user=user, expires_at__gt=timezone.now()).first()
+    if token is None:
         raise InvalidOneTimeToken()
     token.used_at = timezone.now()
     token.save(update_fields=["used_at"])
-    return token.user
+    return user
 
 
 def send_token_email(user, purpose: str, raw: str) -> None:

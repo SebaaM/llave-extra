@@ -24,6 +24,7 @@ from referrals.access import redeem_qr
 from .authentication import SessionJWTAuthentication
 from .models import AuthSession, OneTimeToken
 from .security import (
+    InvalidOneTimeToken,
     InvalidSession,
     consume_one_time_token,
     issue_session,
@@ -233,9 +234,11 @@ class ResendView(APIView):
         limit_auth_operation("resend", request, email)
         user = User.objects.filter(email=email, is_active=True, email_verified=False).first()
         if user:
-            raw = make_one_time_token(user, OneTimeToken.Purpose.VERIFY)
             try:
+                raw = make_one_time_token(user, OneTimeToken.Purpose.VERIFY)
                 send_token_email(user, OneTimeToken.Purpose.VERIFY, raw)
+            except InvalidOneTimeToken:
+                pass
             except Exception:
                 logger.exception("Fallo reenvio de verificacion para user_id=%s", user.pk)
         return private_response({"detail": "Si corresponde, recibirás un email"}, status.HTTP_202_ACCEPTED)
@@ -271,9 +274,11 @@ class ForgotView(APIView):
         limit_auth_operation("reset", request, email)
         user = User.objects.filter(email=email, is_active=True).first()
         if user:
-            raw = make_one_time_token(user, OneTimeToken.Purpose.RESET)
             try:
+                raw = make_one_time_token(user, OneTimeToken.Purpose.RESET)
                 send_token_email(user, OneTimeToken.Purpose.RESET, raw)
+            except InvalidOneTimeToken:
+                pass
             except Exception:
                 logger.exception("Fallo envio de reset para user_id=%s", user.pk)
         return private_response({"detail": "Si corresponde, recibirás un email"}, status.HTTP_202_ACCEPTED)
