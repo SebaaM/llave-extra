@@ -91,11 +91,12 @@ def test_csrf_login_cookie_refresh_logout_and_revoked_access():
     assert no_csrf_refresh.post("/api/v1/auth/refresh/").status_code == 403
     response = client.post("/api/v1/auth/refresh/")
     assert response.status_code == 200, response.data
+    current_refresh = response.cookies[settings.REFRESH_COOKIE_NAME].value
     client.cookies[settings.REFRESH_COOKIE_NAME] = old_refresh
     assert client.post("/api/v1/auth/refresh/").status_code == 401
-    client.cookies[settings.REFRESH_COOKIE_NAME] = response.cookies[settings.REFRESH_COOKIE_NAME].value
+    client.cookies[settings.REFRESH_COOKIE_NAME] = current_refresh
     no_csrf = APIClient(enforce_csrf_checks=True)
-    no_csrf.cookies[settings.REFRESH_COOKIE_NAME] = response.cookies[settings.REFRESH_COOKIE_NAME].value
+    no_csrf.cookies[settings.REFRESH_COOKIE_NAME] = current_refresh
     assert no_csrf.post("/api/v1/auth/logout/").status_code == 403
     assert client.post("/api/v1/auth/logout/").status_code == 204
     assert bearer.get("/api/v1/auth/me/").status_code == 401
