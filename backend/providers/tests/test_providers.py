@@ -350,6 +350,62 @@ def test_provider_delete_waits_for_admin_publication_and_keeps_published_benefit
     assert benefit.status == Publication.PUBLISHED
 
 
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("operation", ["edit-provider", "edit-benefit", "create-benefit"])
+def test_provider_write_denied_after_concurrent_membership_revocation(operation):
+    provider = Provider.objects.create(slug="race-revoke", name="Negocio", description="Descripción original")
+    owner = User.objects.create_user("race-revoke@example.test", "Secret-123", role=User.Role.PROVIDER)
+    membership = ProviderMembership.objects.create(user=owner, provider=provider)
+    benefit = Benefit.objects.create(
+        provider=provider, title="Oferta original", conditions="Con reserva", status=Publication.PUBLISHED,
+    )
+    client = authorized(owner)
+    root = f"/api/v1/provider/providers/{provider.pk}/"
+    worker_pid: Queue[int] = Queue()
+
+    def write_from_other_connection():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '8s'")
+                cursor.execute("SELECT pg_backend_pid()")
+                worker_pid.put(cursor.fetchone()[0])
+            if operation == "edit-provider":
+                return client.patch(root, {"description": "Cambio"}, format="json").status_code
+            if operation == "edit-benefit":
+                return client.patch(f"{root}benefits/{benefit.pk}/", {"title": "Cambio"}, format="json").status_code
+            return client.post(
+                f"{root}benefits/", {"title": "Alta", "conditions": "Con reserva"}, format="json",
+            ).status_code
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with transaction.atomic():
+            User.objects.select_for_update().get(pk=owner.pk)
+            Provider.objects.select_for_update().get(pk=provider.pk)
+            Benefit.objects.select_for_update().get(pk=benefit.pk)
+            result = pool.submit(write_from_other_connection)
+            pid = worker_pid.get(timeout=5)
+            deadline = monotonic() + 5
+            while monotonic() < deadline:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT pg_backend_pid() = ANY(pg_blocking_pids(%s))", [pid])
+                    if cursor.fetchone()[0]:
+                        break
+                sleep(0.02)
+            else:
+                pytest.fail("La escritura no esperó a la transacción que revoca la membresía")
+            membership.delete()
+        assert result.result(timeout=5) == 404
+
+    provider.refresh_from_db()
+    benefit.refresh_from_db()
+    assert provider.description == "Descripción original"
+    assert benefit.title == "Oferta original"
+    assert benefit.status == Publication.PUBLISHED
+    assert provider.benefits.count() == 1
+
+
 @pytest.mark.django_db
 def test_seed_preflight_has_no_partial_additions(tmp_path):
     existing = User.objects.create_user("admin@llaveextra.test", "Unchanged-123", role="ADMIN")

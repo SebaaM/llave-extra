@@ -8,7 +8,7 @@ from accounts.models import User
 from referrals.access import active_folder_access, locked_folder_access
 from referrals.models import CollaboratorProfile
 
-from .models import Benefit, Provider, Publication
+from .models import Benefit, Provider, ProviderMembership, Publication
 
 
 def selected_benefits(profile_id):
@@ -26,6 +26,17 @@ def owned_provider(user: User, provider_id) -> Provider:
         raise PermissionDenied("Solo prestadores activos")
     provider = Provider.objects.filter(pk=provider_id, memberships__user=user).first()
     if provider is None:
+        raise NotFound()
+    return provider
+
+
+def locked_owned_provider(user: User, provider_id) -> Provider:
+    """Revalidate ownership inside the caller's transaction, in membership command lock order."""
+    current = User.objects.select_for_update().filter(pk=user.pk, is_active=True, role=User.Role.PROVIDER).first()
+    if current is None:
+        raise PermissionDenied("Solo prestadores activos")
+    provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
+    if provider is None or not ProviderMembership.objects.select_for_update().filter(user=current, provider=provider).exists():
         raise NotFound()
     return provider
 
