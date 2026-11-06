@@ -33,7 +33,28 @@ function Header({ user, settings, path }: { user: User | null; settings: SiteSet
   </header>
 }
 
-function Footer({ settings }: { settings: SiteSettings }) { return <footer className="product-footer"><Brand name={settings.site_name} /><p>{settings.footer_text}</p><div className="product-footer-links">{settings.contact_email && <a href={`mailto:${settings.contact_email}`}>{settings.contact_email}</a>}{settings.whatsapp_url && <a href={settings.whatsapp_url} target="_blank" rel="noopener noreferrer">WhatsApp</a>}{settings.instagram_url && <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer">Instagram</a>}<a href="/creditos-imagenes">Créditos de imágenes y mapa</a></div></footer> }
+function contactEmailHref(email: string) {
+  const separator = email.lastIndexOf('@')
+  if (separator < 1 || separator === email.length - 1) return undefined
+
+  const localPart = encodeURIComponent(email.slice(0, separator))
+  const domain = encodeURIComponent(email.slice(separator + 1))
+  return `mailto:${localPart}@${domain}`
+}
+
+function Footer({ settings }: { settings: SiteSettings }) {
+  const emailHref = contactEmailHref(settings.contact_email)
+  return <footer className="product-footer">
+    <Brand name={settings.site_name} />
+    <p>{settings.footer_text}</p>
+    <div className="product-footer-links">
+      {emailHref && <a href={emailHref}>{settings.contact_email}</a>}
+      {settings.whatsapp_url && <a href={settings.whatsapp_url} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+      {settings.instagram_url && <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer">Instagram</a>}
+      <a href="/creditos-imagenes">Créditos de imágenes y mapa</a>
+    </div>
+  </footer>
+}
 
 export function ProductShell({ user, path, children, settings = defaultSiteSettings, settingsError = false, retrySettings }: { user: User | null; path: string; children: ReactNode; settings?: SiteSettings; settingsError?: boolean; retrySettings?: () => void }) { return <div className="product-shell"><Header user={user} path={path} settings={settings} />{settingsError && <div className="product-notice" role="status">No pudimos actualizar los textos y contactos del sitio. <button onClick={retrySettings}>Volver a intentar</button></div>}<div className="client-page-content" role="region" aria-label="Contenido de la página" tabIndex={-1}>{children}</div><Footer settings={settings} /></div> }
 
