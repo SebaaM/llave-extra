@@ -73,7 +73,7 @@ Las APIs siguientes requieren JWT de Colaborador activo con perfil propio habili
 
 | Ruta relativa a `/api/v1/` | Entrada / resultado |
 | --- | --- |
-| `GET /collaborator/catalog/benefits/?page=1&page_size=24&search=&category=` | `{count,next,previous,results}`, 24 por página y máximo 48. Búsqueda y categoría como el catálogo público; solo publicación/vigencia actual. Cada beneficio contiene `id,title,description,conditions,valid_from,valid_until,demo,provider:{id,name,category,demo}` |
+| `GET /collaborator/catalog/benefits/?page=1&page_size=24&search=&category=` | `{count,next,previous,results}`, 24 por página y máximo 48. Búsqueda y categoría como el catálogo público. Los caracteres nulos devuelven 400. Solo publicación y vigencia actual. Cada beneficio contiene `id,title,description,conditions,valid_from,valid_until,demo,provider:{id,name,category,demo}` |
 | `GET /collaborator/recommendations/` | `{recommendations:[{benefit_id,available,benefit}]}`. `benefit` contiene el DTO de lectura privado existente más `provider` con ficha y medios privados propios. Si no está disponible, `benefit:null`, sin divulgar contenido borrador |
 | `PUT /collaborator/recommendations/{benefit_id}/` | Objeto vacío `{}`; 201 al agregar, 200 al repetir, sin cuerpo de respuesta. Campos extra 400, beneficio no elegible 404, rol/perfil no habilitado 403 |
 | `DELETE /collaborator/recommendations/{benefit_id}/` | 204 idempotente, solo selección propia; no afecta otras carpetas |
@@ -146,7 +146,7 @@ Las rutas siguientes son relativas a `/api/v1/`. Todas las rutas `/admin/` requi
 | `GET/PATCH /admin/settings/catalog/` | `enabled`, `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds`, `version` |
 | `GET/PATCH /admin/settings/credits/` | `base_reward`, `target_visits`, `version` |
 | `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `low_stock_threshold` (por defecto 5), `payment_provider` de solo lectura y `version` |
-| `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`; 20 por defecto, máximo 100; orden fecha descendente, ID descendente y origen como desempates. `actor` es ID numérico positivo de usuario; acción/recurso exactos. Búsqueda en email del actor, acción, recurso y motivo |
+| `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`. 20 por defecto, máximo 100. Orden fecha descendente, ID descendente y origen como desempates. `actor` es ID numérico positivo de usuario. Acción y recurso son exactos. Búsqueda en email del actor, acción, recurso y motivo. Los filtros con caracteres nulos devuelven 400. |
 
 El DTO de actividad contiene solo `id`, `source`, `actor_email`, `action`, `resource`, `object_id`, `changed_fields`, `reason`, `created_at`. La identidad estable de actividad es el par `(source,id)`: `source="admin"` para AdminAudit y `source="order"` para OrderAudit, incluso cuando ambos tienen `resource="orders"`. La auditoría registra nombres de campos modificados, sin sus valores. Configuración usa acción `settings.update` y recurso `settings.general`, `settings.catalog`, `settings.credits` o `settings.shop`; guarda efecto y auditoría en la misma transacción. Una modificación sin cambios efectivos no crea actividad.
 
@@ -161,6 +161,8 @@ Infraestructura para próximos comandos sensibles: `Idempotency-Key` obligatorio
 ### Gestión operativa administrativa
 
 Todas las rutas de esta sección son relativas a `/api/v1/admin/` y aplican la misma guarda estricta ADMIN/activo/staff/superusuario a listas, detalles, acciones y archivos. Las colecciones usan `GET <recurso>/?page=1&page_size=20&search=...` y responden `{count,next,previous,results}`; 20 por defecto, máximo 100 y orden por PK descendente. `GET <recurso>/{id}/` devuelve un objeto. Los recursos de solo lectura rechazan POST/PATCH/DELETE con 405. Los IDs de usuarios, billeteras, ajustes, reglas, cancelaciones y ajustes de stock son enteros; prestadores, beneficios, colaboradores, consumos, productos, pedidos y operaciones de pago usan UUID. `image_url` es una ruta local autorizada y puede ser `null`.
+
+Los filtros de texto de las colecciones administrativas devuelven 400 si contienen caracteres nulos.
 
 | Recurso | Campos de lectura | Escrituras y filtros |
 | --- | --- | --- |
