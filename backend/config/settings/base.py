@@ -69,6 +69,7 @@ def positive_env(name: str, default: int) -> int:
 
 
 RATE_LIMITS = {
+    "register": (positive_env("RATE_REGISTER_MAX", 10), positive_env("RATE_REGISTER_WINDOW", 300)),
     "login": (positive_env("RATE_LOGIN_MAX", 10), positive_env("RATE_LOGIN_WINDOW", 300)),
     "reset": (positive_env("RATE_RESET_MAX", 5), positive_env("RATE_RESET_WINDOW", 3600)),
     "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),

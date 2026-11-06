@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -101,11 +101,19 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
-    @extend_schema(request=RegisterSerializer, responses={201: None}, auth=[])
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={
+            201: None,
+            429: OpenApiResponse(description="Cuota de registro excedida o control de intentos no disponible"),
+        },
+        auth=[],
+    )
     def post(self, request):
         data = RegisterSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         email = data.validated_data["email"].strip().lower()
+        limit_auth_operation("register", request, email)
         if data.validated_data.get("referral_token"):
             rate_limit("redeem", identity(request))
         try:
