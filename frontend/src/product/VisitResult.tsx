@@ -10,6 +10,7 @@ export function VisitResult({ result }: { result: ConsumptionResult }) {
       <p className="client-result-award">{result.award.toLocaleString('es-AR')} créditos acreditados</p>
       {result.award === 0 && <p>Tu visita quedó registrada con una acreditación de 0 créditos.</p>}
       <dl><dt>Saldo confirmado</dt><dd>{result.balance.toLocaleString('es-AR')} créditos</dd></dl>
+      {result.collaborator_id && <p>Folio de la visita <code>{result.id}</code></p>}
     </> : <>
       <div className="qr-symbol" aria-hidden="true">ⓘ</div><h2>Resultado de tu visita</h2>
       <p>{result.state === 'ANNULLED' ? 'Visita anulada' : `Estado recibido: ${result.state}`}</p>

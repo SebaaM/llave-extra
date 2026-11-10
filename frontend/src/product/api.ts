@@ -83,7 +83,8 @@ function readSessionIdentity(token: string): SessionIdentity | null {
 
 function endpoint(path: string) {
   const url = new URL(path, window.location.origin)
-  if (url.origin !== window.location.origin || !url.pathname.startsWith('/api/v1/')) throw new Error('Ruta de API no autorizada')
+  const consumptionV2 = ['/api/v2/consumptions/', '/api/v2/consumptions/options/'].includes(url.pathname)
+  if (url.origin !== window.location.origin || (!url.pathname.startsWith('/api/v1/') && !consumptionV2)) throw new Error('Ruta de API no autorizada')
   return url
 }
 async function jsonOrError(response: Response) {

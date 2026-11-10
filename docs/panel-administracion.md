@@ -34,6 +34,17 @@ Cada pestaña se guarda de manera independiente:
 - **Créditos:** recompensa base y meta de visitas. Las excepciones se administran en **Reglas de créditos**. Los valores históricos de consumos se conservan.
 - **Tienda y retiro:** nombre, dirección, horarios y habilitación del punto de retiro para pedidos nuevos. Los pedidos anteriores conservan su información. El proveedor de pagos se consulta y no se cambia desde este panel.
 
+## Comisiones por consumos referidos
+
+En **Comisiones** (`/gestion/comisiones`) el estado, la fecha de verificación por QR y PIN y el paso pendiente aparecen con el acordeón cerrado. Los filtros por estado, Prestador y Colaborador se aplican antes de paginar. Abrí una fila para ver la declaración, el monto aproximado, la base aprobada, el porcentaje y la fecha y el responsable de cada paso.
+
+1. El Cliente confirma el beneficio con el QR y el PIN del negocio. El referido queda **Falta verificación del Prestador**.
+2. En **Consumos referidos**, el Prestador declara el resultado y el monto. Cuando declara un importe positivo, la ficha pasa a **A pagar comisión**.
+3. El Administrador confirma la base y aprueba. El Prestador transfiere directamente al Colaborador por fuera de Llave Extra e informa el pago. El Administrador coteja el comprobante, confirma la recepción y marca **Completado**.
+4. En los casos sin comisión, el Administrador puede pedir corrección o registrar el cierre. Si surge una discrepancia tras informar un pago, queda una incidencia en la ficha.
+
+En **Reglas de comisión**, el Administrador configura el porcentaje global o la excepción de un Prestador. La tasa que se aplica al aprobar queda en el historial. Los datos bancarios se consultan por una acción explícita y auditada cuando el estado lo permite. Los referidos históricos sin beneficio siguen visibles como «Beneficio no registrado».
+
 ## Guardados, acciones y conflictos
 
 Un formulario con cambios avisa antes de navegar o cerrar la página. Si otra persona actualiza el registro, el servidor rechaza el guardado desactualizado y el formulario conserva el texto para compararlo. Cargar la versión actual descarta los cambios locales después del aviso correspondiente.

@@ -1,0 +1,80 @@
+.profile-settings {
+  display: grid;
+  gap: 1rem;
+  max-width: 48rem;
+}
+
+.profile-settings nav,
+.profile-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-settings nav button {
+  min-height: 44px;
+  padding: 0.55rem 1rem;
+  border: 1px solid #c4c9c4;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #15474a;
+  font-weight: 700;
+}
+
+.profile-settings nav button[aria-current] {
+  border-color: #15474a;
+  background: #15474a;
+  color: #fff;
+}
+
+.profile-settings-section,
+.profile-settings-email {
+  padding: clamp(1rem, 4vw, 1.75rem);
+  border: 1px solid #e2e3dc;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #171a18;
+}
+
+.profile-settings h2 { margin: 0 0 0.75rem; }
+.profile-settings p { margin: 0.65rem 0; line-height: 1.6; }
+.profile-settings-address { overflow-wrap: anywhere; font-weight: 700; }
+.profile-settings fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.profile-settings form .button { margin-top: 0.9rem; }
+
+.profile-settings-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.profile-settings-fields label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.profile-settings-fields input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #bac4bc;
+  border-radius: 0.35rem;
+  background: #fff;
+  color: #171a18;
+}
+
+.profile-settings-bank-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin: 1rem 0;
+}
+
+.profile-settings-bank-status dt { font-weight: 700; }
+.profile-settings-bank-status dd { margin: 0.25rem 0 0; }
+
+@media (max-width: 540px) {
+  .profile-settings-fields { grid-template-columns: minmax(0, 1fr); }
+}

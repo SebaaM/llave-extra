@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Implementar perfiles de Cliente y Colaborador, captura del beneficio referido con QR y PIN y seguimiento de comisión hasta el cierre. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md)
+
 - [x] Agregar la sección de Beneficios destacados con búsqueda, selección manual y límite de cinco protegido en PostgreSQL. [Plan](docs/superpowers/plans/2026-11-05-limite-destacados-inicio.md).
 
 - [x] Revisar y ajustar visualmente el panel y el catálogo del [PR #20](https://github.com/SebaaM/llave-extra/pull/20) en escritorio y móvil, con respuestas sintéticas. [Evidencia](docs/verification/16-backoffice-tienda-catalogo.md).

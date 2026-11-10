@@ -378,7 +378,7 @@ describe('QR privado y PIN', () => {
     })
     await waitFor(() => expect(finish).toBeTypeOf('function'))
     fireEvent.click(screen.getByRole('link', { name: /Mi cuenta/ }))
-    await screen.findByRole('heading', { name: 'Tu cuenta' })
+    await screen.findByRole('heading', { name: 'Mi cuenta' })
     await act(async () => finish(new Response(new Blob(['late'], { type: 'image/png' }))))
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workspace-test')
     expect(screen.queryByRole('img', { name: 'QR privado de recomendaciones' })).toBeNull()

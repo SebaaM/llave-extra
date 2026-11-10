@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .profiles import BankDetailsView, ProfileView
 from .views import (
     CSRFView,
     ForgotView,
@@ -18,6 +19,8 @@ urlpatterns = [
     path("register/", RegisterView.as_view()),
     path("login/", LoginView.as_view()),
     path("me/", MeView.as_view()),
+    path("profile/", ProfileView.as_view()),
+    path("bank-details/", BankDetailsView.as_view()),
     path("refresh/", RefreshView.as_view()),
     path("logout/", LogoutView.as_view()),
     path("verify-email/", VerifyView.as_view()),

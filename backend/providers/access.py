@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 from django.db import models
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from accounts.models import User
 from referrals.access import active_folder_access, locked_folder_access
@@ -60,7 +60,7 @@ def visible_benefits(provider: Provider):
 
 
 @contextmanager
-def locked_provider_eligibility(user: User, profile_id, provider_id):
+def locked_provider_eligibility(user: User, profile_id, provider_id, *, benefit_id=None):
     """E4: lock a referred folder when supplied, then provider and current benefit."""
     if profile_id is None:
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
@@ -72,6 +72,9 @@ def locked_provider_eligibility(user: User, profile_id, provider_id):
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
         if provider is None or provider.status != Publication.PUBLISHED:
             raise PermissionDenied("Prestador no habilitado para la carpeta")
-        if not selected_benefits(profile.pk).filter(provider=provider).select_for_update(of=("self",)).exists():
+        benefits = selected_benefits(profile.pk).filter(provider=provider).select_for_update(of=("self",))
+        if benefit_id is not None and not benefits.filter(pk=benefit_id).exists():
+            raise ValidationError({"benefit_id": "Elegí un beneficio vigente de esta recomendación y negocio"})
+        if benefit_id is None and not benefits.exists():
             raise PermissionDenied("Prestador no habilitado para la carpeta: sin beneficio seleccionado vigente")
         yield profile, provider

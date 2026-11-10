@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Perfiles y comisiones por consumos referidos — 10/11/2026
+
+El Cliente y el Colaborador completan nombre y apellido y reenvían la verificación de email desde sus cuentas. El Colaborador registra CBU y alias opcional en una pestaña propia. Los referidos nuevos guardan el beneficio elegido junto al QR y el PIN único del negocio. Se conserva una acreditación por Cliente y Prestador. El Prestador declara el resultado y monto aproximado. `/gestion/comisiones` muestra el estado actual y el historial desde la validación hasta el cierre. El pago va del Prestador al Colaborador fuera de la aplicación y el Administrador registra su verificación. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md) · [Guía del panel](docs/panel-administracion.md#comisiones-por-consumos-referidos)
+
 ## Avance de la auditoría de seguridad — 05/11/2026
 
 La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838` y un laboratorio Docker independiente. Al 06/11 integró 18 correcciones con un commit por hallazgo. La segunda pasada agregó comprobaciones en Edge y una matriz HTTP de alcance. La auditoría sigue incompleta. El [resumen de la corrida](docs/security/runs/20261105-1823-7467838/resumen.md) y el [registro de hallazgos](docs/security/hallazgos.md) detallan la cobertura y los pendientes.

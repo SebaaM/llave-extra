@@ -5,11 +5,14 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 DEBUG = False
+BANK_DETAILS_ENCRYPTION_KEY = os.environ.get("BANK_DETAILS_ENCRYPTION_KEY", "")
+REQUIRE_REFERRED_BENEFIT = os.environ.get("REQUIRE_REFERRED_BENEFIT", "true").strip().lower() != "false"
 ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if host]
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits", "shop", "administration",
+    "commissions.apps.CommissionsConfig",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -51,6 +54,7 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0",
+    "ENUM_NAME_OVERRIDES": {"CommissionStateEnum": "commissions.models.CommissionState"},
     "POSTPROCESSING_HOOKS": ["drf_spectacular.hooks.postprocess_schema_enums",
                              "administration.schema.require_admin_patch_versions"],
 }
@@ -75,6 +79,7 @@ RATE_LIMITS = {
     "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),
     "redeem": (positive_env("RATE_REDEEM_MAX", 20), positive_env("RATE_REDEEM_WINDOW", 300)),
     "consumption": (positive_env("RATE_CONSUMPTION_MAX", 8), positive_env("RATE_CONSUMPTION_WINDOW", 300)),
+    "consumption_options": (30, 300),
 }
 RATE_LIMITS["reset_submit"] = RATE_LIMITS["reset"]
 SIMPLE_JWT = {
