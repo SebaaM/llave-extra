@@ -356,6 +356,7 @@ describe('recorridos F2 del Cliente', () => {
       if (url.endsWith('/me/wallet/')) return json({ balance: 450, redemptions_frozen: false })
       if (url.endsWith('/me/progress/')) return json({ total: 1, target: 6, completed: false })
       if (url.endsWith('/me/consumptions/')) return json([{ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }])
+      if (url.endsWith('/consumptions/options/')) return json({ benefits: [{ id: 'benefit-a', title: 'Oferta de Ana' }] })
       if (url.endsWith('/consumptions/')) {
         consumptionCalls.push({ url, init })
         if (consumptionCalls.length === 1) {
@@ -371,6 +372,7 @@ describe('recorridos F2 del Cliente', () => {
     render(<ProductApp />)
     await screen.findByLabelText('PIN del negocio')
     await screen.findByText('Visita recomendada por Ana')
+    await screen.findByText('Oferta de Ana')
     fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '123456' } })
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await screen.findByRole('alert')
@@ -381,7 +383,7 @@ describe('recorridos F2 del Cliente', () => {
     expect(keys[0]).toBeTruthy()
     expect(keys[1]).toBe(keys[0])
     expect(consumptionCalls[1].init?.body).toBe(consumptionCalls[0].init?.body)
-    expect(JSON.parse(String(consumptionCalls[0].init?.body))).toEqual({ folder_id: 'folder-a', qr_token: 'qr-consumo-prueba', pin: '123456' })
+    expect(JSON.parse(String(consumptionCalls[0].init?.body))).toEqual({ folder_id: 'folder-a', benefit_id: 'benefit-a', qr_token: 'qr-consumo-prueba', pin: '123456' })
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))
     await waitFor(() => expect(window.location.pathname).toBe('/mi-viaje'))

@@ -32,6 +32,9 @@ EOF
       printf '%s=%s\n' "$key" "$(openssl rand -hex 48)" >> .env
     fi
   done
+  if ! grep -q '^BANK_DETAILS_ENCRYPTION_KEY=' .env; then
+    printf 'BANK_DETAILS_ENCRYPTION_KEY=%s\n' "$(openssl rand -base64 32 | tr '/+' '_-' | tr -d '=')" >> .env
+  fi
   if ! grep -q '^REDIS_URL=' .env; then printf '%s\n' 'REDIS_URL=redis://redis:6379/0' >> .env; fi
   if ! grep -q '^PUBLIC_APP_URL=' .env; then printf '%s\n' 'PUBLIC_APP_URL=http://localhost:8080' >> .env; fi
   if ! grep -q '^DEFAULT_FROM_EMAIL=' .env; then printf '%s\n' 'DEFAULT_FROM_EMAIL=no-reply@llaveextra.local' >> .env; fi

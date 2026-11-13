@@ -11,21 +11,27 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.views import APIView
 
 from accounts.models import User
+from accounts.security import rate_limit
 from accounts.views import client_origin, private_response
-from providers.access import locked_owned_provider, owned_provider
+from providers.access import locked_owned_provider, owned_provider, selected_benefits
+from referrals.access import active_folder_access
+from referrals.models import CollaboratorProfile
 from referrals.views import private
 
 from .models import Consumption, CreditPolicy, ProviderConsumptionCredential, Wallet
 from .serializers import (
     ConsumptionHistorySerializer,
+    ConsumptionOptionsRequestSerializer,
+    ConsumptionOptionsResponseSerializer,
     ConsumptionRequestSerializer,
     ConsumptionResponseSerializer,
     PinSerializer,
     ProgressResponseSerializer,
     ProviderCredentialResponseSerializer,
+    ReferredConsumptionRequestSerializer,
     WalletResponseSerializer,
 )
-from .services import award_consumption, set_provider_pin, sign_provider_qr
+from .services import award_consumption, parse_provider_qr, set_provider_pin, sign_provider_qr
 
 
 def customer(user):
@@ -46,16 +52,57 @@ class ConsumptionView(APIView):
     },
                    parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)])
     def post(self, request):
+        return self._post(request, ConsumptionRequestSerializer)
+
+    def _post(self, request, serializer_class):
         customer(request.user)
         key = request.headers.get("Idempotency-Key", "")
         if not 1 <= len(key) <= 128 or any(ord(ch) < 33 or ord(ch) > 126 for ch in key):
             raise ValidationError({"Idempotency-Key": "Clave obligatoria de 1 a 128 caracteres visibles"})
-        serializer = ConsumptionRequestSerializer(data=request.data)
+        serializer = serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         result, code = award_consumption(request.user, data.get("folder_id"), data["qr_token"],
-                                         data["pin"], key, origin=client_origin(request))
+                                         data["pin"], key, origin=client_origin(request),
+                                         benefit_id=data.get("benefit_id"))
         return private_response(result, code)
+
+
+class ReferredConsumptionView(ConsumptionView):
+    @extend_schema(
+        operation_id="referred_consumption_create",
+        request=ReferredConsumptionRequestSerializer,
+        responses={201: ConsumptionResponseSerializer, 400: OpenApiResponse(description="Datos o beneficio inválidos"),
+                   403: OpenApiResponse(description="Cliente, email o carpeta no habilitados"),
+                   409: OpenApiResponse(description="Clave reutilizada o consumo ya registrado")},
+        parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)],
+    )
+    def post(self, request):
+        return self._post(request, ReferredConsumptionRequestSerializer)
+
+
+class ConsumptionOptionsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=ConsumptionOptionsRequestSerializer, responses={200: ConsumptionOptionsResponseSerializer})
+    def post(self, request):
+        customer(request.user)
+        rate_limit("consumption_options", f"origin:{client_origin(request)}")
+        rate_limit("consumption_options", f"account:{request.user.pk}")
+        serializer = ConsumptionOptionsRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        provider_id, version = parse_provider_qr(data["qr_token"])
+        profile = CollaboratorProfile.objects.filter(pk=data["folder_id"]).first()
+        if profile is None or not active_folder_access(request.user, profile):
+            raise PermissionDenied("Acceso a carpeta no autorizado")
+        if not ProviderConsumptionCredential.objects.filter(provider_id=provider_id, qr_version=version).exclude(pin_hash="").exists():
+            raise ValidationError({"qr_token": "QR de prestador inválido"})
+        benefits = list(selected_benefits(profile.pk).filter(provider_id=provider_id).order_by("title", "pk")
+                        .values("id", "title"))
+        if not benefits:
+            raise PermissionDenied("Prestador no habilitado para la carpeta")
+        return private_response({"benefits": benefits})
 
 
 class WalletView(APIView):

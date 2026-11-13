@@ -42,15 +42,18 @@ function Initialize-Environment {
   $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
   $jwtBytes = New-Object byte[] 48
   $qrBytes = New-Object byte[] 48
+  $bankBytes = New-Object byte[] 32
   try {
     $rng.GetBytes($jwtBytes)
     $rng.GetBytes($qrBytes)
+    $rng.GetBytes($bankBytes)
   } finally {
     $rng.Dispose()
   }
   $keys = @{
     JWT_SIGNING_KEY = [Convert]::ToBase64String($jwtBytes)
     QR_SIGNING_KEY = [Convert]::ToBase64String($qrBytes)
+    BANK_DETAILS_ENCRYPTION_KEY = [Convert]::ToBase64String($bankBytes).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     REDIS_URL = 'redis://redis:6379/0'
     PUBLIC_APP_URL = 'http://localhost:8080'
     DEFAULT_FROM_EMAIL = 'no-reply@llaveextra.local'

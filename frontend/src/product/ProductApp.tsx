@@ -5,7 +5,7 @@ import { messageOf } from './shared'
 import { consumptionToken, captureQrIntent, verifyToken, setVerifyToken } from './qr-intent'
 import { ProductShell, ButtonLink } from './Layout'
 import { Auth } from './PublicPages'
-import { AccountPage } from './AccountPage'
+import { ProfileSettings } from './ProfileSettings'
 import { HomePage } from './HomePage'
 import { ShopPage, ShopDetail } from './shop/ShopPage'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
@@ -37,6 +37,7 @@ export default function ProductApp() {
   const [history, setHistory] = useState<Consumption[]>([])
   const [tripOwner, setTripOwner] = useState<{ identity: number; version: number } | null>(null)
   const [pageError, setPageError] = useState('')
+  const [verifiedLink, setVerifiedLink] = useState(false)
   const identityRef = useRef<number | null>(null)
   const locationRef = useRef(`${window.location.pathname}${window.location.search}`)
   const site = useSiteSettings()
@@ -52,6 +53,21 @@ export default function ProductApp() {
       && identityRef.current === identity,
     [],
   )
+
+  const refreshAccount = useCallback(async () => {
+    const version = currentSessionVersion(), identity = identityRef.current
+    if (identity === null) return
+    const account = await api<User>('/api/v1/auth/me/')
+    if (!stillCurrent(version, identity) || account.id !== identity) return
+    setUser(current => current?.email === account.email && current.role === account.role
+      && current.email_verified === account.email_verified ? current : account)
+  }, [stillCurrent])
+
+  async function resendVerification(account: User) {
+    const version = currentSessionVersion()
+    await api('/api/v1/auth/resend-verification/', { method: 'POST', auth: false, body: { email: account.email } })
+    if (stillCurrent(version, account.id)) setNotice('Si corresponde, recibirás un email para verificar tu cuenta.')
+  }
 
   const clearPrivateData = useCallback(() => {
     resetVisit()
@@ -199,11 +215,32 @@ export default function ProductApp() {
 
   useEffect(() => {
     if (!verifyToken) return
+    let active = true
     verifyEmailToken(verifyToken).then(() => {
+      if (!active) return
       setVerifyToken(null)
-      setNotice('Email verificado. Ya podés acreditar consumos elegibles.')
-    }).catch(error => setPageError(messageOf(error)))
+      setVerifiedLink(true)
+      setNotice('Email verificado. Ya podés volver a tu cuenta.')
+    }).catch(error => { if (active) setPageError(messageOf(error)) })
+    return () => { active = false }
   }, [])
+
+  const accountId = user?.id
+  useEffect(() => {
+    if (!authReady || accountId === undefined) return
+    const inAccount = path === '/perfil' || path === '/colaborador/cuenta'
+    if (!inAccount && !(path === '/verificar-email' && verifiedLink)) return
+    const refresh = () => { void refreshAccount().catch(() => { /* La cuenta conserva el último estado confirmado. */ }) }
+    const visible = () => { if (document.visibilityState === 'visible') refresh() }
+    refresh()
+    if (!inAccount) return
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', visible)
+    }
+  }, [authReady, accountId, path, refreshAccount, verifiedLink])
 
   useEffect(() => {
     if (!authReady || !user) return
@@ -297,11 +334,13 @@ export default function ProductApp() {
       })
     }} />
     if (path === '/perfil') {
-      return <AccountPage key={`${user.id}:${renderedSessionVersion}`} user={user} notice={notice} onResend={async () => {
-        const version = currentSessionVersion(), identity = identityRef.current
-        await api('/api/v1/auth/resend-verification/', { method: 'POST', auth: false, body: { email: user.email } })
-        if (stillCurrent(version, identity)) setNotice('Si corresponde, recibirás un email para verificar tu cuenta.')
-      }} />
+      return <main id="contenido" className="content-width client-account-page">
+        <section className="client-account-passport">
+          <h1>{user.email}</h1>
+          <ProfileSettings key={`${user.id}:${renderedSessionVersion}`} user={user} notice={notice} onResend={() => resendVerification(user)} />
+          <ProductLink className="button button-dark" href="/mi-viaje">Ver Mi viaje</ProductLink>
+        </section>
+      </main>
     }
     return <main id="contenido" className="product-gate content-width"><h1>Esta sección no está disponible.</h1><a href="/">Volver a inicio</a></main>
   }
@@ -309,6 +348,6 @@ export default function ProductApp() {
   const inAdmin = user && authReady && user.role === 'ADMIN' && (path === '/gestion' || path.startsWith('/gestion/'))
   if (inAdmin) return <AdminWorkspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} search={search} />
   const inWorkspace = user && authReady && ((user.role === 'PROVIDER' && (path === '/prestador' || path.startsWith('/prestador/'))) || (user.role === 'COLLABORATOR' && (path === '/colaborador' || path.startsWith('/colaborador/'))))
-  if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} />
+  if (inWorkspace) return <Workspace key={`${user.id}:${currentSessionVersion()}:${path}`} user={user} path={path} notice={notice} onResend={() => resendVerification(user)} />
   return <ProductShell path={path} user={shellUser} settings={site.settings} settingsError={site.error} retrySettings={site.retry}>{notice && path !== '/verificar' && path !== '/perfil' && <div className="product-notice" role="status">{notice}</div>}{renderContent()}</ProductShell>
 }

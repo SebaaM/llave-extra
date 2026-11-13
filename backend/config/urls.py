@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from credits.views import ConsumptionOptionsView, ReferredConsumptionView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/health/", include("config.health_urls")),
@@ -11,6 +13,10 @@ urlpatterns = [
     path("api/v1/", include("credits.urls")),
     path("api/v1/shop/", include("shop.urls")),
     path("api/v1/", include("administration.urls")),
+    path("api/v1/", include("commissions.urls")),
+    path("api/v1/", include("commissions.collaborator")),
+    path("api/v2/consumptions/", ReferredConsumptionView.as_view()),
+    path("api/v2/consumptions/options/", ConsumptionOptionsView.as_view()),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

@@ -7,6 +7,25 @@ class ConsumptionRequestSerializer(serializers.Serializer):
     pin = serializers.RegexField(r"^[0-9]{6,12}$", write_only=True)
 
 
+class ReferredConsumptionRequestSerializer(ConsumptionRequestSerializer):
+    folder_id = serializers.UUIDField()
+    benefit_id = serializers.UUIDField()
+
+
+class ConsumptionOptionsRequestSerializer(serializers.Serializer):
+    folder_id = serializers.UUIDField()
+    qr_token = serializers.CharField(max_length=1000, trim_whitespace=False, write_only=True)
+
+
+class ConsumptionOptionSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+
+
+class ConsumptionOptionsResponseSerializer(serializers.Serializer):
+    benefits = ConsumptionOptionSerializer(many=True)
+
+
 class PinSerializer(serializers.Serializer):
     pin = serializers.RegexField(r"^[0-9]{6,12}$", write_only=True)
 

@@ -1,0 +1,16 @@
+.collaborator-commissions > p { margin: 0; }
+.collaborator-pending-total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem;
+}
+.collaborator-pending-total h2 { margin: 0; font-size: 1rem; }
+.collaborator-pending-total p { margin: .25rem 0 0; color: #5e584f; }
+.collaborator-pending-total > strong { font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+.collaborator-commission-row { display: grid; gap: .85rem; padding: 1rem; }
+.collaborator-commission-title, .collaborator-commission-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .45rem .8rem; }
+.collaborator-commission-title span, .collaborator-commission-meta > span { color: #5e584f; }
+.collaborator-commission-row .commission-facts dd { overflow-wrap: anywhere; }

@@ -2,6 +2,8 @@
 
 # Plan de implementación aprobado
 
+El 10/11/2026 se aprueba implementar [perfiles y comisiones por consumos referidos](../superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md). La cuenta reutiliza E2. La comisión depende del beneficio exacto registrado con E4 y de la declaración posterior del Prestador. El Administrador sigue el flujo en el backoffice y verifica la transferencia externa directa al Colaborador. El 12/11 se define que el Prestador configura la tasa por beneficio, con respaldo global de 5 %, y que la validación QR y PIN fija la tasa de cada consumo nuevo. [Plan de implementación](../superpowers/plans/2026-11-10-perfiles-y-comisiones.md)
+
 Campaña de auditoría iniciada el 05/11/2026 en un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838`. La continuación del 06/11 verificó variantes de navegador y permisos, y sumó cuatro correcciones. El [registro de la corrida](../security/runs/20261105-1823-7467838/resumen.md) distingue controles ejecutados, hallazgos y pendientes.
 
 Pedido del 05/11/2026: [selección de beneficios destacados del inicio](../superpowers/plans/2026-11-05-limite-destacados-inicio.md). El panel lista todos los beneficios y permite elegir hasta cinco, sujetos a la política del catálogo al mostrarlos en el carrusel.
