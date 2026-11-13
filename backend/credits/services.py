@@ -207,7 +207,7 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
                 rule_snapshot={"source": source, "amount": award, "target_visits": policy.target_visits},
             )
             if benefit is not None and not consumption.benefit_demo:
-                record_referral(consumption)
+                record_referral(consumption, benefit=benefit)
             if award:
                 credit_wallet(actor.pk, award, f"consumption:{consumption.pk}:earn")
             wallet = _wallet_locked(actor.pk)

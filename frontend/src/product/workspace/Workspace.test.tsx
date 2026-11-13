@@ -49,6 +49,28 @@ function mount(role: User['role'], route: string, handler?: Handler) {
 }
 
 describe('paneles operativos por rol', () => {
+  it('configura una opción fija de comisión sin editar el beneficio', async () => {
+    const ratePath = '/api/v1/provider/providers/business-1/benefits/benefit-1/commission-rate/'
+    let rate: number | null = null
+    const { calls } = mount('PROVIDER', '/prestador/beneficios', (path, init) => {
+      if (path !== ratePath) return undefined
+      if (init?.method === 'PUT') rate = Number(JSON.parse(String(init.body)).rate)
+      return json({ rate, version: rate === null ? null : 'saved-version', global_rate: '5.00' })
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Comisión' }))
+    const options = await screen.findByRole('combobox', { name: 'Porcentaje de comisión' })
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      'Usar tasa global (5 %)', '3 %', '7 %', '10 %',
+    ])
+    fireEvent.change(options, { target: { value: '7' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar porcentaje' }))
+    await screen.findByText('Cambios guardados.')
+    const write = calls.find(call => call.init?.method === 'PUT')
+    expect(write?.path).toBe(ratePath)
+    expect(JSON.parse(String(write?.init?.body))).toEqual({ rate: '7', version: null })
+    expect(new Headers(write?.init?.headers).get('Idempotency-Key')).toBeTruthy()
+  })
+
   it('restaura /espacio como Prestador y usa solo su negocio, sin endpoints financieros', async () => {
     const { calls } = mount('PROVIDER', '/espacio')
     await screen.findByRole('heading', { name: provider.name }, { timeout: 5000 })

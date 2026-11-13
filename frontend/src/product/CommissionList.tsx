@@ -130,7 +130,7 @@ function CommissionDetail({ detail, scope, command, adminExtra, loading }: {
       <div><dt>Declaración</dt><dd>{detail.declaration ? (detail.declaration.outcome === 'CONSUMED' ? 'Se concretó' : 'No consumió') : 'Pendiente'}</dd></div>
       {detail.declaration?.amount != null && <div><dt>Importe declarado</dt><dd>{pesos.format(Number(detail.declaration.amount))}</dd></div>}
       {detail.approval && <div><dt>Base aprobada</dt><dd>{pesos.format(Number(detail.approval.base_amount))}</dd></div>}
-      <div><dt>{detail.approval ? 'Porcentaje aplicado' : 'Porcentaje vigente'}</dt><dd>{detail.approval ? `${detail.approval.rate} %` : detail.current_rate == null ? 'Sin configurar' : `${detail.current_rate} %`}</dd></div>
+      <div><dt>{detail.approval ? 'Porcentaje aplicado' : detail.rate_fixed_at_validation ? 'Porcentaje fijado al validar' : 'Porcentaje vigente'}</dt><dd>{detail.approval ? `${detail.approval.rate} %` : detail.current_rate == null ? 'Sin configurar' : `${detail.current_rate} %`}</dd></div>
       {detail.approval && <div><dt>Comisión aprobada</dt><dd>{pesos.format(Number(detail.approval.amount))}</dd></div>}
       {detail.payment && <>
         <div><dt>Fecha de transferencia</dt><dd><PaymentDate value={detail.payment.date} /></dd></div>

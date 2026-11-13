@@ -30,6 +30,7 @@ from .serializers import (
 from .services import (
     actions_for,
     apply_action,
+    case_rate,
     effective_approval,
     late_approvals,
     next_step,
@@ -133,7 +134,8 @@ def _serialize(cases, *, admin):
         commission = getattr(case, "commission", None)
         rule = rules.get(case.provider_id, rules.get(None))
         actions = actions_for(commission, admin=admin)
-        if rule is None and "approve" in actions:
+        rate = case_rate(commission, rule)
+        if rate is None and "approve" in actions:
             actions.remove("approve")
         approval = effective_approval(commission) if commission else None
         item = {
@@ -146,7 +148,8 @@ def _serialize(cases, *, admin):
             "approval": approval, "payment": commission.payment if commission else None,
             "payment_approvals": late_approvals(commission),
             "events": _timeline(case, commission, admin=admin), "actions": actions,
-            "incident": bool(commission and commission.incident), "current_rate": rule.rate if rule else None,
+            "incident": bool(commission and commission.incident), "current_rate": rate,
+            "rate_fixed_at_validation": bool(commission and commission.verified_rate is not None),
         }
         if admin:
             item.update(

@@ -53,6 +53,7 @@ export type Commission = {
   actions: string[]
   incident: boolean
   current_rate: string | null
+  rate_fixed_at_validation?: boolean
   bank_configured?: boolean
   bank_changed?: boolean
 }

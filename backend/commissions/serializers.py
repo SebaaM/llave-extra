@@ -159,6 +159,7 @@ class CommissionSerializer(serializers.Serializer):
     actions = serializers.ListField(child=serializers.CharField())
     incident = serializers.BooleanField()
     current_rate = RateField(allow_null=True)
+    rate_fixed_at_validation = serializers.BooleanField()
 
 
 class AdminCommissionSerializer(CommissionSerializer):

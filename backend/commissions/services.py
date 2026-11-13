@@ -16,6 +16,7 @@ from providers.access import locked_owned_provider
 from providers.models import Provider
 
 from .models import (
+    BenefitCommissionRule,
     Commission,
     CommissionCommand,
     CommissionEvent,
@@ -31,6 +32,7 @@ from .models import (
 )
 
 CENT = Decimal("0.01")
+DEFAULT_RATE = Decimal("5.00")
 # One transaction-scoped lock protects creation, deletion and reading for approval
 # even when the applicable rule (or both rules) does not exist.
 RULE_LOCK = (1200471901, 1)
@@ -66,6 +68,17 @@ def applicable_rule(provider_id):
     ).first()
 
 
+def global_rate():
+    rate = CommissionRule.objects.filter(provider__isnull=True).values_list("rate", flat=True).first()
+    return DEFAULT_RATE if rate is None else rate
+
+
+def case_rate(commission, rule):
+    if commission and commission.verified_rate is not None:
+        return commission.verified_rate
+    return rule.rate if rule else None
+
+
 def _name(actor):
     return actor.get_full_name().strip() or actor.get_role_display()
 
@@ -82,12 +95,22 @@ def _save(commission, event):
     commission.save(update_fields=["state", "incident", "declaration", "approval", "payment", "last_event"])
 
 
-def record_referral(consumption):
+def record_referral(consumption, *, benefit=None):
     if not consumption.collaborator_id or not consumption.benefit_id or consumption.benefit_demo:
         return
     if not connection.in_atomic_block:
         raise RuntimeError("La ficha debe crearse en la misma transacción que el consumo.")
-    commission = Commission.objects.create(consumption=consumption)
+    snapshot = {}
+    if benefit is not None:
+        if benefit.pk != consumption.benefit_id or benefit.provider_id != consumption.provider_id:
+            raise ValueError("El beneficio no corresponde al consumo.")
+        selected = BenefitCommissionRule.objects.filter(benefit=benefit).values_list("rate", flat=True).first()
+        if selected is None:
+            _rule_lock()
+            snapshot = {"verified_rate": global_rate(), "verified_source": RuleSource.GLOBAL}
+        else:
+            snapshot = {"verified_rate": Decimal(selected), "verified_source": RuleSource.BENEFIT}
+    commission = Commission.objects.create(consumption=consumption, **snapshot)
     verified = _event(commission, consumption.tourist, Event.VERIFIED, created_at=consumption.created_at)
     _save(commission, verified)
 
@@ -109,7 +132,8 @@ def record_annulment(consumption, actor, reason):
 
 def version(consumption, commission, rule):
     rule_signature = None
-    if commission and commission.state in (State.AWAITING_PROVIDER, State.NO_COMMISSION, State.TO_PAY) and not commission.approval_id and rule:
+    if (commission and commission.verified_rate is None and rule and not commission.approval_id
+            and commission.state in (State.AWAITING_PROVIDER, State.NO_COMMISSION, State.TO_PAY)):
         rule_signature = (rule.version, rule.rate)
     return digest("version", [
         consumption.pk, consumption.state, commission.last_event_id if commission else None, rule_signature,
@@ -202,7 +226,7 @@ def next_step(state, commission, rule):
             return "Verificar pago informado"
         if commission.approval_id:
             return "Esperar la transferencia del Prestador"
-        return "Aprobar comisión" if rule else "Configurar porcentaje"
+        return "Aprobar comisión" if case_rate(commission, rule) is not None else "Configurar porcentaje"
     return {
         State.AWAITING_PROVIDER: "Esperar la declaración del Prestador",
         State.NO_COMMISSION: "Revisar el cierre sin comisión",
@@ -224,20 +248,22 @@ def _declare(commission, actor, data, rule):
 def _approve(commission, actor, data, rule):
     from accounts.bank import locked_bank_version
 
-    if rule is None:
+    rate = case_rate(commission, rule)
+    if rate is None:
         conflict("Configurá un porcentaje de comisión antes de aprobar.")
     base = data["amount"]
     if base != commission.declaration.amount and not data["reason"]:
         raise ValidationError({"reason": "Indicá el motivo del cambio de importe."})
-    amount = (base * rule.rate / 100).quantize(CENT, rounding=ROUND_HALF_UP)
+    amount = (base * rate / 100).quantize(CENT, rounding=ROUND_HALF_UP)
     bank_version = None
     if amount > 0:
         bank_version = locked_bank_version(commission.consumption.collaborator.user_id)
         if bank_version is None:
             conflict("El Colaborador debe configurar sus datos bancarios antes de aprobar.")
+    source = commission.verified_source or (RuleSource.PROVIDER if rule and rule.provider_id else RuleSource.GLOBAL)
     commission.approval = _event(
         commission, actor, Event.APPROVED, basis=commission.declaration, base_amount=base,
-        amount=amount, rate=rule.rate, rule_source=RuleSource.PROVIDER if rule.provider_id else RuleSource.GLOBAL,
+        amount=amount, rate=rate, rule_source=source,
         bank_version=bank_version, reason=data["reason"],
     )
     if not amount:
@@ -364,9 +390,11 @@ def apply_action(user, *, admin, pk, action, key, data, payload):
     if replay is not None:
         return replay
 
-    if action == "approve":
-        _rule_lock()
-    rule = applicable_rule(consumption.provider_id)
+    rule = None
+    if commission is None or commission.verified_rate is None:
+        if action == "approve":
+            _rule_lock()
+        rule = applicable_rule(consumption.provider_id)
     if not compare_digest(data["version"], version(consumption, commission, rule)):
         conflict("La ficha cambió. Recargala antes de guardar.")
     if action not in actions_for(commission, admin=admin) or action == "bank-details":

@@ -43,7 +43,7 @@ En **Comisiones** (`/gestion/comisiones`) el estado, la fecha de verificación p
 3. El Administrador confirma la base y aprueba. El Prestador transfiere directamente al Colaborador por fuera de Llave Extra e informa el pago. El Administrador coteja el comprobante, confirma la recepción y marca **Completado**.
 4. En los casos sin comisión, el Administrador puede pedir corrección o registrar el cierre. Si surge una discrepancia tras informar un pago, queda una incidencia en la ficha.
 
-En **Reglas de comisión**, el Administrador configura el porcentaje global o la excepción de un Prestador. La tasa que se aplica al aprobar queda en el historial. Los datos bancarios se consultan por una acción explícita y auditada cuando el estado lo permite. Los referidos históricos sin beneficio siguen visibles como «Beneficio no registrado».
+En **Reglas de comisión**, el Administrador configura el porcentaje global. El Prestador elige en **Mis beneficios** si cada beneficio usa esa tasa o una opción de 3 %, 7 % o 10 %. El respaldo global es 5 %. La tasa se guarda al validar el consumo con QR y PIN. Las excepciones por Prestador permanecen disponibles para los casos anteriores sin tasa registrada. Los datos bancarios se consultan por una acción explícita y auditada cuando el estado lo permite. Los referidos históricos sin beneficio siguen visibles como «Beneficio no registrado».
 
 ## Guardados, acciones y conflictos
 

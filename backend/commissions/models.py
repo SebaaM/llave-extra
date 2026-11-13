@@ -35,6 +35,23 @@ class CommissionRule(models.Model):
         ]
 
 
+class BenefitCommissionRule(models.Model):
+    benefit = models.OneToOneField(
+        "providers.Benefit", verbose_name="Beneficio", primary_key=True, on_delete=models.CASCADE,
+    )
+    rate = models.PositiveSmallIntegerField("Porcentaje", null=True)
+    version = models.UUIDField("Versión", default=uuid.uuid4, editable=False)
+
+    class Meta:
+        verbose_name = "Regla de comisión del beneficio"
+        verbose_name_plural = "Reglas de comisión de beneficios"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(rate__isnull=True) | Q(rate__in=(3, 7, 10)), name="benefit_commission_rate_valid",
+            ),
+        ]
+
+
 class Commission(models.Model):
     consumption = models.OneToOneField(
         "credits.Consumption", verbose_name="Consumo", on_delete=models.PROTECT,
@@ -44,6 +61,8 @@ class Commission(models.Model):
         "Estado", max_length=24, choices=CommissionState.choices, default=CommissionState.AWAITING_PROVIDER,
     )
     incident = models.BooleanField("Incidencia abierta", default=False)
+    verified_rate = models.DecimalField("Porcentaje al validar", max_digits=5, decimal_places=2, null=True, editable=False)
+    verified_source = models.CharField("Origen al validar", max_length=8, blank=True, editable=False)
     declaration = models.ForeignKey(
         "CommissionEvent", verbose_name="Declaración vigente", null=True, on_delete=models.PROTECT, related_name="+",
     )
@@ -62,6 +81,14 @@ class Commission(models.Model):
         verbose_name_plural = "Comisiones"
         indexes = [models.Index(fields=["state"], name="commission_state_idx")]
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(verified_rate__isnull=True, verified_source="")
+                    | Q(verified_rate__isnull=False, verified_rate__gte=0, verified_rate__lte=100,
+                        verified_source__in=("GLOBAL", "BENEFIT"))
+                ),
+                name="commission_verified_rate_valid",
+            ),
             models.CheckConstraint(
                 condition=(
                     Q(state="AWAITING_PROVIDER", declaration__isnull=True, approval__isnull=True, payment__isnull=True)
@@ -104,6 +131,7 @@ class Outcome(models.TextChoices):
 class RuleSource(models.TextChoices):
     GLOBAL = "GLOBAL", "Regla global"
     PROVIDER = "PROVIDER", "Excepción del Prestador"
+    BENEFIT = "BENEFIT", "Regla del beneficio"
 
 
 class CommissionEvent(models.Model):

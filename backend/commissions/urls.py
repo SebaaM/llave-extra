@@ -7,6 +7,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework import serializers
 
+from .benefit_rates import BenefitRateView
 from .serializers import (
     ACTION_REQUESTS,
     ActionResponseSerializer,
@@ -25,6 +26,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "provider/providers/<uuid:provider_id>/benefits/<uuid:benefit_id>/commission-rate/",
+        BenefitRateView.as_view(), name="provider-benefit-commission-rate",
+    ),
     path("admin/commission-rules/", RuleListView.as_view(), name="commission-rules"),
     path("admin/commission-rules/global/", RuleWriteView.as_view(), name="commission-rules-global"),
     path("admin/commission-rules/providers/<uuid:provider_id>/", RuleWriteView.as_view(), name="commission-rules-provider"),

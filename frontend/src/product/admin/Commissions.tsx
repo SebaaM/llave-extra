@@ -88,7 +88,7 @@ function RuleEditor({ rule, command }: { rule: Rule; command: CommandControl }) 
         <input name="rate" type="number" min="0" max="100" step="0.01" inputMode="decimal" defaultValue={rule.rate ?? ''} {...fieldErrorProps(errors, 'rate', prefix)} />
       </label>
       <FieldError name="rate" prefix={prefix} errors={errors} /></div>
-      <p className="commission-muted">{rule.provider_id ? 'Dejá el porcentaje vacío para aplicar la regla global.' : 'Dejá el porcentaje vacío para desactivar la regla global.'}</p>
+      <p className="commission-muted">{rule.provider_id ? 'Dejá el porcentaje vacío para aplicar la regla global a los casos anteriores.' : 'Sin regla global explícita, las nuevas validaciones usan el 5 % cuando el beneficio no tiene una tasa propia.'}</p>
       <button className="button button-dark" type="submit">{rule.provider_id ? 'Guardar excepción' : 'Guardar regla global'}</button>
     </fieldset>
   </form>
@@ -106,7 +106,7 @@ function CommissionRules() {
   const provider = data?.providers.find(item => item.provider_id === providerId)
   if (denied) return <p role="alert">Tu cuenta ya no tiene acceso a las reglas de comisión.</p>
   return <section className="commission-page">
-    <p className="commission-muted">Los cambios de porcentaje se aplican a futuras aprobaciones.</p>
+    <p className="commission-muted">La tasa global se registra en las nuevas validaciones de beneficios que la usan. Las excepciones por Prestador se aplican a casos anteriores sin tasa registrada.</p>
     <CommissionCommandFeedback command={command} />
     {loading && <p role="status">Cargando porcentajes…</p>}
     {error && <><p role="alert">{error}</p><button className="button button-dark" onClick={reload}>Volver a intentar</button></>}
