@@ -14,6 +14,7 @@ urlpatterns = [
     path("api/v1/shop/", include("shop.urls")),
     path("api/v1/", include("administration.urls")),
     path("api/v1/", include("commissions.urls")),
+    path("api/v1/", include("commissions.collaborator")),
     path("api/v2/consumptions/", ReferredConsumptionView.as_view()),
     path("api/v2/consumptions/options/", ConsumptionOptionsView.as_view()),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

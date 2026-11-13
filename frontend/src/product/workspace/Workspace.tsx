@@ -6,6 +6,7 @@ import { ProfileSettings } from '../ProfileSettings'
 import { ProviderWorkspace } from './ProviderWorkspace'
 import { CollaboratorWorkspace } from './CollaboratorWorkspace'
 import { ReferredConsumptions } from './ReferredConsumptions'
+import { CollaboratorCommissions } from './CollaboratorCommissions'
 import './workspace.css'
 import { workspaceHome } from './data'
 
@@ -13,13 +14,14 @@ export function Workspace({ user, path, notice, onResend }: { user: User; path: 
   const [open, setOpen] = useState(false)
   const provider = user.role === 'PROVIDER'
   const base = workspaceHome(user)
-  const links = provider ? [['', 'Resumen', '◫'], ['/negocio', 'Mi negocio', '⌂'], ['/beneficios', 'Mis beneficios', '✳'], ['/consumos-referidos', 'Consumos referidos', '◫'], ['/qr', 'QR y PIN', '▦'], ['/cuenta', 'Mi cuenta', '○']] : [['', 'Resumen', '◫'], ['/recomendaciones', 'Mis recomendaciones', '♡'], ['/catalogo', 'Explorar catálogo', '✳'], ['/qr', 'Mi QR', '▦'], ['/cuenta', 'Mi cuenta', '○']]
+  const links = provider ? [['', 'Resumen', '◫'], ['/negocio', 'Mi negocio', '⌂'], ['/beneficios', 'Mis beneficios', '✳'], ['/consumos-referidos', 'Consumos referidos', '◫'], ['/qr', 'QR y PIN', '▦'], ['/cuenta', 'Mi cuenta', '○']] : [['', 'Resumen', '◫'], ['/recomendaciones', 'Mis recomendaciones', '♡'], ['/catalogo', 'Explorar catálogo', '✳'], ['/comisiones', 'Mis comisiones', '◎'], ['/qr', 'Mi QR', '▦'], ['/cuenta', 'Mi cuenta', '○']]
   const selected = links.find(([suffix]) => `${base}${suffix}` === path)
   const title = selected?.[1] ?? 'Sección no disponible'
   let content
   if (!selected) content = <Empty title="Esta sección no está disponible" text="Usá el menú para volver a tu panel." />
   else if (selected[0] === '/cuenta') content = provider ? <Account user={user} /> : <ProfileSettings user={user} notice={notice} onResend={onResend} />
   else if (selected[0] === '/consumos-referidos') content = <ReferredConsumptions />
+  else if (selected[0] === '/comisiones') content = <CollaboratorCommissions />
   else content = provider ? <ProviderWorkspace section={selected[0]} /> : <CollaboratorWorkspace section={selected[0]} />
   return <div className="workspace">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>

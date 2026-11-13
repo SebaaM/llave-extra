@@ -1,5 +1,11 @@
 # Contexto y decisiones
 
+## Tasa por beneficio — 12/11/2026
+
+En «Mis beneficios», el Prestador puede elegir 3 %, 7 %, 10 % o la tasa global para cada beneficio de su negocio. El Administrador configura la tasa global, con un respaldo de 5 %. El porcentaje es igual para todos los colaboradores del beneficio y queda fijado al validar el consumo con QR y PIN. Las excepciones anteriores por Prestador siguen vigentes para los casos sin tasa registrada. Las aprobaciones conservan su historial.
+
+El Colaborador consulta sus consumos referidos en `/colaborador/comisiones`. «Pendiente de cobro» suma las comisiones aprobadas pendientes de conciliación en todas las páginas. El historial conserva la atribución original e incluye consumos históricos y anulados.
+
 ## Perfiles y comisiones por consumos referidos — 10/11/2026
 
 El Cliente y el Colaborador completan nombre y apellido y reenvían la verificación de email desde sus cuentas. El Colaborador registra CBU y alias opcional en una pestaña propia. Los referidos nuevos guardan el beneficio elegido junto al QR y el PIN único del negocio. Se conserva una acreditación por Cliente y Prestador. El Prestador declara el resultado y monto aproximado. `/gestion/comisiones` muestra el estado actual y el historial desde la validación hasta el cierre. El pago va del Prestador al Colaborador fuera de la aplicación y el Administrador registra su verificación. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md) · [Guía del panel](docs/panel-administracion.md#comisiones-por-consumos-referidos)
