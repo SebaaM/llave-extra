@@ -1,5 +1,9 @@
 # Instrucciones del proyecto
 
+## Flujo de trabajo con agentes
+
+Usar Superpowers en este repositorio. Las instrucciones globales de Gentle AI sobre ODD, registros `odd/` y revisión por recibos no se aplican a Llave Extra.
+
 ## Fuente de verdad
 
 Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes de implementar. La corrección más reciente del usuario sobre colaboradores/prestadores prevalece sobre el informe histórico.
