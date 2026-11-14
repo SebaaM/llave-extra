@@ -45,6 +45,8 @@ Los implementadores no crean otros subagentes ni sus propios revisores. El orque
 
 ## Flujo QR del Cliente — precisión vigente
 
+E
+
 El carrusel del hero muestra únicamente beneficios destacados por Administrador desde backoffice, sujetos a la política pública de publicación/vigencia y catálogo habilitado. La sección `/gestion/beneficios-destacados` lista todos los beneficios y permite seleccionar hasta cinco; PostgreSQL protege el límite. No seleccionar ofertas automáticamente ni usar las recomendaciones privadas como fuente del hero. Ver `docs/superpowers/specs/2026-11-01-destacados-hero.md`.
 
 El catálogo de beneficios incluye «Cómo funciona», compartido con el inicio: visita confirmada, acreditación única por negocio y créditos destinados al canje en la tienda web. La UI actual de tienda aún no permite canjear; informar su disponibilidad real y no ofrecer una operación que no existe. Este contenido no requiere nuevas lecturas privadas.

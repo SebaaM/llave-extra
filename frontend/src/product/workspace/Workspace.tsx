@@ -6,6 +6,7 @@ import { ProviderWorkspace } from './ProviderWorkspace'
 import { CollaboratorWorkspace } from './CollaboratorWorkspace'
 import './workspace.css'
 import { workspaceHome } from './data'
+import { QRIcon } from './QRIcon'
 
 export function Workspace({ user, path }: { user: User; path: string }) {
   const [open, setOpen] = useState(false)
@@ -25,6 +26,7 @@ export function Workspace({ user, path }: { user: User; path: string }) {
     </aside>
     <div className="workspace-body"><header className="workspace-header"><span>USHUAIA · RED LOCAL</span><div><span className="workspace-email">{user.email}</span><button className="button button-ghost" onClick={() => window.dispatchEvent(new Event('llave:logout'))}>Salir</button></div></header>
       <main id="contenido" className="workspace-main"><div className="workspace-heading"><p className="eyebrow">TU ESPACIO, TU COMUNIDAD</p><h1>{title}</h1></div>
+        {!provider && selected?.[0] !== '/qr' && <ProductLink className="button button-dark workspace-quick-qr" href={`${base}/qr`}><QRIcon /> Mostrar mi QR</ProductLink>}
         {!selected ? <Empty title="Esta sección no está disponible" text="Usá el menú para volver a tu panel." /> : path.endsWith('/cuenta') ? <Account user={user} /> : provider ? <ProviderWorkspace section={selected[0]} /> : <CollaboratorWorkspace section={selected[0]} />}
         <footer className="workspace-footer">LLAVE EXTRA <span>Conectamos lo mejor de Ushuaia.</span></footer>
       </main>

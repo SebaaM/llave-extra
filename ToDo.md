@@ -19,6 +19,9 @@
 
 - [x] Hero con beneficios destacados por Administrador desde backoffice, filtrados por política pública y recorridos mediante carrusel paginado; [plan](docs/superpowers/plans/2026-11-01-destacados-hero.md). Sin fallback a beneficios no destacados.
 
+- [x] Incorporar escáner para Cliente y acceso a Mi QR para Colaborador.
+- [ ] Validar cámara en iOS/Android físicos con HTTPS y el origen de PUBLIC_APP_URL.
+
 - [x] Aplicar selección contextual por QR: catálogo sin sección permanente Recomendaciones, selección vigente tras login con nombre, vínculo de ingreso/resumen Admin, atribución y QR del negocio + PIN; QR del colaborador estable y renovable manualmente en su espacio. [Plan vigente](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md). Sustituye el corte inicial de catálogo único y la pantalla permanente históricos.
 
 - [x] Diseño de ajustes del Cliente aprobado el 30/10 e implementación registrada: lenguaje cotidiano, recomendaciones recibidas condicionales, navegación/red adaptables, orden del inicio, carrusel y libreta abierta; [antes/después y pruebas](docs/verification/13-ajustes-vista-cliente.md). Revisión integral y corrector aprobados; la aprobación final del cliente sigue pendiente.

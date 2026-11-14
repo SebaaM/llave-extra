@@ -22,6 +22,8 @@
 .workspace-email { font-size: 12px; overflow-wrap: anywhere; }
 .workspace-main { padding: 38px clamp(20px,4vw,60px) 20px; max-width: 1450px; margin: 0 auto; }
 .workspace-heading { margin-bottom: 28px; }
+.workspace .workspace-quick-qr { display: inline-flex; align-items: center; gap: .55rem; min-height: 46px; margin-bottom: 1.5rem; }
+.workspace .workspace-quick-qr svg { flex: none; }
 .workspace .eyebrow { font-size: 10px; font-weight: 800; letter-spacing: .15em; margin: 0 0 9px; color: #527368; }
 .workspace h1 { font-family: 'Montserrat',sans-serif; font-size: clamp(27px,3vw,36px); line-height: 1.2; margin: 0; font-weight: 800; letter-spacing: -.045em; }
 .workspace h2 { font-family: 'Montserrat',sans-serif; font-size: 22px; line-height: 1.3; letter-spacing: -.035em; margin: 0 0 12px; font-weight: 800; }
@@ -85,6 +87,7 @@
 .workspace-qr-panel>.button { display: flex; width: fit-content; margin: 10px auto; }
 .workspace-qr-panel .workspace-actions { justify-content: center; }
 .workspace-qr-image { display: block; margin: 20px auto; width: 240px; max-width: 100%; height: auto; aspect-ratio: 1; }
+.workspace-qr-image[alt="QR privado de recomendaciones"] { width: min(100%, 340px); }
 .workspace-qr-guide li { padding: 8px 0 15px 8px; line-height: 1.65; font-size: 14px; }
 .workspace-details { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 15px; font-size: 14px; padding: 14px 0 22px; }
 .workspace-details dt { color: var(--ws-muted); }
