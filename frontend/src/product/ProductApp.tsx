@@ -10,6 +10,7 @@ import { HomePage } from './HomePage'
 import { ShopPage, ShopDetail } from './shop/ShopPage'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
 import { CreditsPage } from './CreditsPage'
+import { ContactPage } from './ContactPage'
 import { QrPage } from './ReferencePage'
 import { Trip } from './JourneyPage'
 import { ConsumePage } from './ConsumptionPage'
@@ -260,6 +261,7 @@ export default function ProductApp() {
     if (path === '/beneficios') return <CatalogPage search={search} />
     if (path.startsWith('/beneficios/')) return <BenefitDetail id={path.slice('/beneficios/'.length)} />
     if (path === '/creditos-imagenes') return <CreditsPage />
+    if (path === '/contacto' || path === '/contacto/') return <ContactPage settings={site.settings} />
     if (!authReady) return <main id="contenido" className="product-loading" role="status">Preparando tu viaje…</main>
     if (path === '/verificar-email') {
       return <main id="contenido" className="product-empty content-width"><h1>Verificá tu email</h1><p>{pageError || notice || 'Usá el enlace que enviamos a tu correo para confirmar tu cuenta.'}</p><ProductLink href="/ingresar">Ir a ingresar</ProductLink></main>

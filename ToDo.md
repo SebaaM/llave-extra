@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Incorporar contacto público y WhatsApp configurable. [Guía y verificación de Mailpit](docs/contact-email.md).
+
 - [x] Agregar la sección de Beneficios destacados con búsqueda, selección manual y límite de cinco protegido en PostgreSQL. [Plan](docs/superpowers/plans/2026-11-05-limite-destacados-inicio.md).
 
 - [x] Revisar y ajustar visualmente el panel y el catálogo del [PR #20](https://github.com/SebaaM/llave-extra/pull/20) en escritorio y móvil, con respuestas sintéticas. [Evidencia](docs/verification/16-backoffice-tienda-catalogo.md).
