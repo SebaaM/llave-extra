@@ -2,9 +2,12 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from .contact import ContactView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/health/", include("config.health_urls")),
+    path("api/v1/contact/", ContactView.as_view(), name="contact"),
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/", include("referrals.urls")),
     path("api/v1/", include("providers.urls")),
