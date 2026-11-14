@@ -17,6 +17,9 @@ Todas las rutas de dominio usan `/api/v1/`. `GET /auth/csrf/` entrega token CSRF
 | `GET /me/folders/` | bearer Cliente (`TOURIST`) | Solo IDs de referencias activas; prestadores por las rutas de carpeta E3 |
 | `GET /collaborator/qr/` | bearer colaborador activo y habilitado | `{url,version}`: URL firmada estable y precondición opaca no secreta; `GET /collaborator/qr.png` descarga la misma imagen para esa configuración y generación |
 | `POST /collaborator/qr/renew/` | bearer colaborador activo/habilitado, solo `{version}` e `Idempotency-Key` | 200: `{id,status:"renewed",version}` sin QR/URL; renovación propia manual, idempotente y auditada atómicamente |
+| `POST /contact/` | Público, sin sesión; JSON con `name`, `email`, `message` (máximos 100, 254 y 3000 caracteres) | 204 si el transporte acepta el mensaje; 400 si la entrada es inválida; 413 si el cuerpo supera 64 KiB; 415 si el formato no es JSON; 429 si aplica el límite; 503 si el envío no está disponible |
+
+El formulario de contacto admite únicamente los tres campos de texto anteriores. No acepta destinatario, copia, asunto ni adjuntos. El servidor envía texto plano a `CONTACT_RECIPIENT_EMAIL` desde `DEFAULT_FROM_EMAIL` y usa el correo validado del visitante como `Reply-To`. No almacena el mensaje en la base de datos de la aplicación ni envía una respuesta automática. Redis limita por origen confiable y de forma global; si el control de intentos no está disponible, no se envía el mensaje. Un 204 confirma aceptación por SMTP, no entrega en la bandeja final. Consulta la [guía de correo](contact-email.md) para la configuración y la validación local.
 
 Un cambio de email desde Django Admin devuelve la cuenta al estado de verificación pendiente e invalida los enlaces emitidos anteriormente y las sesiones API de la cuenta. El reenvío y la recuperación mantienen la respuesta genérica aunque la dirección cambie durante la solicitud.
 

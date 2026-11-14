@@ -6,6 +6,8 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 
 ## Restricciones
 
+C
+
 - Django + DRF, PostgreSQL, React + TypeScript + Tailwind; Docker local.
 - Usuario por email antes de la primera migración. No usar SQLite para validar código del dominio o pruebas de integración.
 - Carpetas y referencias privadas: autorización del servidor por QR válido, colaborador habilitado y prestador perteneciente a esa carpeta. Ocultar enlaces en React no satisface este requisito.

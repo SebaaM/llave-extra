@@ -75,6 +75,8 @@ RATE_LIMITS = {
     "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),
     "redeem": (positive_env("RATE_REDEEM_MAX", 20), positive_env("RATE_REDEEM_WINDOW", 300)),
     "consumption": (positive_env("RATE_CONSUMPTION_MAX", 8), positive_env("RATE_CONSUMPTION_WINDOW", 300)),
+    "contact_origin": (positive_env("RATE_CONTACT_ORIGIN_MAX", 5), positive_env("RATE_CONTACT_ORIGIN_WINDOW", 900)),
+    "contact_global": (positive_env("RATE_CONTACT_GLOBAL_MAX", 60), positive_env("RATE_CONTACT_GLOBAL_WINDOW", 3600)),
 }
 RATE_LIMITS["reset_submit"] = RATE_LIMITS["reset"]
 SIMPLE_JWT = {
@@ -88,6 +90,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@llaveextra.local")
 EMAIL_HOST = os.environ.get("MAILPIT_HOST", "mailpit")
 EMAIL_PORT = int(os.environ.get("MAILPIT_PORT", "1025"))
+EMAIL_TIMEOUT = positive_env("EMAIL_TIMEOUT", 5)
+CONTACT_RECIPIENT_EMAIL = os.environ.get("CONTACT_RECIPIENT_EMAIL", "").strip()
 REFRESH_COOKIE_NAME = "llave_refresh"
 REFRESH_COOKIE_SECURE = not DEBUG
 REFRESH_COOKIE_SAMESITE = "Lax"
