@@ -40,6 +40,10 @@ Producto hasta `02781f2`: revisiones por tarea aprobadas y revisión integral co
 
 ## Decisión vigente: catálogo y selección contextual por QR — 30/10/2026
 
+### Accesos móviles — 13/11/2026
+
+E
+
 El usuario decidió retirar la sección permanente Recomendaciones del Cliente, porque ya dispone del catálogo de beneficios. Esta decisión sustituye la pantalla propia y el enlace condicional descritos en los apartados históricos siguientes. En escritorio quedan Beneficios, Tienda, Cómo funciona, Mi viaje y Cuenta; en la barra móvil, Beneficios y Mi viaje.
 
 Precisión posterior: si el turista abre el QR de un colaborador, después de iniciar sesión se muestra una selección dinámica con el nombre de ese colaborador y sus negocios/beneficios elegidos. No se copia la selección ni se crea una colección administrable por el turista. Sí se registra el vínculo de ingreso para resumen/analítica del backoffice y la visita sigue atribuida al colaborador. La autorización de lectura y medios sigue en el servidor con selección canónica vigente. Flujo confirmado y resumen acotado en [selección contextual](docs/superpowers/specs/2026-10-30-seleccion-qr-contextual.md); su ubicación en la ficha administrativa se adopta como decisión reversible de implementación.

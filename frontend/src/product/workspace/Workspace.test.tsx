@@ -328,6 +328,16 @@ describe('ruta pública de referencia', () => {
 })
 
 describe('QR privado y PIN', () => {
+  it('abre Mi QR sin pasar por el menú ni renovar el código', async () => {
+    const { calls } = mount('COLLABORATOR', '/colaborador', path => {
+      if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
+      if (path === '/api/v1/collaborator/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
+    })
+    fireEvent.click(await screen.findByRole('link', { name: 'Mostrar mi QR' }))
+    await screen.findByRole('img', { name: 'QR privado de recomendaciones' })
+    expect(calls.filter(call => call.path === '/api/v1/collaborator/qr.png')).toHaveLength(1)
+    expect(calls.some(call => call.path.includes('/renew/'))).toBe(false)
+  })
   it('copia el enlace privado solo después de una acción explícita', async () => {
     const copy = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } })
