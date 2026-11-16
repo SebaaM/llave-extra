@@ -17,10 +17,11 @@ describe('navegación del Cliente', () => {
     expect(screen.queryByRole('link', { name: 'Recomendaciones' })).toBeNull()
   })
 
-  it('presenta una sola navegación de dos destinos para el Cliente', () => {
+  it('presenta dos destinos y el escáner entre ambos en el móvil', () => {
     render(shell(tourist))
     const navigation = screen.getByRole('navigation', { name: 'Tu viaje' })
     expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Mi viaje'])
+    expect([...navigation.children].map(item => item.textContent?.trim())).toEqual(['Beneficios', 'Escanear QR', 'Mi viaje'])
     for (const name of ['Beneficios', 'Mi viaje']) expect(screen.getAllByRole('link', { name })).toHaveLength(1)
   })
 
@@ -29,8 +30,20 @@ describe('navegación del Cliente', () => {
     render(shell(tourist))
     const navigation = screen.getByRole('navigation', { name: 'Navegación principal' })
     expect(within(navigation).getAllByRole('link').map(link => link.textContent)).toEqual(['Beneficios', 'Tienda', 'Cómo funciona', 'Mi viaje', 'Cuenta'])
+    expect(within(navigation).getByRole('button', { name: 'Escanear QR' })).toBeTruthy()
     expect(screen.queryByText('Menú')).toBeNull()
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
+  })
+
+  it('devuelve el foco al escáner después de cerrarlo', () => {
+    render(shell(tourist))
+    const trigger = screen.getByRole('button', { name: 'Escanear QR' })
+    fireEvent.click(trigger)
+    const dialog = screen.getByRole('dialog', { name: 'Escanear QR' })
+    within(dialog).getByRole('button', { name: 'Cerrar' }).focus()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 
   it.each(['/beneficios', '/beneficios/oferta-de-prueba'])('marca Beneficios como ruta activa en %s', path => {
@@ -64,11 +77,13 @@ describe('navegación del Cliente', () => {
     render(shell(tourist, path))
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Salir' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Escanear QR' })).toBeNull()
   })
 
   it.each([null, 'PROVIDER', 'COLLABORATOR', 'ADMIN'] as const)('conserva accesos de otros roles y no muestra barra para %s', role => {
     render(shell(role ? { ...tourist, role } : null))
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Escanear QR' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Beneficios' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Tienda' })).toBeTruthy()
     if (role === 'ADMIN') expect(screen.getByRole('link', { name: 'Administrar' })).toBeTruthy()

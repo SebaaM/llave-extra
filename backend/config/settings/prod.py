@@ -29,3 +29,5 @@ EMAIL_HOST_USER = environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = environ.get("EMAIL_USE_SSL", "false").lower() == "true"
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise RuntimeError("EMAIL_USE_TLS y EMAIL_USE_SSL son mutuamente excluyentes")

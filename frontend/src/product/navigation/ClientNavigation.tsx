@@ -1,7 +1,10 @@
-import { useLayoutEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import type { User } from '../api'
 import { ProductLink } from '../navigation'
+import { navigate } from '../navigate'
+import { ScanIcon } from './ScanIcon'
+import { QRScanner } from './QRScanner'
 
 const destinations = [
   { href: '/beneficios', label: 'Beneficios' },
@@ -17,6 +20,18 @@ function isCurrentTabNavigation(event: MouseEvent<HTMLAnchorElement>) {
 export function ClientNavigation({ user, path }: { user: User | null; path: string }) {
   const [isMobile, setIsMobile] = useState(() => typeof window.matchMedia !== 'function' || window.matchMedia('(max-width: 680px)').matches)
   const menu = useRef<HTMLDetailsElement>(null)
+  const desktopNav = useRef<HTMLElement>(null)
+  const [scanRoute, setScanRoute] = useState<string | null>(null)
+  useEffect(() => {
+    if (!scanRoute) return
+    const dismissScanner = () => setScanRoute(null)
+    window.addEventListener('popstate', dismissScanner)
+    window.addEventListener('llave:navigate', dismissScanner)
+    return () => {
+      window.removeEventListener('popstate', dismissScanner)
+      window.removeEventListener('llave:navigate', dismissScanner)
+    }
+  }, [scanRoute])
   const pendingFocus = useRef<{ path: string; userId: number } | null>(null)
   const [focusRequest, requestContentFocus] = useReducer((value: number) => value + 1, 0)
   useLayoutEffect(() => {
@@ -31,7 +46,7 @@ export function ClientNavigation({ user, path }: { user: User | null; path: stri
     const pending = pendingFocus.current
     pendingFocus.current = null
     if (!pending || pending.path !== path || pending.userId !== user?.id) return
-    const content = menu.current?.closest('.product-shell')?.querySelector<HTMLElement>('.client-page-content')
+    const content = (menu.current ?? desktopNav.current)?.closest('.product-shell')?.querySelector<HTMLElement>('.client-page-content')
     const heading = content?.querySelector<HTMLElement>('h1')
     if (heading) heading.tabIndex = -1
     const target = heading ?? content
@@ -45,6 +60,17 @@ export function ClientNavigation({ user, path }: { user: User | null; path: stri
     .some(page => route === page || route.startsWith(`${page}/`))
   const active = (href: string) => route === href || route.startsWith(`${href}/`) ? 'page' as const : undefined
   const closeMenu = () => { if (menu.current) menu.current.open = false }
+  const scanButton = <button type="button" className="client-scan-button" aria-haspopup="dialog" onClick={event => {
+    event.currentTarget.focus()
+    closeMenu()
+    setScanRoute(route)
+  }}><ScanIcon /> Escanear QR</button>
+  const scanner = scanRoute === route && !hideBar && <QRScanner onClose={() => setScanRoute(null)} onScan={destination => {
+    setScanRoute(null)
+    pendingFocus.current = { path: destination.split('#', 1)[0], userId: user.id }
+    requestContentFocus()
+    navigate(destination)
+  }} />
   const navigateFromMenu = (event: MouseEvent<HTMLAnchorElement>) => {
     const link = event.currentTarget
     if (!isCurrentTabNavigation(event)) return
@@ -53,17 +79,20 @@ export function ClientNavigation({ user, path }: { user: User | null; path: stri
     closeMenu()
   }
 
-  if (!isMobile) return <nav aria-label="Navegación principal">
+  if (!isMobile) return <><nav ref={desktopNav} aria-label="Navegación principal">
     <ProductLink href="/beneficios" aria-current={active('/beneficios')}>Beneficios</ProductLink>
     <ProductLink href="/tienda" aria-current={active('/tienda')}>Tienda</ProductLink>
     <a href="/#como-funciona">Cómo funciona</a>
     <ProductLink href="/mi-viaje" aria-current={active('/mi-viaje')}>Mi viaje</ProductLink>
     <ProductLink href="/perfil" aria-current={active('/perfil')}>Cuenta</ProductLink>
-  </nav>
+    {!hideBar && scanButton}
+  </nav>{scanner}</>
 
   return <div className="client-navigation-group">
     {!hideBar && <nav className="client-navigation" aria-label="Tu viaje">
-      {destinations.map(({ href, label }) => <ProductLink key={href} href={href} aria-current={active(href)} onClick={closeMenu}>{label}</ProductLink>)}
+      <ProductLink href="/beneficios" aria-current={active('/beneficios')} onClick={closeMenu}>Beneficios</ProductLink>
+      {scanButton}
+      <ProductLink href="/mi-viaje" aria-current={active('/mi-viaje')} onClick={closeMenu}>Mi viaje</ProductLink>
     </nav>}
     <details key={path} className="client-menu" ref={menu} onKeyDown={event => {
       if (event.key === 'Escape' && menu.current?.open) {
@@ -79,5 +108,6 @@ export function ClientNavigation({ user, path }: { user: User | null; path: stri
         <a href="/#como-funciona" onClick={event => { if (isCurrentTabNavigation(event)) closeMenu() }}>Cómo funciona</a>
       </nav>
     </details>
+    {scanner}
   </div>
 }

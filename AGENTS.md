@@ -10,6 +10,8 @@ Leer `CONTEXT.md` y la etapa correspondiente de `docs/plans/00-roadmap.md` antes
 
 ## Restricciones
 
+C
+
 - Django + DRF, PostgreSQL, React + TypeScript + Tailwind; Docker local.
 - Usuario por email antes de la primera migración. No usar SQLite para validar código del dominio o pruebas de integración.
 - Carpetas y referencias privadas: autorización del servidor por QR válido, colaborador habilitado y prestador perteneciente a esa carpeta. Ocultar enlaces en React no satisface este requisito.
@@ -50,6 +52,8 @@ Ejecutar comprobaciones relevantes antes de cada commit: pruebas de backend sobr
 Los implementadores no crean otros subagentes ni sus propios revisores. El orquestador asigna trabajo acotado y revisores independientes. Usar modelos económicos para trabajo mecánico y un modelo de juicio adecuado para seguridad y concurrencia. Reportar dudas y hallazgos en archivos, sin duplicar historiales extensos.
 
 ## Flujo QR del Cliente — precisión vigente
+
+E
 
 El carrusel del hero muestra únicamente beneficios destacados por Administrador desde backoffice, sujetos a la política pública de publicación/vigencia y catálogo habilitado. La sección `/gestion/beneficios-destacados` lista todos los beneficios y permite seleccionar hasta cinco; PostgreSQL protege el límite. No seleccionar ofertas automáticamente ni usar las recomendaciones privadas como fuente del hero. Ver `docs/superpowers/specs/2026-11-01-destacados-hero.md`.
 

@@ -4,6 +4,7 @@
 - [x] Mostrar al Colaborador su historial de consumos referidos y el total de comisiones aprobadas pendientes de conciliación.
 
 - [x] Implementar perfiles de Cliente y Colaborador, captura del beneficio referido con QR y PIN y seguimiento de comisión hasta el cierre. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md)
+- [x] Incorporar contacto público y WhatsApp configurable. [Guía y verificación de Mailpit](docs/contact-email.md).
 
 - [x] Agregar la sección de Beneficios destacados con búsqueda, selección manual y límite de cinco protegido en PostgreSQL. [Plan](docs/superpowers/plans/2026-11-05-limite-destacados-inicio.md).
 
@@ -23,6 +24,9 @@
 - [x] Agregar «Cómo funciona» al catálogo con explicación de créditos para canje en tienda, indicando que el canje aún no está habilitado; integrado en F2 del plan de destacados.
 
 - [x] Hero con beneficios destacados por Administrador desde backoffice, filtrados por política pública y recorridos mediante carrusel paginado; [plan](docs/superpowers/plans/2026-11-01-destacados-hero.md). Sin fallback a beneficios no destacados.
+
+- [x] Incorporar escáner para Cliente y acceso a Mi QR para Colaborador.
+- [ ] Validar cámara en iOS/Android físicos con HTTPS y el origen de PUBLIC_APP_URL.
 
 - [x] Aplicar selección contextual por QR: catálogo sin sección permanente Recomendaciones, selección vigente tras login con nombre, vínculo de ingreso/resumen Admin, atribución y QR del negocio + PIN; QR del colaborador estable y renovable manualmente en su espacio. [Plan vigente](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md). Sustituye el corte inicial de catálogo único y la pantalla permanente históricos.
 

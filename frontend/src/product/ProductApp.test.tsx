@@ -39,6 +39,32 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('recorridos F2 del Cliente', () => {
+  it.each(['/consumo', '/referencia'])('abre el recorrido existente desde el escáner: %s', async path => {
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = String(input)
+      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
+      if (url.endsWith('/auth/me/')) return json(tourist)
+      if (url.endsWith('/me/folders/')) return json({ folders: [] })
+      return json({}, 404)
+    }))
+    const ProductApp = await prepareApp('/tienda')
+    render(<ProductApp />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Escanear QR' }))
+    const dialog = screen.getByRole('dialog', { name: 'Escanear QR' })
+    fireEvent.change(within(dialog).getByLabelText('Enlace del QR'), { target: { value: `${window.location.origin}${path}#token=qr-de-prueba` } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Abrir enlace' }))
+    expect(window.location.pathname).toBe(path)
+    expect(window.location.hash).toBe('')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement?.tagName).toBe('H1')
+    const intents = await import('./qr-intent')
+    if (path === '/consumo') {
+      expect(intents.consumptionToken).toBe('qr-de-prueba')
+      expect(screen.getByLabelText(/PIN/)).toBeTruthy()
+    }
+  })
+
   it.each([false, true])('abre la tienda pública sin consultar saldo ni operaciones (sesión: %s)', async signedIn => {
     const calls: string[] = []
     const id = '550e8400-e29b-41d4-a716-446655440000'

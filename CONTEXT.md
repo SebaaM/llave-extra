@@ -9,6 +9,9 @@ El Colaborador consulta sus consumos referidos en `/colaborador/comisiones`. «P
 ## Perfiles y comisiones por consumos referidos — 10/11/2026
 
 El Cliente y el Colaborador completan nombre y apellido y reenvían la verificación de email desde sus cuentas. El Colaborador registra CBU y alias opcional en una pestaña propia. Los referidos nuevos guardan el beneficio elegido junto al QR y el PIN único del negocio. Se conserva una acreditación por Cliente y Prestador. El Prestador declara el resultado y monto aproximado. `/gestion/comisiones` muestra el estado actual y el historial desde la validación hasta el cierre. El pago va del Prestador al Colaborador fuera de la aplicación y el Administrador registra su verificación. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md) · [Guía del panel](docs/panel-administracion.md#comisiones-por-consumos-referidos)
+## Contacto público — 13/11/2026
+
+L
 
 ## Avance de la auditoría de seguridad — 05/11/2026
 
@@ -45,6 +48,10 @@ El hero muestra únicamente beneficios marcados por Administrador como «Destaca
 Producto hasta `02781f2`: revisiones por tarea aprobadas y revisión integral con dos casos principales de paginación corregidos. Sobre el árbol con base/lock vigentes aprobaron 366 UI + 1 proxy, instalación congelada, auditoría de dependencias, lint/tipos/build; backend de producto conserva el corte de 383 pruebas PostgreSQL/Redis y se agregan seis casos focales de nombres aprobados, sin cambios de producto backend. Ruff/OpenAPI/drift y HTTP real con fixtures temporales están registrados. Queda un residual Important antes del merge: si una página retirada devuelve 404 y su recuperación falla por 503/red, se borra la pista; recargar requiere reabrir el QR para conservar atribución. No se declara revisión integral limpia. La revisión visual manual del corte nuevo sigue pendiente porque Computer Use agotó la autorización de Opera. [Antes/después, decisiones y límites](docs/verification/14-seleccion-qr-contextual.md), [plan contextual](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md) y [plan de destacados/recorrido](docs/superpowers/plans/2026-11-01-destacados-hero.md).
 
 ## Decisión vigente: catálogo y selección contextual por QR — 30/10/2026
+
+### Accesos móviles — 13/11/2026
+
+E
 
 El usuario decidió retirar la sección permanente Recomendaciones del Cliente, porque ya dispone del catálogo de beneficios. Esta decisión sustituye la pantalla propia y el enlace condicional descritos en los apartados históricos siguientes. En escritorio quedan Beneficios, Tienda, Cómo funciona, Mi viaje y Cuenta; en la barra móvil, Beneficios y Mi viaje.
 
