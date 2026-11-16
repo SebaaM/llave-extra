@@ -45,7 +45,11 @@ export function useQrContext(user: User | null, path: string) {
     const current = () => !abort.signal.aborted && sequence === request.current && account === owner.current && version === currentSessionVersion()
     const previous = stateRef.current
     publish({ ...previous, owner: account, version, revision: previous.revision + 1, status: 'loading', collaborator: { id, name: previous.collaborator?.id === id ? previous.collaborator.name : '' }, page: null, pageNumber, error: '', missing })
-    const read = (page: number) => api<SelectionPage>(`/api/v1/folders/${encodeURIComponent(id)}/benefits/?page=${page}&page_size=24`, { signal: abort.signal })
+    let transientReadFailure = false
+    const read = (page: number) => api<SelectionPage>(`/api/v1/folders/${encodeURIComponent(id)}/benefits/?page=${page}&page_size=24`, { signal: abort.signal }).catch(error => {
+      transientReadFailure = error instanceof ApiError ? error.status >= 500 && error.status < 600 : error instanceof TypeError
+      throw error
+    })
     const promise = (async () => {
       let resolvedPage = pageNumber
       let result: SelectionPage
@@ -66,7 +70,8 @@ export function useQrContext(user: User | null, path: string) {
       publish({ ...stateRef.current, status: 'ready', collaborator, page: { ...result, collaborator }, pageNumber: resolvedPage, error: '' })
     })().catch(error => {
       if (!current()) return
-      clearQrHint()
+      // A transient failure leaves only the existing IDs for a fresh authorization check.
+      if (!transientReadFailure) clearQrHint()
       const revoked = error instanceof ApiError && [401, 403, 404].includes(error.status)
       publish({ ...stateRef.current, status: revoked ? 'blocked' : 'error', page: null, missing: revoked ? [] : stateRef.current.missing, error: revoked ? denied : messageOf(error) })
     }).finally(() => { if (current()) flight.current = null })
