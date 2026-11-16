@@ -8,6 +8,18 @@ const setUrl = (path: string, hash = '') => window.history.replaceState({}, '', 
 const tourist = { id: 804, email: 'viajera@example.test', role: 'TOURIST', email_verified: true }
 const nativeLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
 
+function mockTouristAuth(url: string) {
+  if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
+  if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
+  if (url.endsWith('/auth/me/')) return json(tourist)
+}
+
+async function submitLogin(email: string) {
+  fireEvent.change(await screen.findByLabelText('Email'), { target: { value: email } })
+  fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+}
+
 beforeEach(() => {
   cleanup()
   sessionStorage.clear()
@@ -38,13 +50,12 @@ async function prepareApp(path: string, fragment = '') {
   return ProductApp
 }
 
-describe('recorridos F2 del Cliente', () => {
+describe('Navegación del Cliente', () => {
   it.each(['/consumo', '/referencia'])('abre el recorrido existente desde el escáner: %s', async path => {
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
-      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
-      if (url.endsWith('/auth/me/')) return json(tourist)
+      const auth = mockTouristAuth(url)
+      if (auth) return auth
       if (url.endsWith('/me/folders/')) return json({ folders: [] })
       return json({}, 404)
     }))
@@ -97,9 +108,8 @@ describe('recorridos F2 del Cliente', () => {
     const keyboard = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
-      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
-      if (url.endsWith('/auth/me/')) return json(tourist)
+      const auth = mockTouristAuth(url)
+      if (auth) return auth
       if (url.endsWith('/me/folders/')) return json({ folders: [] })
       return json({}, 404)
     }))
@@ -125,6 +135,9 @@ describe('recorridos F2 del Cliente', () => {
       expect(titlesAtFocus).toEqual([tourist.email])
     } finally { document.removeEventListener('focusin', listener) }
   })
+})
+
+describe('Sesión y cuenta del Cliente', () => {
   it('vacía el estado de A al entrar con B y antes de esperar el logout remoto', async () => {
     let accountB = false
     let finishLogin!: (response: Response) => void
@@ -169,9 +182,7 @@ describe('recorridos F2 del Cliente', () => {
     expect(screen.queryByRole('navigation', { name: 'Tu viaje' })).toBeNull()
     const qr = await import('./qr-intent')
     qr.setConsumptionToken('qr-de-prueba')
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'b@example.test' } })
-    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await submitLogin('b@example.test')
     await waitFor(() => expect(finishLogin).toBeTypeOf('function'))
     expect(screen.queryByText('a@example.test')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Prestador privado de A' })).toBeNull()
@@ -232,9 +243,7 @@ describe('recorridos F2 del Cliente', () => {
     await waitFor(() => expect(finishHistoryA).toBeTypeOf('function'))
     await act(async () => { setUrl('/ingresar'); window.dispatchEvent(new PopStateEvent('popstate')) })
     await screen.findByRole('heading', { name: 'Qué bueno verte' })
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'b@example.test' } })
-    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await submitLogin('b@example.test')
     await screen.findByRole('heading', { name: visitB.provider_name })
     expect(screen.queryByText(visitA.provider_name)).toBeNull()
     expect(screen.queryByText('777')).toBeNull()
@@ -304,15 +313,16 @@ describe('recorridos F2 del Cliente', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/navegador actualizado en una conexión segura/)
     expect(fetch.mock.calls.every(([url]) => String(url).endsWith('/site-settings/'))).toBe(true)
   })
+})
 
+describe('Validación de visitas del Cliente', () => {
   it('conserva la confirmación de consumo cuando falla la lectura posterior de Mi viaje', async () => {
     let confirmed = false
     let posts = 0
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
-      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
-      if (url.endsWith('/auth/me/')) return json(tourist)
+      const auth = mockTouristAuth(url)
+      if (auth) return auth
       if (url.endsWith('/me/wallet/')) return confirmed ? json({}, 503) : json({ balance: 10, redemptions_frozen: false })
       if (url.endsWith('/me/progress/')) return json({ total: 0, target: 5, completed: false })
       if (url.endsWith('/me/consumptions/')) return json([])
@@ -358,9 +368,7 @@ describe('recorridos F2 del Cliente', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await waitFor(() => expect(finishPost).toBeTypeOf('function'))
     await act(async () => { setUrl('/ingresar'); window.dispatchEvent(new PopStateEvent('popstate')) })
-    fireEvent.change(await screen.findByLabelText('Email'), { target: { value: 'b@example.test' } })
-    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-segura-987!' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+    await submitLogin('b@example.test')
     await screen.findByText('Lo descubrí por mi cuenta')
     await waitFor(() => expect(tripReadsB).toBeGreaterThan(0))
     const readsBeforeLatePost = tripReadsB
@@ -373,23 +381,28 @@ describe('recorridos F2 del Cliente', () => {
 
   it.each(['503', 'timeout'])('reintenta la validación tras %s con su clave y cuerpo originales y actualiza Mi viaje desde la API', async failure => {
     const consumptionCalls: Array<{ url: string; init?: RequestInit }> = []
+    const tripReadsAfterConfirmation = new Set<string>()
+    const visit = { id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }
+    let confirmed = false
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input)
-      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
-      if (url.endsWith('/auth/me/')) return json(tourist)
+      const path = new URL(url, window.location.origin).pathname
+      const auth = mockTouristAuth(path)
+      if (auth) return auth
       if (url.includes('/folders/folder-a/benefits/')) return json({ count: 0, next: null, previous: null, collaborator: { id: 'folder-a', name: 'Ana' }, results: [] })
-      if (url.endsWith('/me/wallet/')) return json({ balance: 450, redemptions_frozen: false })
-      if (url.endsWith('/me/progress/')) return json({ total: 1, target: 6, completed: false })
-      if (url.endsWith('/me/consumptions/')) return json([{ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }])
-      if (url.endsWith('/consumptions/options/')) return json({ benefits: [{ id: 'benefit-a', title: 'Oferta de Ana' }] })
-      if (url.endsWith('/consumptions/')) {
+      if (path === '/api/v2/consumptions/options/' && init?.method === 'POST') return json({ benefits: [{ id: 'benefit-a', title: 'Oferta de Ana' }] })
+      if (confirmed && /^\/api\/v1\/me\/(wallet|progress|consumptions)\/$/.test(path)) tripReadsAfterConfirmation.add(path)
+      if (path.endsWith('/me/wallet/')) return json({ balance: confirmed ? 450 : 0, redemptions_frozen: false })
+      if (path.endsWith('/me/progress/')) return json({ total: confirmed ? 1 : 0, target: 6, completed: false })
+      if (path.endsWith('/me/consumptions/')) return json(confirmed ? [visit] : [])
+      if (path === '/api/v2/consumptions/' && init?.method === 'POST') {
         consumptionCalls.push({ url, init })
         if (consumptionCalls.length === 1) {
           if (failure === 'timeout') throw new DOMException('Timeout sintético del transporte', 'TimeoutError')
           return json({ detail: 'Servicio no disponible' }, 503)
         }
-        return json({ id: 'visit-1', provider_id: 'provider-1', collaborator_id: 'folder-a', award: 450, balance: 450, state: 'VALID', created_at: '2026-10-18T12:00:00Z' }, 201)
+        confirmed = true
+        return json({ ...visit, balance: 450 }, 201)
       }
       return json({ detail: 'No encontrado' }, 404)
     }))
@@ -410,6 +423,9 @@ describe('recorridos F2 del Cliente', () => {
     expect(keys[1]).toBe(keys[0])
     expect(consumptionCalls[1].init?.body).toBe(consumptionCalls[0].init?.body)
     expect(JSON.parse(String(consumptionCalls[0].init?.body))).toEqual({ folder_id: 'folder-a', benefit_id: 'benefit-a', qr_token: 'qr-consumo-prueba', pin: '123456' })
+    await waitFor(() => expect(tripReadsAfterConfirmation).toEqual(new Set([
+      '/api/v1/me/wallet/', '/api/v1/me/progress/', '/api/v1/me/consumptions/',
+    ])))
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))
     await waitFor(() => expect(window.location.pathname).toBe('/mi-viaje'))
@@ -423,9 +439,8 @@ describe('recorridos F2 del Cliente', () => {
     let body: Record<string, unknown> | null = null
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input)
-      if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-producto' })
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-demo' })
-      if (url.endsWith('/auth/me/')) return json(tourist)
+      const auth = mockTouristAuth(url)
+      if (auth) return auth
       if (url.endsWith('/me/folders/')) return json({ folders: [] })
       if (url.endsWith('/me/wallet/')) return json({ balance: 450, redemptions_frozen: false })
       if (url.endsWith('/me/progress/')) return json({ total: 1, target: 6, completed: false })
