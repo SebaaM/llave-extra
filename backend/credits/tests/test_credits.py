@@ -15,6 +15,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APIClient
 
+from accounts.bank import replace_bank_details
 from accounts.models import User
 from accounts.security import issue_session
 from credits.admin import AdjustmentAdmin, ConsumptionAdmin
@@ -127,6 +128,119 @@ def test_referred_consumption_also_requires_current_benefit(domain):
     Benefit.objects.filter(provider=provider).update(status=Publication.DRAFT)
     assert post(authorized(tourist), profile, token).status_code == 403
     assert Consumption.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_referred_options_and_exact_benefit_snapshot(domain):
+    tourist, second, _, profile, provider, other, token, _ = domain
+    current = provider.benefits.get()
+    another = Benefit.objects.create(provider=provider, title="Otra oferta", conditions="Con reserva",
+                                     status=Publication.PUBLISHED)
+    FolderBenefit.assign(profile.pk, another.pk)
+    client = authorized(tourist)
+    base = {"folder_id": str(profile.pk), "qr_token": token}
+    options = client.post("/api/v2/consumptions/options/", base, format="json")
+    assert options.status_code == 200
+    assert options.headers["Cache-Control"] == "no-store"
+    assert {str(item["id"]) for item in options.data["benefits"]} == {str(current.pk), str(another.pk)}
+
+    def consume(benefit):
+        return client.post("/api/v2/consumptions/", {**base, "benefit_id": str(benefit.pk), "pin": "123456"},
+                           format="json", HTTP_IDEMPOTENCY_KEY="v2-visit")
+
+    assert consume(other.benefits.get()).status_code == 400
+    FolderBenefit.remove(profile.pk, current.pk)
+    assert consume(current).status_code == 400
+    response = consume(another)
+    assert response.status_code == 201
+    item = Consumption.objects.get(tourist=tourist)
+    assert (item.benefit_id, item.benefit_title, item.collaborator_id) == (another.pk, "Otra oferta", profile.pk)
+    assert item.commission is not None
+    assert str(item.commission.verified_rate) == "5.00"
+    assert "benefit_title" not in response.data
+    assert consume(another).data == response.data
+    assert consume(current).status_code == 409
+    assert WalletEntry.objects.filter(kind=WalletEntry.Kind.EARN).count() == 1
+    with pytest.raises(DatabaseError), transaction.atomic():
+        Consumption.objects.filter(pk=item.pk).update(benefit_title="Otro título")
+
+    profile.set_enabled(profile.pk, False)
+    rejected = authorized(second).post("/api/v2/consumptions/options/", base, format="json")
+    assert rejected.status_code == 403
+
+
+@pytest.mark.django_db
+def test_provider_benefit_rate_applies_only_to_new_validations(domain):
+    tourist, second, admin, profile, provider, other, token, _ = domain
+    benefit = provider.benefits.get()
+    owner = User.objects.create_user("owner@example.test", role=User.Role.PROVIDER)
+    ProviderMembership.objects.create(provider=provider, user=owner)
+    provider_api, admin_api = authorized(owner), authorized(admin)
+    rate_path = f"/api/v1/provider/providers/{provider.pk}/benefits/{benefit.pk}/commission-rate/"
+
+    def set_rate(rate, version, key):
+        return provider_api.put(rate_path, {"rate": rate, "version": version}, format="json", HTTP_IDEMPOTENCY_KEY=key)
+
+    initial = provider_api.get(rate_path)
+    assert initial.data == {"rate": None, "version": None, "global_rate": "5.00"}
+    assert "no-store" in initial.headers["Cache-Control"]
+    assert authorized(tourist).get(rate_path).status_code == 403
+    assert provider_api.get(rate_path.replace(str(benefit.pk), str(other.benefits.get().pk))).status_code == 404
+    assert set_rate(4, None, "invalid").status_code == 400
+    saved = set_rate(7, None, "seven")
+    assert saved.status_code == 200
+    assert set_rate(7, None, "seven").data == saved.data
+    assert set_rate(3, None, "seven").status_code == 409
+    benefit.refresh_from_db()
+    assert benefit.status == Publication.PUBLISHED
+
+    data = {"folder_id": str(profile.pk), "qr_token": token, "benefit_id": str(benefit.pk), "pin": "123456"}
+    first_api = authorized(tourist)
+    first = first_api.post("/api/v2/consumptions/", data, format="json", HTTP_IDEMPOTENCY_KEY="first")
+    assert first.status_code == 201
+    commission_url = f"/api/v1/admin/commissions/{first.data['id']}/"
+    first_detail = admin_api.get(commission_url).data
+    assert first_detail["current_rate"] == "7.00"
+    assert first_detail["rate_fixed_at_validation"]
+    changed = set_rate(3, saved.data["version"], "three")
+    assert changed.status_code == 200
+    assert set_rate(10, saved.data["version"], "stale").status_code == 409
+    assert admin_api.get(commission_url).data["version"] == first_detail["version"]
+    assert first_api.post("/api/v2/consumptions/", data, format="json", HTTP_IDEMPOTENCY_KEY="first").data == first.data
+    second_response = authorized(second).post(
+        "/api/v2/consumptions/", data, format="json", HTTP_IDEMPOTENCY_KEY="second",
+    )
+    assert second_response.status_code == 201
+    assert str(Consumption.objects.get(tourist=second).commission.verified_rate) == "3.00"
+    replace_bank_details(profile.user_id, cbu="0000000000000000000000", alias="dato.bancario")
+    declared = provider_api.post(
+        commission_url.replace("/admin/", "/provider/") + "actions/declare/",
+        {"version": first_detail["version"], "outcome": "CONSUMED", "amount": "200.00"},
+        format="json", HTTP_IDEMPOTENCY_KEY="declared",
+    )
+    assert declared.status_code == 200
+    detail = admin_api.get(commission_url).data
+    approved = admin_api.post(
+        commission_url + "actions/approve/", {"version": detail["version"], "amount": "200.00", "reason": ""},
+        format="json", HTTP_IDEMPOTENCY_KEY="approved",
+    )
+    assert approved.status_code == 200
+    commission = Consumption.objects.get(tourist=tourist).commission
+    assert (str(commission.approval.rate), str(commission.approval.amount)) == ("7.00", "14.00")
+    with pytest.raises(DatabaseError), transaction.atomic():
+        type(commission).objects.filter(pk=commission.pk).update(verified_rate=10)
+
+
+@pytest.mark.django_db
+def test_v1_referred_cutover_preserves_saved_replay_and_direct(domain):
+    tourist, second, _, profile, _, _, token, other_token = domain
+    client = authorized(tourist)
+    first = post(client, profile, token)
+    assert first.status_code == 201
+    with override_settings(REQUIRE_REFERRED_BENEFIT=True):
+        assert post(client, profile, token).data == first.data
+        assert post(authorized(second), profile, token, key="new-referral").status_code == 409
+        assert post_direct(client, other_token, pin="654321", key="new-direct").status_code == 201
 
 
 @pytest.mark.django_db

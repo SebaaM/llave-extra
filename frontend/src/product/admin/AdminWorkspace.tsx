@@ -3,6 +3,7 @@ import type { User } from '../api'
 import { ProductLink } from '../navigation'
 import { adminApi } from './api'
 import { Dashboard } from './Dashboard'
+import { Commissions } from './Commissions'
 import { auditActionLabel, auditResourceLabel, fieldLabels, resourceByKey } from './data'
 import { FeaturedBenefitsPage } from './FeaturedBenefitsPage'
 import { useAdminLoad } from './hooks'
@@ -15,7 +16,7 @@ import { LoadState } from './UI'
 import { formatValue } from './formatValue'
 import './admin.css'
 
-const mainLinks = [['', 'Inicio', '⌂'], ['usuarios', 'Usuarios', '◉'], ['prestadores', 'Prestadores', '▣'], ['beneficios', 'Beneficios', '✳'], ['beneficios-destacados', 'Beneficios destacados', '★'], ['colaboradores', 'Colaboradores', '♡'], ['consumos', 'Consumos', '◫'], ['billeteras', 'Billeteras', '▤'], ['ajustes', 'Ajustes de créditos', '↗'], ['productos', 'Productos', '◈'], ['categorias-tienda', 'Categorías de tienda', '▣'], ['pedidos', 'Pedidos', '▦'], ['cancelaciones', 'Cancelaciones', '⊘'], ['reglas-creditos', 'Reglas de créditos', '✦'], ['movimientos-stock', 'Movimientos de stock', '⇅'], ['operaciones-pago', 'Operaciones de pago', '◎'], ['actividad', 'Actividad', '◷'], ['configuracion', 'Configuración', '⚙'], ['cuenta', 'Mi cuenta', '○']] as const
+const mainLinks = [['', 'Inicio', '⌂'], ['usuarios', 'Usuarios', '◉'], ['prestadores', 'Prestadores', '▣'], ['beneficios', 'Beneficios', '✳'], ['beneficios-destacados', 'Beneficios destacados', '★'], ['colaboradores', 'Colaboradores', '♡'], ['consumos', 'Consumos', '◫'], ['comisiones', 'Comisiones', '◎'], ['reglas-comisiones', 'Reglas de comisión', '▤'], ['billeteras', 'Billeteras', '▤'], ['ajustes', 'Ajustes de créditos', '↗'], ['productos', 'Productos', '◈'], ['categorias-tienda', 'Categorías de tienda', '▣'], ['pedidos', 'Pedidos', '▦'], ['cancelaciones', 'Cancelaciones', '⊘'], ['reglas-creditos', 'Reglas de créditos', '✦'], ['movimientos-stock', 'Movimientos de stock', '⇅'], ['operaciones-pago', 'Operaciones de pago', '◎'], ['actividad', 'Actividad', '◷'], ['configuracion', 'Configuración', '⚙'], ['cuenta', 'Mi cuenta', '○']] as const
 export function AdminWorkspace({ user, path, search }: { user: User; path: string; search: string }) {
   const [menu, setMenu] = useState(false)
   const parts = path.replace(/^\/gestion\/?/, '').split('/').filter(Boolean)
@@ -31,6 +32,7 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   else if (section === 'configuracion') content = <Settings search={search} />
   else if (section === 'cuenta') content = <Account user={user} />
   else if (section === 'actividad') content = <Activity search={search} />
+  else if (section === 'comisiones' || section === 'reglas-comisiones') content = <Commissions section={section === 'comisiones' ? 'commissions' : 'commission-rules'} />
   else if (section === 'beneficios-destacados') content = <FeaturedBenefitsPage search={search} />
   else if (resource) content = parts[1] === 'nuevo' && resource.fields ? <NewRecord key={`${resource.key}:nuevo`} resource={resource} search={search} /> : parts[1] ? <RecordDetail key={`${resource.key}:${parts[1]}`} resource={resource} id={parts[1]} search={search} /> : <ResourceList key={resource.key} resource={resource} search={search} />
   else content = <section className="admin-panel"><h2>Sección no disponible</h2><ProductLink href="/gestion">Volver al inicio</ProductLink></section>
@@ -62,11 +64,11 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   </div>
 }
 
-const primaryRoutes: readonly string[] = ['', 'pedidos', 'productos', 'beneficios']
+const primaryRoutes: readonly string[] = ['', 'pedidos', 'productos', 'beneficios', 'comisiones']
 const navGroups: readonly { id: string; label: string; icon: string; routes: readonly string[] }[] = [
   { id: 'red', label: 'Red y usuarios', icon: '◉', routes: ['usuarios', 'prestadores', 'colaboradores'] },
   { id: 'tienda', label: 'Tienda', icon: '▦', routes: ['categorias-tienda', 'movimientos-stock', 'cancelaciones', 'operaciones-pago'] },
-  { id: 'creditos', label: 'Créditos y visitas', icon: '✦', routes: ['consumos', 'billeteras', 'ajustes', 'reglas-creditos'] },
+  { id: 'creditos', label: 'Créditos y visitas', icon: '✦', routes: ['consumos', 'billeteras', 'ajustes', 'reglas-creditos', 'reglas-comisiones'] },
   { id: 'administracion', label: 'Administración', icon: '⚙', routes: ['actividad', 'configuracion'] },
 ]
 

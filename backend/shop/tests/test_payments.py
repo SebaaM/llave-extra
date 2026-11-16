@@ -179,7 +179,7 @@ def test_adapter_errors_sanitized(status, retry):
     assert str(caught.value) == f"http_{status}" and caught.value.retry is retry
 
 
-@pytest.mark.parametrize("body", [b"invalid json", b"x" * (MAX_RESPONSE + 1), b"[]", b"{}"])
+@pytest.mark.parametrize("body", [b"invalid json", pytest.param(b"x" * (MAX_RESPONSE + 1), id="oversized-body"), b"[]", b"{}"])
 def test_adapter_malformed_bounds(body):
     with pytest.raises(GatewayError):
         MercadoPagoGateway("token", send=lambda *args: (200, body)).get_order("ORD_A")
@@ -592,7 +592,7 @@ def test_commands_seed_idempotence_and_demo_receipts(domain, tmp_path):
         assert Order.objects.count() == 2
         assert Wallet.objects.get(tourist=domain.customer).balance == 1400
         assert Product.objects.get(demo=True).stock == 18
-        assert destination.read_text().startswith("DEMO — SIN VALIDEZ FISCAL")
+        assert destination.read_text(encoding="utf-8").startswith("DEMO — SIN VALIDEZ FISCAL")
         call_command("process_shop_outbox", stdout=StringIO())
         order = Order.objects.get(mode="MONEY")
         call_command("simulate_shop_payment", str(order.pk), "paid", stdout=StringIO())

@@ -90,6 +90,7 @@ const auditActions: Record<string, string> = {
   'orders.prepare': 'Pedido preparado', 'orders.deliver': 'Pedido entregado', 'orders.refund': 'Reintegro solicitado',
   'cancellations.approve': 'Cancelación aprobada', 'cancellations.reject': 'Cancelación rechazada',
   'payment-operations.retry': 'Operación de pago reprogramada', 'credit-rules.remove': 'Regla de créditos eliminada',
+  'benefit-commission-rate.update': 'Porcentaje de comisión del beneficio actualizado',
   CHECKOUT: 'Pedido creado', CANCELLATION_REQUESTED: 'Cancelación solicitada', CANCELLATION_APPROVED: 'Cancelación aprobada',
   CANCELLATION_REJECTED: 'Cancelación rechazada', REFUND_REQUESTED: 'Reintegro solicitado', PAYMENT_RETRY: 'Pago reprogramado',
 }

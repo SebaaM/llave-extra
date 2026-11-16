@@ -60,14 +60,16 @@ describe('selección contextual del QR', () => {
     sessionStorage.setItem(hintKey, JSON.stringify({ accountId: tourist.id, collaboratorId: collaborator.id }))
     let body: unknown
     const { fetcher } = await mount('/consumo', null, (url, init) => {
+      if (url.endsWith('/consumptions/options/')) return json({ benefits: [{ id: benefit.id, title: benefit.title }] })
       if (url.endsWith('/consumptions/') && init?.method === 'POST') { body = JSON.parse(String(init?.body)); return json({ id: 'visit', provider_id: provider.id, collaborator_id: collaborator.id, award: 10, balance: 10, state: 'VALID', created_at: '' }) }
     })
     await screen.findByText('Visita recomendada por Ana del Sur')
+    await screen.findByText(benefit.title)
     expect(screen.queryByRole('combobox')).toBeNull()
     fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await screen.findByRole('heading', { name: 'Visita verificada' })
-    expect(body).toEqual({ qr_token: 'synthetic-business-qr', pin: '000123', folder_id: collaborator.id })
+    expect(body).toEqual({ qr_token: 'synthetic-business-qr', pin: '000123', folder_id: collaborator.id, benefit_id: benefit.id })
     expect(fetcher.mock.calls.some(([url]) => /redeem|me\/folders/.test(String(url)))).toBe(false)
   })
 
@@ -279,6 +281,7 @@ describe('selección contextual del QR', () => {
   it('conserva el comando incierto al recorrer otro QR y volver a consumo en la SPA', async () => {
     const posts: RequestInit[] = []
     const { intents } = await mount('/consumo', 'synthetic-guide-qr', (url, init) => {
+      if (url.endsWith('/consumptions/options/')) return json({ benefits: [{ id: benefit.id, title: benefit.title }] })
       if (url.endsWith('/consumptions/') && init?.method === 'POST') {
         posts.push(init)
         if (posts.length === 1) throw new DOMException('Timeout', 'TimeoutError')
@@ -286,6 +289,7 @@ describe('selección contextual del QR', () => {
       }
     })
     await screen.findByText('Visita recomendada por Ana del Sur')
+    await screen.findByText(benefit.title)
     fireEvent.change(screen.getByLabelText('PIN del negocio'), { target: { value: '000123' } })
     fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
     await screen.findByRole('alert')
@@ -298,7 +302,7 @@ describe('selección contextual del QR', () => {
     expect(posts).toHaveLength(2)
     expect(posts[1].body).toBe(posts[0].body)
     expect(new Headers(posts[1].headers).get('Idempotency-Key')).toBe(new Headers(posts[0].headers).get('Idempotency-Key'))
-    expect(JSON.parse(String(posts[1].body))).toEqual({ qr_token: 'synthetic-business-qr', pin: '000123', folder_id: collaborator.id })
+    expect(JSON.parse(String(posts[1].body))).toEqual({ qr_token: 'synthetic-business-qr', pin: '000123', folder_id: collaborator.id, benefit_id: benefit.id })
     expect(window.location.hash).toBe('')
   })
 

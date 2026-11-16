@@ -91,3 +91,15 @@ class OneTimeToken(models.Model):
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class CollaboratorBankDetails(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="bank_details", verbose_name="Colaborador",
+    )
+    version = models.UUIDField("Versión", default=uuid.uuid4, editable=False)
+    ciphertext = models.BinaryField("Datos bancarios cifrados", editable=False)
+
+    class Meta:
+        verbose_name = "Datos bancarios del colaborador"
+        verbose_name_plural = "Datos bancarios de colaboradores"

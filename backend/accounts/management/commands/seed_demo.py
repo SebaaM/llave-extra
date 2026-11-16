@@ -17,7 +17,7 @@ from credits.services import (
     set_provider_pin,
     sign_provider_qr,
 )
-from providers.access import selected_providers
+from providers.access import selected_benefits, selected_providers
 from providers.catalog import catalog_benefits
 from providers.models import (
     Benefit,
@@ -157,9 +157,10 @@ class Command(BaseCommand):
                                                            qr_version=profile.qr_version)
                         for provider in assigned:
                             credential = ProviderConsumptionCredential.objects.get(provider=provider)
+                            benefit = selected_benefits(profile.pk).filter(provider=provider).order_by("pk").first()
                             award_consumption(tourist, profile.pk, sign_provider_qr(credential),
                                               generated_pins[str(provider.pk)][1],
-                                              f"demo-e4-{provider.pk}")
+                                              f"demo-e4-{provider.pk}", benefit_id=benefit.pk)
                     adjustment_user = users["turista.ajuste@llaveextra.test"]
                     debit_wallet(adjustment_user.pk, policy.base_reward - 1, "demo-e4-order")
                     consumption = adjustment_user.consumptions.get(provider=eligible[0])

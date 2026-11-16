@@ -65,7 +65,7 @@ def seed_customer(credentials, index):
                 credential = ProviderConsumptionCredential.objects.get(provider=provider)
                 response, _ = award_consumption(customer, profile.pk if position % 3 else None,
                     sign_provider_qr(credential), credentials.data["pins"][str(provider.pk)],
-                    f"activity-v1-consume-{position}")
+                    f"activity-v1-consume-{position}", benefit_id=selection.benefit_id if position % 3 else None)
                 consumption_ids.append(response["id"])
             admin = admin_user()
             if index % 15 in (4, 5, 6):
