@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Continuidad de la atribución QR — 16/11/2026
+
+Si la lectura de la selección falla por un 5xx o un error de red, se conserva únicamente la pista de IDs ya guardada. Se oculta el contenido privado y se impide consumir con esa referencia hasta revalidarla en el servidor, incluso tras recargar. Una denegación confirmada (401/403/404 definitivo) sigue eliminando la pista. El PR #18 consta integrado en `develop` en `c43eeea`. [Verificación](docs/verification/14-seleccion-qr-contextual.md#corrección-de-continuidad--16112026).
+
 ## Tasa por beneficio — 12/11/2026
 
 En «Mis beneficios», el Prestador puede elegir 3 %, 7 %, 10 % o la tasa global para cada beneficio de su negocio. El Administrador configura la tasa global, con un respaldo de 5 %. El porcentaje es igual para todos los colaboradores del beneficio y queda fijado al validar el consumo con QR y PIN. Las excepciones anteriores por Prestador siguen vigentes para los casos sin tasa registrada. Las aprobaciones conservan su historial.

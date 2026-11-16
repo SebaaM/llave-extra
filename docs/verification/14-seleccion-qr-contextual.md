@@ -59,3 +59,15 @@ Los comandos backend usan `docker compose --project-name llaveextra-visual --env
 - QA visual manual del corte nuevo pendiente: Computer Use listó Opera, pero la solicitud de autorización para capturar su estado agotó el tiempo (`Computer Use app approval timed out`). No se obtuvo una captura válida ni se ejecutaron acciones sobre la página. Las comprobaciones DOM/HTTP no se presentan como aprobación visual en navegador ni dispositivo físico.
 
 El entorno Docker aislado `llaveextra-visual` está activo en frontend `5176` y backend `8002`. Las bases y cuentas del entorno original no se modifican por esta entrega. La aprobación del cliente sigue siendo requisito para fusionar.
+
+## Corrección de continuidad — 16/11/2026
+
+El PR #18 consta integrado en `develop` (`c43eeea`). La corrección del pendiente se preparó por separado desde `a51eb97`: una lectura de la selección que falla con un 5xx o un error de red ya no elimina la pista de IDs existente. La selección permanece oculta; tras recargar, la visita referida no puede enviarse hasta que el servidor revalide el acceso. Las denegaciones definitivas conservan el comportamiento anterior. No se guardan QR, nombres ni contenido privado, ni se cambia la API.
+
+- RED: `node node_modules/vitest/vitest.mjs run --configLoader runner src/product/QrFlow.test.tsx -t 'conserva la atribuci.n'` reprodujo las dos pérdidas de pista (`404 → 503` y `404 → error de red`).
+- GREEN: `node node_modules/vitest/vitest.mjs run --configLoader runner src/product/QrFlow.test.tsx`: 38 pruebas aprobadas. Las regresiones verifican una recarga sin repetir el QR del colaborador, el bloqueo mientras se revalida y un POST de consumo con el `folder_id` original. Se mantiene la cobertura de 401/403/404 definitivo.
+- Suite: `node node_modules/vitest/vitest.mjs run --configLoader runner`: 409 pruebas aprobadas en 36 archivos. `node --test tests/proxy-config.test.mjs`: 1 aprobada; el cargador de Vite requirió ejecución fuera del sandbox.
+- `node node_modules/eslint/bin/eslint.js .`, `node node_modules/typescript/bin/tsc -b --pretty` y `node node_modules/vite/bin/vite.js build --configLoader runner`: aprobados.
+- Verificación con respuestas HTTP sintéticas; sin nuevo QA visual, dispositivos físicos ni cambios de backend. La corrección se puede revertir como una unidad de frontend, sus pruebas y la documentación asociada.
+
+Para la publicación se comprobó el mismo cambio sobre `develop` en `e5d9207`, que ya exige elegir un beneficio para la visita referida. Las dos regresiones cubren el envío a `/api/v2/consumptions/` con `folder_id` y `benefit_id` originales. Aprobados: 38 casos focales, 425 pruebas de UI en 39 archivos (`vitest run --configLoader runner --maxWorkers 4 --reporter dot`), 1 prueba del proxy, lint, tipos y build.

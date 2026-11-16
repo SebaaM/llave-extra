@@ -17,8 +17,8 @@
 
 - [x] Arranque local con consola adjunta: PowerShell y Bash muestran todos los servicios al finalizar la preparación; `Ctrl+C` detiene los contenedores conservando volúmenes. Ver `DEV.md`.
 
-- [ ] Resolver antes del merge la continuidad del QR si una página retirada devuelve 404 y su recuperación falla por 503/red: la pista se borra y una carga completa requiere reabrir el QR para conservar atribución. La recuperación normal y la revocación real están cubiertas; [residual de revisión](docs/verification/14-seleccion-qr-contextual.md).
-- [x] Realizar revisión integral y publicar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) de `feature/cliente-qr-destacados` hacia develop, en borrador y sin merge. Un residual Important sigue abierto en el pendiente anterior; no equivale a aprobación técnica final.
+- [x] Corregir la pérdida de atribución tras 404 y fallo temporal de recuperación (503/red). Se conservan solo los IDs ya guardados; una recarga exige revalidar con el servidor. [Verificación](docs/verification/14-seleccion-qr-contextual.md#corrección-de-continuidad--16112026).
+- [x] Publicar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) de `feature/cliente-qr-destacados`; Git registra su integración en `develop` en `c43eeea`. La integración no acredita aprobación del cliente ni QA visual.
 - [ ] Revisión visual manual del corte nuevo (desktop/móvil, zoom y safe area): herramienta de Opera agotó autorización; [evidencia y límites](docs/verification/14-seleccion-qr-contextual.md).
 
 - [x] Agregar «Cómo funciona» al catálogo con explicación de créditos para canje en tienda, indicando que el canje aún no está habilitado; integrado en F2 del plan de destacados.
@@ -31,7 +31,7 @@
 - [x] Aplicar selección contextual por QR: catálogo sin sección permanente Recomendaciones, selección vigente tras login con nombre, vínculo de ingreso/resumen Admin, atribución y QR del negocio + PIN; QR del colaborador estable y renovable manualmente en su espacio. [Plan vigente](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md). Sustituye el corte inicial de catálogo único y la pantalla permanente históricos.
 
 - [x] Diseño de ajustes del Cliente aprobado el 30/10 e implementación registrada: lenguaje cotidiano, recomendaciones recibidas condicionales, navegación/red adaptables, orden del inicio, carrusel y libreta abierta; [antes/después y pruebas](docs/verification/13-ajustes-vista-cliente.md). Revisión integral y corrector aprobados; la aprobación final del cliente sigue pendiente.
-- [ ] Obtener aprobación del cliente antes de fusionar [PR #18](https://github.com/SebaaM/llave-extra/pull/18) hacia develop, después de cerrar residual técnico y QA visual. PR #16 ya fue integrada externamente; no iniciar merge por cerrar pruebas.
+- [ ] Confirmar la aprobación final del cliente para el corte del PR #18 tras el QA visual; el PR ya consta integrado.
 
 - [x] Diagnosticar el CI de develop `8250205`: fallo exclusivo de auditoría por minimatch transitivo; corrección temporal a 11.0.1 sin desactivar el control. [Evidencia](docs/verification/14-ci-develop.md).
 - [x] Corregir espera de render en las pruebas de navegación Admin y verificar en Docker Linux: 309 UI + 1 proxy, lint, tipos, build y auditoría aprobados.

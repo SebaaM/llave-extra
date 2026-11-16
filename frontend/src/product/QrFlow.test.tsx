@@ -175,6 +175,45 @@ describe('selección contextual del QR', () => {
     expect(sessionStorage.getItem(hintKey)).not.toBeNull()
   })
 
+  it.each(['503', 'red'])('conserva la atribución tras 404 y fallo de recuperación (%s) al recargar', async failure => {
+    let withdrawn = false
+    const initial = await mount('/referencia', 'synthetic-guide-qr', url => {
+      if (!url.includes('/folders/guide-a/benefits/')) return
+      if (new URL(url).searchParams.get('page') === '2') return json({}, 404)
+      if (!withdrawn) return json(page({ count: 25, next: '/api/v1/folders/guide-a/benefits/?page=2' }))
+      return failure === '503' ? json({}, 503) : Promise.reject(new TypeError('Failed to fetch'))
+    })
+    await screen.findByRole('heading', { name: benefit.title })
+    withdrawn = true
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await screen.findByRole('alert')
+    expect(screen.queryByText(benefit.title)).toBeNull()
+    expect(screen.queryByText(provider.name)).toBeNull()
+    expect(sessionStorage.getItem(hintKey)).toBe(JSON.stringify({ accountId: tourist.id, collaboratorId: collaborator.id }))
+    initial.unmount()
+
+    let finishSelection!: (value: Response) => void
+    const { fetcher } = await mount('/consumo', null, (url, init) => {
+      if (url.includes('/folders/guide-a/benefits/')) return new Promise(resolve => { finishSelection = resolve })
+      if (url.endsWith('/api/v2/consumptions/options/')) return json({ benefits: [{ id: benefit.id, title: benefit.title }] })
+      if (url.endsWith('/api/v2/consumptions/') && init?.method === 'POST') return json({ id: 'visit', provider_id: provider.id, collaborator_id: collaborator.id, award: 10, balance: 10, state: 'VALID', created_at: '' })
+    })
+    const pin = await screen.findByLabelText('PIN del negocio') as HTMLInputElement
+    await waitFor(() => expect(finishSelection).toBeTypeOf('function'))
+    expect(pin.disabled).toBe(true)
+    fireEvent.submit(pin.closest('form')!)
+    expect(fetcher.mock.calls.some(([url, init]) => /\/api\/v[12]\/consumptions\/(?:options\/)?$/.test(String(url)) && init?.method === 'POST')).toBe(false)
+    await act(async () => finishSelection(json(page())))
+    await screen.findByText('Visita recomendada por Ana del Sur')
+    await screen.findByText(benefit.title)
+    fireEvent.change(pin, { target: { value: '000123' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Validar visita' }))
+    await screen.findByRole('heading', { name: 'Visita verificada' })
+    const visit = fetcher.mock.calls.find(([url, init]) => String(url).endsWith('/api/v2/consumptions/') && init?.method === 'POST')
+    expect(JSON.parse(String(visit?.[1]?.body))).toEqual({ qr_token: 'synthetic-business-qr', pin: '000123', folder_id: collaborator.id, benefit_id: benefit.id })
+    expect(fetcher.mock.calls.some(([url]) => String(url).includes('/referrals/redeem/'))).toBe(false)
+  })
+
   it.each([401, 403, 404])('bloquea una revocación %s en página 1 tras un único rescate de página 2', async status => {
     let revoked = false
     const { fetcher } = await mount('/referencia', 'synthetic-guide-qr', url => {
@@ -255,7 +294,7 @@ describe('selección contextual del QR', () => {
     await screen.findByRole('alert')
     expect(screen.queryByText(benefit.title)).toBeNull()
     expect(screen.queryByText(provider.name)).toBeNull()
-    expect(sessionStorage.getItem(hintKey)).toBeNull()
+    expect(sessionStorage.getItem(hintKey)).toBe(status === 503 ? JSON.stringify({ accountId: tourist.id, collaboratorId: collaborator.id }) : null)
     failed = false
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar selección' }))
     await screen.findByRole('heading', { name: benefit.title })
