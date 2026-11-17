@@ -2,6 +2,8 @@
 
 ## E6.1 — Visitas atribuidas · 17/11/2026
 
+Ajuste visual solicitado: fechas y Colaborador alineados, búsqueda y acciones separadas, y navegación de comercios junto al pie de la lista. La paginación de colaboradores es independiente y solo aparece cuando hay varias páginas. Este refinamiento no cambia métricas, permisos ni contrato API.
+
 El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integración a `develop` pendiente. Las métricas por rol y los controles operativos siguientes permanecen fuera de este corte.
 
 ## Continuidad de la atribución QR — 16/11/2026

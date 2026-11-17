@@ -49,6 +49,8 @@ En **Reglas de comisión**, el Administrador configura el porcentaje global. El 
 
 En **Analítica de visitas** (`/gestion/analitica/visitas`), el Administrador consulta Clientes vinculados, visitas válidas atribuidas y el detalle paginado de comercios para un período. Las fechas y el Colaborador elegido se aplican desde la URL; al cambiar filtros, el informe vuelve a la primera página. La búsqueda de colaboradores usa el listado administrativo y permite recorrer sus páginas. El informe no identifica Clientes. Si la procedencia de un indicador no puede confirmarse, muestra «No disponible para este período» en lugar de presentarlo como cero; un período sin registros sí muestra cero y un estado vacío.
 
+Los filtros presentan primero Desde, Hasta y Colaborador; la búsqueda de colaboradores y las acciones se agrupan debajo. La navegación de comercios aparece al pie de su tabla cuando existe más de una página. El selector de colaboradores tiene su propia navegación, visible solo si sus opciones ocupan varias páginas.
+
 ## Guardados, acciones y conflictos
 
 Un formulario con cambios avisa antes de navegar o cerrar la página. Si otra persona actualiza el registro, el servidor rechaza el guardado desactualizado y el formulario conserva el texto para compararlo. Cargar la versión actual descarta los cambios locales después del aviso correspondiente.

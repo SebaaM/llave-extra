@@ -85,6 +85,42 @@ afterEach(() => {
 })
 
 describe('informe administrativo de visitas', () => {
+  it('agrupa la navegación de comercios con la lista y mantiene los filtros separados', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/analytics/visits/')) return json(visitReport())
+      return json(collaboratorPage([]))
+    }))
+    render(<AdminWorkspace user={admin} path="/gestion/analitica/visitas" search="" />)
+
+    const businesses = await screen.findByRole('region', { name: 'Comercios con visitas' })
+    const table = within(businesses).getByRole('table')
+    const pagination = within(businesses).getByRole('navigation', { name: 'Páginas de comercios' })
+    expect(table.compareDocumentPosition(pagination) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+    const filters = screen.getByRole('form', { name: 'Filtros de visitas' })
+    const from = within(filters).getByLabelText('Desde')
+    const to = within(filters).getByLabelText('Hasta')
+    const collaborator = within(filters).getByLabelText('Colaborador')
+    const search = within(filters).getByLabelText('Buscar colaboradores')
+    for (const [before, after] of [[from, to], [to, collaborator], [collaborator, search]]) {
+      expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+    }
+    expect(within(filters).queryByRole('navigation', { name: 'Páginas de comercios' })).toBeNull()
+  })
+
+  it('oculta los controles de páginas de colaboradores cuando solo hay una página', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/analytics/visits/')) return json(visitReport())
+      return json(collaboratorPage([{ id: 'collaborator-1', user_email: 'marina@example.test' }]))
+    }))
+    render(<AdminWorkspace user={admin} path="/gestion/analitica/visitas" search="" />)
+    await screen.findByRole('option', { name: 'marina@example.test' })
+
+    expect(screen.queryByRole('button', { name: 'Colaboradores anteriores' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Siguientes colaboradores' })).toBeNull()
+  })
+
   it('solo admite la subruta exacta de visitas', async () => {
     const calls: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
@@ -389,8 +425,11 @@ describe('informe administrativo de visitas', () => {
     fireEvent.change(screen.getByLabelText('Buscar colaboradores'), { target: { value: 'marina' } })
     fireEvent.click(screen.getByRole('button', { name: 'Buscar colaboradores' }))
     await screen.findByRole('option', { name: 'marina.primera@example.test' })
-    fireEvent.click(screen.getByRole('button', { name: 'Siguientes colaboradores' }))
+    const nextCollaborators = screen.getByRole('button', { name: 'Siguientes colaboradores' })
+    nextCollaborators.focus()
+    fireEvent.click(nextCollaborators)
     await screen.findByRole('option', { name: 'marina@example.test' })
+    expect(document.activeElement).toBe(screen.getByLabelText('Colaborador'))
     fireEvent.change(screen.getByLabelText('Colaborador'), { target: { value: '0a000000-0000-4000-8000-000000000009' } })
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
 

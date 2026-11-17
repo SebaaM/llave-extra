@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Pulir visualmente el informe de visitas: filtros alineados, búsqueda separada, navegación junto a la lista y adaptación móvil. [Verificación](docs/verification/17-analitica-e6.md#ajuste-visual-del-informe--17112026).
+
 - [x] Permitir tasas de comisión por beneficio y fijarlas en las nuevas validaciones referidas con QR y PIN.
 - [x] Mostrar al Colaborador su historial de consumos referidos y el total de comisiones aprobadas pendientes de conciliación.
 

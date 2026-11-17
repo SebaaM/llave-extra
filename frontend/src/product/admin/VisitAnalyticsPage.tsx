@@ -59,6 +59,8 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   const [reportRevoked, setReportRevoked] = useState(false)
   const paginationFocusPending = useRef(false)
   const paginationRef = useRef<HTMLElement | null>(null)
+  const collaboratorFocusPending = useRef(false)
+  const collaboratorSelectRef = useRef<HTMLSelectElement | null>(null)
 
   const reportParams = new URLSearchParams()
   if (appliedFrom) reportParams.set('from', appliedFrom)
@@ -97,6 +99,12 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
     }
   }, [appliedCollaboratorId, collaboratorLookup.page, collaboratorLookup.search])
   const collaborators = useAdminLoad(loadCollaborators)
+
+  useEffect(() => {
+    if (!collaboratorFocusPending.current || collaborators.loading) return
+    collaboratorFocusPending.current = false
+    collaboratorSelectRef.current?.focus()
+  }, [collaborators.loading])
 
   useEffect(() => {
     if (!paginationFocusPending.current || !reportData || reportLoading) return
@@ -141,6 +149,7 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   }
 
   const changeCollaboratorPage = (nextPage: number) => {
+    collaboratorFocusPending.current = true
     collaborators.setState({ data: null, loading: true, error: '' })
     setCollaboratorLookup(current => ({ ...current, page: nextPage }))
   }
@@ -183,31 +192,36 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
     <h2 id="visit-analytics-heading">Visitas atribuidas</h2>
     <p>Consulta visitas válidas atribuidas a Colaboradores y Clientes vinculados dentro del período elegido.</p>
 
-    <form className="admin-filters admin-visit-filters" onSubmit={applyFilters}>
+    <form className="admin-filters admin-visit-filters" aria-label="Filtros de visitas" onSubmit={applyFilters}>
       <label htmlFor="visit-from">Desde<input id="visit-from" type="date" value={fromValue} required={Boolean(fromValue || toValue)} onChange={event => { setFilterError(''); setDraft(current => ({ ...current, from: event.target.value, to: toValue, datesEdited: true })) }} /></label>
       <label htmlFor="visit-to">Hasta<input id="visit-to" type="date" value={toValue} required={Boolean(fromValue || toValue)} onChange={event => { setFilterError(''); setDraft(current => ({ ...current, from: fromValue, to: event.target.value, datesEdited: true })) }} /></label>
       <div className="admin-visit-collaborator-filter">
-        <label htmlFor="visit-collaborator-search">Buscar colaboradores<input id="visit-collaborator-search" value={collaboratorSearchInput} onChange={event => setCollaboratorSearchInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); searchCollaborators() } }} placeholder="Email o nombre de carpeta" /></label>
-        <button type="button" className="button button-ghost" onClick={searchCollaborators} disabled={collaborators.loading}>Buscar colaboradores</button>
-        {collaborators.error && <p role="alert">{collaborators.error}</p>}
+        <label htmlFor="visit-collaborator">Colaborador<select ref={collaboratorSelectRef} id="visit-collaborator" value={draft.collaboratorId} onChange={event => {
+          const collaboratorId = event.target.value
+          const selected = collaboratorRows.find(row => String(row.id) === collaboratorId) ?? null
+          setSelectedDraftCollaborator(selected)
+          setDraft(current => ({ ...current, collaboratorId }))
+        }}>
+          <option value="">Todos</option>
+          {collaboratorOptions.map(collaborator => <option key={String(collaborator.id)} value={String(collaborator.id)}>{String(collaborator.user_email ?? 'Colaborador')}</option>)}
+        </select></label>
+        {collaborators.data && collaborators.data.count > pageSize && <nav className="admin-visit-lookup-controls" aria-label="Páginas de colaboradores">
+          <span>Página {collaboratorLookup.page} de {Math.ceil(collaborators.data.count / pageSize)}</span>
+          <button type="button" className="button button-ghost" aria-label="Colaboradores anteriores" onClick={() => changeCollaboratorPage(collaboratorLookup.page - 1)} disabled={collaborators.loading || !collaborators.data.previous}>Anteriores</button>
+          <button type="button" className="button button-ghost" aria-label="Siguientes colaboradores" onClick={() => changeCollaboratorPage(collaboratorLookup.page + 1)} disabled={collaborators.loading || !collaborators.data.next}>Siguientes</button>
+        </nav>}
       </div>
-      <label htmlFor="visit-collaborator">Colaborador<select id="visit-collaborator" value={draft.collaboratorId} onChange={event => {
-        const collaboratorId = event.target.value
-        const selected = collaboratorRows.find(row => String(row.id) === collaboratorId) ?? null
-        setSelectedDraftCollaborator(selected)
-        setDraft(current => ({ ...current, collaboratorId }))
-      }}>
-        <option value="">Todos</option>
-        {collaboratorOptions.map(collaborator => <option key={String(collaborator.id)} value={String(collaborator.id)}>{String(collaborator.user_email ?? 'Colaborador')}</option>)}
-      </select></label>
-      <div className="admin-visit-lookup-controls">
-        <span>{collaborators.data ? `Página ${collaboratorLookup.page} de ${Math.max(1, Math.ceil(collaborators.data.count / pageSize))}` : collaborators.loading ? 'Buscando colaboradores…' : ''}</span>
-        <button type="button" className="button button-ghost" onClick={() => changeCollaboratorPage(collaboratorLookup.page - 1)} disabled={collaborators.loading || !collaborators.data?.previous}>Colaboradores anteriores</button>
-        <button type="button" className="button button-ghost" onClick={() => changeCollaboratorPage(collaboratorLookup.page + 1)} disabled={collaborators.loading || !collaborators.data?.next}>Siguientes colaboradores</button>
-      </div>
-      <div className="admin-filter-actions">
-        <button className="button button-dark">Aplicar filtros</button>
-        <button type="button" className="button button-ghost" onClick={resetFilters}>Restablecer filtros</button>
+      <div className="admin-visit-filter-tools">
+        <div className="admin-visit-collaborator-search">
+          <label htmlFor="visit-collaborator-search">Buscar colaboradores<input id="visit-collaborator-search" value={collaboratorSearchInput} onChange={event => setCollaboratorSearchInput(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); searchCollaborators() } }} placeholder="Email o nombre de carpeta" /></label>
+          <button type="button" className="button button-ghost" onClick={searchCollaborators} disabled={collaborators.loading}>Buscar colaboradores</button>
+          {collaborators.loading && <p role="status">Buscando colaboradores…</p>}
+          {collaborators.error && <p className="admin-field-error" role="alert">{collaborators.error}</p>}
+        </div>
+        <div className="admin-filter-actions">
+          <button className="button button-dark">Aplicar filtros</button>
+          <button type="button" className="button button-ghost" onClick={resetFilters}>Restablecer filtros</button>
+        </div>
       </div>
       {filterError && <p className="admin-field-error" role="alert">{filterError}</p>}
     </form>
@@ -220,23 +234,25 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
         <div><dt>Visitas atribuidas válidas</dt><dd>{numberLabel(reportData.valid_attributed_visits)}</dd></div>
       </dl>
       <p className="admin-visit-metric-definitions">Clientes vinculados cuenta personas distintas vinculadas mediante QR durante el período. Visitas atribuidas válidas cuenta visitas actualmente válidas atribuidas dentro del período. Son conteos independientes y no representan una tasa de conversión.</p>
-      <div className="admin-visit-business-heading"><h3>Comercios con visitas</h3><p>{numberLabel(reportData.businesses.count)} comercios en total</p></div>
-      {reportData.businesses.count === 0 ? <p className="admin-visit-empty">No hay visitas atribuidas en este período.</p> : <>
-        <div className="admin-table-scroll admin-visit-table-scroll" tabIndex={0} aria-label="Tabla de comercios por visitas atribuidas">
-          <table className="admin-table">
-            <thead><tr><th scope="col">Comercio</th><th scope="col">Visitas válidas</th></tr></thead>
-            <tbody>{reportData.businesses.results.map(row => <tr key={row.provider_id}>
-              <td data-label="Comercio">{row.provider_name}</td>
-              <td data-label="Visitas válidas">{numberLabel(row.visits)}</td>
-            </tr>)}</tbody>
-          </table>
-        </div>
-        {totalPages > 1 && <nav ref={paginationRef} tabIndex={-1} className="admin-pagination" aria-label="Páginas de comercios">
-          <button type="button" disabled={reportData.businesses.page <= 1 || reportLoading} onClick={() => changeReportPage(reportData.businesses.page - 1)}>← Anterior</button>
-          <span>Página {reportData.businesses.page} de {totalPages}</span>
-          <button type="button" disabled={reportData.businesses.page >= totalPages || reportLoading} onClick={() => changeReportPage(reportData.businesses.page + 1)}>Siguiente →</button>
-        </nav>}
-      </>}
+      <section className="admin-visit-businesses" aria-labelledby="visit-businesses-heading">
+        <div className="admin-visit-business-heading"><h3 id="visit-businesses-heading">Comercios con visitas</h3><p>{numberLabel(reportData.businesses.count)} comercios en total</p></div>
+        {reportData.businesses.count === 0 ? <p className="admin-visit-empty">No hay visitas atribuidas en este período.</p> : <>
+          <div className="admin-table-scroll admin-visit-table-scroll" tabIndex={0} aria-label="Tabla de comercios por visitas atribuidas">
+            <table className="admin-table" aria-labelledby="visit-businesses-heading">
+              <thead><tr><th scope="col">Comercio</th><th scope="col">Visitas válidas</th></tr></thead>
+              <tbody>{reportData.businesses.results.map(row => <tr key={row.provider_id}>
+                <td data-label="Comercio">{row.provider_name}</td>
+                <td data-label="Visitas válidas">{numberLabel(row.visits)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+          {totalPages > 1 && <nav ref={paginationRef} tabIndex={-1} className="admin-pagination admin-visit-pagination" aria-label="Páginas de comercios">
+            <button type="button" disabled={reportData.businesses.page <= 1 || reportLoading} onClick={() => changeReportPage(reportData.businesses.page - 1)}>← Anterior</button>
+            <span>Página {reportData.businesses.page} de {totalPages}</span>
+            <button type="button" disabled={reportData.businesses.page >= totalPages || reportLoading} onClick={() => changeReportPage(reportData.businesses.page + 1)}>Siguiente →</button>
+          </nav>}
+        </>}
+      </section>
     </>}
   </section>
 }
