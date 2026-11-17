@@ -1,5 +1,7 @@
 # Pendientes
 
+- [x] Permitir quitar un destacado desde su fila y retirar un beneficio de la carpeta desde la misma tarjeta del catálogo privado. [Verificación](docs/verification/18-selecciones-reversibles.md).
+
 - [x] Pulir visualmente el informe de visitas: filtros alineados, búsqueda separada, navegación junto a la lista y adaptación móvil. [Verificación](docs/verification/17-analitica-e6.md#ajuste-visual-del-informe--17112026).
 
 - [x] Permitir tasas de comisión por beneficio y fijarlas en las nuevas validaciones referidas con QR y PIN.

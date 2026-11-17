@@ -286,20 +286,33 @@ describe('Ficha y beneficios del Prestador', () => {
 })
 
 describe('Recomendaciones privadas del Colaborador', () => {
-  it('agrega un beneficio concreto al catálogo privado y deshabilita la repetición', async () => {
+  it('agrega, quita y vuelve a agregar el beneficio desde la misma tarjeta del catálogo privado', async () => {
     let selected = false
     const { calls } = mount('COLLABORATOR', '/colaborador/catalogo', (path, init) => {
       if (path === '/api/v1/collaborator/recommendations/') return json({ recommendations: selected ? [{ benefit_id: benefit.id, available: true, benefit: catalogBenefit }] : [] })
       if (path.endsWith('/recommendations/benefit-1/') && init?.method === 'PUT') { selected = true; return json(null, 201) }
+      if (path.endsWith('/recommendations/benefit-1/') && init?.method === 'DELETE') { selected = false; return json(null, 204) }
     })
     fireEvent.click(await screen.findByRole('button', { name: '+ Agregar a mi carpeta' }))
     await screen.findByText('Beneficio agregado a tus recomendaciones.')
-    const added = await screen.findByRole('button', { name: '✓ Ya está en tu carpeta' })
-    expect((added as HTMLButtonElement).disabled).toBe(true)
+    const remove = await screen.findByRole('button', { name: 'Quitar de mi carpeta' })
+    expect((remove as HTMLButtonElement).disabled).toBe(false)
+    expect(remove.getAttribute('aria-pressed')).toBe('true')
     const put = calls.find(call => call.init?.method === 'PUT')!
     expect(put.path).toBe('/api/v1/collaborator/recommendations/benefit-1/')
     expect(put.init!.body).toBe('{}')
     expect(calls.some(call => call.path.startsWith('/api/v1/catalog/'))).toBe(false)
+    fireEvent.click(remove)
+    await screen.findByText('Beneficio quitado de tus recomendaciones.')
+    const add = await screen.findByRole('button', { name: '+ Agregar a mi carpeta' })
+    expect(add.getAttribute('aria-pressed')).toBe('false')
+    expect(selected).toBe(false)
+    const deletion = calls.find(call => call.init?.method === 'DELETE')!
+    expect(deletion.path).toBe('/api/v1/collaborator/recommendations/benefit-1/')
+    expect(deletion.init!.body).toBeUndefined()
+    fireEvent.click(add)
+    await screen.findByRole('button', { name: 'Quitar de mi carpeta' })
+    expect(calls.filter(call => ['PUT', 'DELETE'].includes(call.init?.method ?? '')).map(call => call.init!.method)).toEqual(['PUT', 'DELETE', 'PUT'])
   })
 
   it('quita una selección no disponible sin mostrar contenido retirado', async () => {

@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Selecciones reversibles en los catálogos — 17/11/2026
+
+La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
+
 ## E6.1 — Visitas atribuidas · 17/11/2026
 
 Ajuste visual solicitado: fechas y Colaborador alineados, búsqueda y acciones separadas, y navegación de comercios junto al pie de la lista. La paginación de colaboradores es independiente y solo aparece cuando hay varias páginas. Este refinamiento no cambia métricas, permisos ni contrato API.

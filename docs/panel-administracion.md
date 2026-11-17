@@ -21,6 +21,8 @@ Los QR se consultan y descargan desde la ficha correspondiente. Renovarlos inval
 
 ## Beneficios destacados
 
+Cada fila permite alternar **Destacar** y **Quitar destacado**. Quitar sigue disponible aunque los cinco cupos estén ocupados. También se conserva **Quitar** en el resumen de seleccionados.
+
 Entrá en **Beneficios destacados** para buscar por beneficio o prestador y ver todos los registros, incluidos borradores e inactivos. La selección actual y el contador aparecen encima del listado. Usá **Destacar** para sumar un beneficio y **Quitar** para liberar uno de los cinco cupos. Cada acción se guarda en el momento.
 
 Un beneficio seleccionado ocupa un cupo aunque todavía no aparezca en el inicio. El carrusel muestra solo los beneficios publicados y vigentes de prestadores publicados cuando el catálogo público está habilitado.

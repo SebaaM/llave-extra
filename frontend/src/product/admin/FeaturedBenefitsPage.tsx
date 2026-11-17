@@ -87,9 +87,10 @@ export function FeaturedBenefitsPage({ search }: { search: string }) {
               <td data-label="Prestador">{String(row.provider_name)}</td>
               <td data-label="Estado">{formatValue(row.status)}</td>
               <td data-label="Hasta">{formatValue(row.valid_until)}</td>
-              <td data-label="Carrusel">{selected ? 'Seleccionado' : <button className="button button-dark" type="button"
-                disabled={pending || data.selected.count >= limit}
-                aria-label={`Destacar ${row.title}`} onClick={() => void changeSelection(row, true)}>Destacar</button>}</td>
+              <td data-label="Carrusel"><button className={`button ${selected ? 'button-ghost' : 'button-dark'}`} type="button"
+                disabled={pending || (!selected && data.selected.count >= limit)} aria-pressed={selected}
+                aria-label={selected ? `Quitar destacado de ${row.title}` : `Destacar ${row.title}`}
+                onClick={() => void changeSelection(row, !selected)}>{selected ? 'Quitar destacado' : 'Destacar'}</button></td>
             </tr>
           })}</tbody>
         </table></div>}

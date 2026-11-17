@@ -38,4 +38,16 @@ it('gestiona hasta cinco destacados desde su propia sección, incluso fuera de l
   await screen.findByRole('button', { name: 'Quitar Oferta 5 de destacados' })
   expect(changes).toEqual([{ featured: false, version: 'v1' }, { featured: true, version: 'v1' }])
   expect(screen.getByRole('heading', { name: '5 de 5 seleccionados' })).toBeTruthy()
+
+  const removeInList = screen.getByRole('button', { name: 'Quitar destacado de Oferta 5' })
+  expect((removeInList as HTMLButtonElement).disabled).toBe(false)
+  expect(removeInList.getAttribute('aria-pressed')).toBe('true')
+  fireEvent.click(removeInList)
+  await screen.findByRole('heading', { name: '4 de 5 seleccionados' })
+  expect(changes).toEqual([
+    { featured: false, version: 'v1' },
+    { featured: true, version: 'v1' },
+    { featured: false, version: 'v2' },
+  ])
+  expect((screen.getByRole('button', { name: 'Destacar Oferta 5' }) as HTMLButtonElement).disabled).toBe(false)
 })
