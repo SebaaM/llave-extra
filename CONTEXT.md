@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## E6.1 — Visitas atribuidas · 17/11/2026
+
+El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integración a `develop` pendiente. Las métricas por rol y los controles operativos siguientes permanecen fuera de este corte.
+
 ## Continuidad de la atribución QR — 16/11/2026
 
 Si la lectura de la selección falla por un 5xx o un error de red, se conserva únicamente la pista de IDs ya guardada. Se oculta el contenido privado y se impide consumir con esa referencia hasta revalidarla en el servidor, incluso tras recargar. Una denegación confirmada (401/403/404 definitivo) sigue eliminando la pista. El PR #18 consta integrado en `develop` en `c43eeea`. [Verificación](docs/verification/14-seleccion-qr-contextual.md#corrección-de-continuidad--16112026).
