@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { invalidatePrivateState, setAccessToken } from '../api'
 import type { User } from '../api'
@@ -143,6 +143,137 @@ describe('informe administrativo de visitas', () => {
     expect(applied.searchParams.get('from')).toBe('2026-11-01')
     expect(applied.searchParams.get('to')).toBe('2026-11-17')
     expect(reportCalls.at(-1)?.searchParams.get('page')).toBe('1')
+  })
+
+  it('restablece los borradores aunque la URL ya esté en la página 1', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/collaborators/')) {
+        return json(url.searchParams.get('search') === 'marina'
+          ? collaboratorPage([{ id: 'collaborator-1', user_email: 'marina@example.test' }])
+          : collaboratorPage([]))
+      }
+      if (url.pathname.endsWith('/admin/analytics/visits/')) return json(visitReport())
+      return json({ count: 0, next: null, previous: null, results: [] })
+    }))
+    window.history.replaceState({}, '', '/gestion/analitica/visitas?page=1')
+
+    render(<WorkspaceHarness />)
+    await screen.findByText('31', { selector: 'dd' })
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-11-01' } })
+    fireEvent.change(screen.getByLabelText('Hasta'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Buscar colaboradores'), { target: { value: 'marina' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar colaboradores' }))
+    await screen.findByRole('option', { name: 'marina@example.test' })
+    fireEvent.change(screen.getByLabelText('Colaborador'), { target: { value: 'collaborator-1' } })
+    fireEvent.submit(screen.getByLabelText('Desde').closest('form')!)
+    expect(screen.getByRole('alert').textContent).toContain('Completa ambas fechas')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer filtros' }))
+
+    expect((screen.getByLabelText('Desde') as HTMLInputElement).value).toBe('2026-10-19')
+    expect((screen.getByLabelText('Hasta') as HTMLInputElement).value).toBe('2026-11-17')
+    expect((screen.getByLabelText('Buscar colaboradores') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Colaborador') as HTMLSelectElement).value).toBe('')
+    expect(screen.queryByRole('alert')).toBeNull()
+    await waitFor(() => expect(screen.queryByRole('option', { name: 'marina@example.test' })).toBeNull())
+
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-11-02' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer filtros' }))
+    expect((screen.getByLabelText('Desde') as HTMLInputElement).value).toBe('2026-10-19')
+    expect((screen.getByLabelText('Hasta') as HTMLInputElement).value).toBe('2026-11-17')
+  })
+
+  it('conserva visible al colaborador borrador durante una nueva búsqueda y aplica el mismo identificador', async () => {
+    const nextSearch = deferred<Response>()
+    const reportCalls: URL[] = []
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/collaborators/')) {
+        const search = url.searchParams.get('search')
+        const page = Number(url.searchParams.get('page') ?? '1')
+        if (search === 'marina' && page === 1) return Promise.resolve(json(collaboratorPage([{ id: 'collaborator-first', user_email: 'primera@example.test' }], 101, 1)))
+        if (search === 'marina' && page === 2) return Promise.resolve(json(collaboratorPage([{ id: 'collaborator-selected', user_email: 'seleccionada@example.test' }], 101, 2)))
+        if (search === 'otra') return nextSearch.promise
+        return Promise.resolve(json(collaboratorPage([])))
+      }
+      if (url.pathname.endsWith('/admin/analytics/visits/')) {
+        reportCalls.push(url)
+        return Promise.resolve(json(visitReport()))
+      }
+      return Promise.resolve(json({ count: 0, next: null, previous: null, results: [] }))
+    }))
+    window.history.replaceState({}, '', '/gestion/analitica/visitas?from=2026-11-01&to=2026-11-07')
+
+    render(<WorkspaceHarness />)
+    await screen.findByText('31', { selector: 'dd' })
+    fireEvent.change(screen.getByLabelText('Buscar colaboradores'), { target: { value: 'marina' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar colaboradores' }))
+    await screen.findByRole('option', { name: 'primera@example.test' })
+    fireEvent.click(screen.getByRole('button', { name: 'Siguientes colaboradores' }))
+    await screen.findByRole('option', { name: 'seleccionada@example.test' })
+    fireEvent.change(screen.getByLabelText('Colaborador'), { target: { value: 'collaborator-selected' } })
+    fireEvent.change(screen.getByLabelText('Buscar colaboradores'), { target: { value: 'otra' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar colaboradores' }))
+
+    await waitFor(() => expect((screen.getByLabelText('Colaborador') as HTMLSelectElement).value).toBe('collaborator-selected'))
+    expect(screen.getByRole('option', { name: 'seleccionada@example.test' })).toBeTruthy()
+    await act(async () => { nextSearch.resolve(json(collaboratorPage([{ id: 'collaborator-other', user_email: 'otra@example.test' }]))); await nextSearch.promise })
+    expect((screen.getByLabelText('Colaborador') as HTMLSelectElement).value).toBe('collaborator-selected')
+    expect(screen.getByRole('option', { name: 'seleccionada@example.test' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar filtros' }))
+
+    await waitFor(() => expect(new URL(window.location.href).searchParams.get('collaborator_id')).toBe('collaborator-selected'))
+    await waitFor(() => expect(reportCalls.at(-1)?.searchParams.get('collaborator_id')).toBe('collaborator-selected'))
+  })
+
+  it('define los conteos y aclara que no representan una conversión', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/collaborators/')) return json(collaboratorPage([]))
+      if (url.pathname.endsWith('/admin/analytics/visits/')) return json(visitReport())
+      return json({ count: 0, next: null, previous: null, results: [] })
+    }))
+    window.history.replaceState({}, '', '/gestion/analitica/visitas?page=1')
+
+    render(<WorkspaceHarness />)
+    await screen.findByText('31', { selector: 'dd' })
+
+    expect(screen.getByText(/personas distintas vinculadas mediante QR/i)).toBeTruthy()
+    expect(screen.getByText(/actualmente válidas.*dentro del período/i)).toBeTruthy()
+    expect(screen.getByText(/no representan una tasa de conversión/i)).toBeTruthy()
+  })
+
+  it('oculta la página anterior mientras carga y restaura el foco en la paginación', async () => {
+    const pageTwo = deferred<Response>()
+    let pageTwoRequested = false
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/collaborators/')) return Promise.resolve(json(collaboratorPage([])))
+      if (url.pathname.endsWith('/admin/analytics/visits/')) {
+        if (url.searchParams.get('page') === '2') { pageTwoRequested = true; return pageTwo.promise }
+        return Promise.resolve(json(visitReport({ businesses: { count: 75, page: 1, page_size: 25, results: [{ provider_id: 'provider-one', provider_name: 'Comercio página uno', visits: 18 }] } })))
+      }
+      return Promise.resolve(json({ count: 0, next: null, previous: null, results: [] }))
+    }))
+    window.history.replaceState({}, '', '/gestion/analitica/visitas?page=1')
+
+    render(<WorkspaceHarness />)
+    await screen.findByText('Comercio página uno')
+    const next = screen.getByRole('button', { name: 'Siguiente →' })
+    next.focus()
+    expect(document.activeElement).toBe(next)
+    fireEvent.click(next)
+    await waitFor(() => expect(pageTwoRequested).toBe(true))
+    expect(screen.queryByText('Comercio página uno')).toBeNull()
+
+    await act(async () => {
+      pageTwo.resolve(json(visitReport({ businesses: { count: 75, page: 2, page_size: 25, results: [{ provider_id: 'provider-two', provider_name: 'Comercio página dos', visits: 17 }] } })))
+      await pageTwo.promise
+    })
+    await screen.findByText('Comercio página dos')
+    expect(document.activeElement).toBe(screen.getByRole('navigation', { name: 'Páginas de comercios' }))
   })
 
   it('aplica filtros y descarta la consulta anterior', async () => {

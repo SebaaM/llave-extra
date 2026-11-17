@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api'
+import { messageOf } from '../shared'
 import { collection, detail, adminApi } from './api'
 import { useAdminLoad } from './hooks'
 import type { Page, Row } from './types'
@@ -20,6 +21,7 @@ type VisitReport = {
 type Collaborator = Row & { user_email?: string }
 type CollaboratorLookup = { search: string; page: number }
 type DraftFilters = { from: string; to: string; collaboratorId: string; datesEdited: boolean }
+type LoadedVisitReport = { requestKey: string; report?: VisitReport; error?: string }
 
 const reportPath = '/gestion/analitica/visitas'
 const pageSize = 100
@@ -53,16 +55,31 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   const [filterError, setFilterError] = useState('')
   const [collaboratorSearchInput, setCollaboratorSearchInput] = useState('')
   const [collaboratorLookup, setCollaboratorLookup] = useState<CollaboratorLookup>({ search: '', page: 1 })
+  const [selectedDraftCollaborator, setSelectedDraftCollaborator] = useState<Collaborator | null>(null)
+  const [reportRevoked, setReportRevoked] = useState(false)
+  const paginationFocusPending = useRef(false)
+  const paginationRef = useRef<HTMLElement | null>(null)
 
-  const loadReport = useCallback((signal: AbortSignal) => {
-    const params = new URLSearchParams()
-    if (appliedFrom) params.set('from', appliedFrom)
-    if (appliedTo) params.set('to', appliedTo)
-    if (appliedCollaboratorId) params.set('collaborator_id', appliedCollaboratorId)
-    params.set('page', String(page))
-    return adminApi<VisitReport>(`analytics/visits/?${params.toString()}`, { signal })
-  }, [appliedCollaboratorId, appliedFrom, appliedTo, page])
-  const { data: reportData, loading: reportLoading, error: reportError, reload: reloadReport, setState: setReportState } = useAdminLoad(loadReport)
+  const reportParams = new URLSearchParams()
+  if (appliedFrom) reportParams.set('from', appliedFrom)
+  if (appliedTo) reportParams.set('to', appliedTo)
+  if (appliedCollaboratorId) reportParams.set('collaborator_id', appliedCollaboratorId)
+  reportParams.set('page', String(page))
+  const reportRequestKey = reportParams.toString()
+
+  const loadReport = useCallback(async (signal: AbortSignal): Promise<LoadedVisitReport> => {
+    try {
+      const report = await adminApi<VisitReport>(`analytics/visits/?${reportRequestKey}`, { signal })
+      return { requestKey: reportRequestKey, report }
+    } catch (error) {
+      return { requestKey: reportRequestKey, error: messageOf(error) }
+    }
+  }, [reportRequestKey])
+  const { data: loadedReport, loading: loadReportLoading, reload: reloadReport, setState: setReportState } = useAdminLoad(loadReport)
+  const currentReport = loadedReport?.requestKey === reportRequestKey ? loadedReport : null
+  const reportData = currentReport?.report ?? null
+  const reportError = reportRevoked ? 'La sesión administrativa ya no está disponible.' : currentReport?.error ?? ''
+  const reportLoading = loadReportLoading || (!currentReport && !reportRevoked)
 
   const loadCollaborators = useCallback(async (signal: AbortSignal): Promise<Page<Collaborator>> => {
     const params = new URLSearchParams({ page: String(collaboratorLookup.page), page_size: String(pageSize) })
@@ -82,7 +99,16 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   const collaborators = useAdminLoad(loadCollaborators)
 
   useEffect(() => {
-    const clearReport = () => setReportState({ data: null, loading: false, error: 'La sesión administrativa ya no está disponible.' })
+    if (!paginationFocusPending.current || !reportData || reportLoading) return
+    paginationFocusPending.current = false
+    paginationRef.current?.focus()
+  }, [reportData, reportLoading])
+
+  useEffect(() => {
+    const clearReport = () => {
+      setReportRevoked(true)
+      setReportState({ data: null, loading: false, error: '' })
+    }
     window.addEventListener('llave:admin-revoked', clearReport)
     return () => window.removeEventListener('llave:admin-revoked', clearReport)
   }, [setReportState])
@@ -119,7 +145,21 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
     setCollaboratorLookup(current => ({ ...current, page: nextPage }))
   }
 
+  const resetFilters = () => {
+    setDraft({ from: '', to: '', collaboratorId: '', datesEdited: false })
+    setSelectedDraftCollaborator(null)
+    setFilterError('')
+    setCollaboratorSearchInput('')
+    collaborators.setState({ data: null, loading: true, error: '' })
+    const resetLookup = { search: '', page: 1 }
+    const lookupChanged = collaboratorLookup.search !== resetLookup.search || collaboratorLookup.page !== resetLookup.page
+    setCollaboratorLookup(resetLookup)
+    if (!lookupChanged) collaborators.reload()
+    dispatchNavigation(new URLSearchParams('page=1'))
+  }
+
   const changeReportPage = (nextPage: number) => {
+    paginationFocusPending.current = true
     const params = new URLSearchParams(search)
     params.set('page', String(nextPage))
     dispatchNavigation(params)
@@ -130,6 +170,14 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   const linkedClientsValue = linkedClients?.status === 'available' && linkedClients.value !== null
     ? numberLabel(linkedClients.value)
     : 'No disponible para este período'
+
+  const collaboratorRows = collaborators.data?.results ?? []
+  const selectedDraftRow = selectedDraftCollaborator && String(selectedDraftCollaborator.id) === draft.collaboratorId
+    ? selectedDraftCollaborator
+    : null
+  const collaboratorOptions = selectedDraftRow && !collaboratorRows.some(row => String(row.id) === draft.collaboratorId)
+    ? [selectedDraftRow, ...collaboratorRows]
+    : collaboratorRows
 
   return <section className="admin-panel admin-visit-analytics" aria-labelledby="visit-analytics-heading">
     <h2 id="visit-analytics-heading">Visitas atribuidas</h2>
@@ -143,9 +191,14 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
         <button type="button" className="button button-ghost" onClick={searchCollaborators} disabled={collaborators.loading}>Buscar colaboradores</button>
         {collaborators.error && <p role="alert">{collaborators.error}</p>}
       </div>
-      <label htmlFor="visit-collaborator">Colaborador<select id="visit-collaborator" value={draft.collaboratorId} onChange={event => setDraft(current => ({ ...current, collaboratorId: event.target.value }))}>
+      <label htmlFor="visit-collaborator">Colaborador<select id="visit-collaborator" value={draft.collaboratorId} onChange={event => {
+        const collaboratorId = event.target.value
+        const selected = collaboratorRows.find(row => String(row.id) === collaboratorId) ?? null
+        setSelectedDraftCollaborator(selected)
+        setDraft(current => ({ ...current, collaboratorId }))
+      }}>
         <option value="">Todos</option>
-        {collaborators.data?.results.map(collaborator => <option key={String(collaborator.id)} value={String(collaborator.id)}>{String(collaborator.user_email ?? 'Colaborador')}</option>)}
+        {collaboratorOptions.map(collaborator => <option key={String(collaborator.id)} value={String(collaborator.id)}>{String(collaborator.user_email ?? 'Colaborador')}</option>)}
       </select></label>
       <div className="admin-visit-lookup-controls">
         <span>{collaborators.data ? `Página ${collaboratorLookup.page} de ${Math.max(1, Math.ceil(collaborators.data.count / pageSize))}` : collaborators.loading ? 'Buscando colaboradores…' : ''}</span>
@@ -154,7 +207,7 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
       </div>
       <div className="admin-filter-actions">
         <button className="button button-dark">Aplicar filtros</button>
-        <button type="button" className="button button-ghost" onClick={() => dispatchNavigation(new URLSearchParams('page=1'))}>Restablecer filtros</button>
+        <button type="button" className="button button-ghost" onClick={resetFilters}>Restablecer filtros</button>
       </div>
       {filterError && <p className="admin-field-error" role="alert">{filterError}</p>}
     </form>
@@ -166,6 +219,7 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
         <div><dt>Clientes vinculados</dt><dd>{linkedClientsValue}</dd></div>
         <div><dt>Visitas atribuidas válidas</dt><dd>{numberLabel(reportData.valid_attributed_visits)}</dd></div>
       </dl>
+      <p className="admin-visit-metric-definitions">Clientes vinculados cuenta personas distintas vinculadas mediante QR durante el período. Visitas atribuidas válidas cuenta visitas actualmente válidas atribuidas dentro del período. Son conteos independientes y no representan una tasa de conversión.</p>
       <div className="admin-visit-business-heading"><h3>Comercios con visitas</h3><p>{numberLabel(reportData.businesses.count)} comercios en total</p></div>
       {reportData.businesses.count === 0 ? <p className="admin-visit-empty">No hay visitas atribuidas en este período.</p> : <>
         <div className="admin-table-scroll admin-visit-table-scroll" tabIndex={0} aria-label="Tabla de comercios por visitas atribuidas">
@@ -177,7 +231,7 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
             </tr>)}</tbody>
           </table>
         </div>
-        {totalPages > 1 && <nav className="admin-pagination" aria-label="Páginas de comercios">
+        {totalPages > 1 && <nav ref={paginationRef} tabIndex={-1} className="admin-pagination" aria-label="Páginas de comercios">
           <button type="button" disabled={reportData.businesses.page <= 1 || reportLoading} onClick={() => changeReportPage(reportData.businesses.page - 1)}>← Anterior</button>
           <span>Página {reportData.businesses.page} de {totalPages}</span>
           <button type="button" disabled={reportData.businesses.page >= totalPages || reportLoading} onClick={() => changeReportPage(reportData.businesses.page + 1)}>Siguiente →</button>

@@ -28,6 +28,8 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   if (groupChoice.section !== section) setGroupChoice({ section, id: activeGroup })
   const resource = resourceByKey.get(keyForRoute(section) ?? '')
   const isAnalyticsRoute = section === 'analitica' && parts.length === 2 && parts[1] === 'visitas'
+  const analyticsQuery = new URLSearchParams(search)
+  const analyticsKey = JSON.stringify([analyticsQuery.get('from') ?? '', analyticsQuery.get('to') ?? '', analyticsQuery.get('collaborator_id') ?? ''])
   const title = (isAnalyticsRoute ? analyticsLink[1] : mainLinks.find(([route]) => route === section)?.[1]) ?? resource?.title ?? 'Sección no disponible'
   const renderLink = ([route, label, icon]: readonly [string, string, string]) => <ProductLink key={route} href={route === 'analitica' ? '/gestion/analitica/visitas' : route ? `/gestion/${route}` : '/gestion'} aria-current={(route === 'analitica' ? isAnalyticsRoute : section === route) ? 'page' : undefined} onClick={() => setMenu(false)}><span aria-hidden="true">{icon}</span>{label}</ProductLink>
   let content
@@ -37,7 +39,7 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   else if (section === 'actividad') content = <Activity search={search} />
   else if (section === 'comisiones' || section === 'reglas-comisiones') content = <Commissions section={section === 'comisiones' ? 'commissions' : 'commission-rules'} />
   else if (section === 'beneficios-destacados') content = <FeaturedBenefitsPage search={search} />
-  else if (isAnalyticsRoute) content = <VisitAnalyticsPage key={search} search={search} />
+  else if (isAnalyticsRoute) content = <VisitAnalyticsPage key={analyticsKey} search={search} />
   else if (resource) content = parts[1] === 'nuevo' && resource.fields ? <NewRecord key={`${resource.key}:nuevo`} resource={resource} search={search} /> : parts[1] ? <RecordDetail key={`${resource.key}:${parts[1]}`} resource={resource} id={parts[1]} search={search} /> : <ResourceList key={resource.key} resource={resource} search={search} />
   else content = <section className="admin-panel"><h2>Sección no disponible</h2><ProductLink href="/gestion">Volver al inicio</ProductLink></section>
   return <div className="workspace admin-workspace">
