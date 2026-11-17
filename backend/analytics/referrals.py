@@ -6,7 +6,7 @@ from credits.models import Consumption
 from referrals.models import FolderAccess
 
 from .periods import BUSINESSES_PAGE_SIZE
-from .provenance import exclude_activity_demo_tourists, legacy_access_provenance_is_ambiguous
+from .provenance import exclude_activity_demo_tourists, linked_client_metrics
 
 
 def attributed_visit_report(period, *, collaborator_id=None, page=1):
@@ -26,13 +26,7 @@ def attributed_visit_report(period, *, collaborator_id=None, page=1):
         visits = visits.filter(collaborator_id=collaborator_id)
 
     accesses = exclude_activity_demo_tourists(accesses)
-    if legacy_access_provenance_is_ambiguous(period, accesses):
-        linked_clients = {"status": "unavailable", "value": None}
-    else:
-        linked_clients = {
-            "status": "available",
-            "value": accesses.values("tourist_id").distinct().count(),
-        }
+    linked_clients = linked_client_metrics(accesses)
 
     visits = exclude_activity_demo_tourists(visits)
     valid_attributed_visits = visits.count()

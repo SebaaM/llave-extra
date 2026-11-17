@@ -1,4 +1,4 @@
-from django.db.models import CharField, Exists, OuterRef
+from django.db.models import CharField, Count, Exists, Max, OuterRef, Q, Subquery
 from django.db.models.functions import Cast
 
 from administration.models import AdminAudit
@@ -21,18 +21,23 @@ def exclude_activity_demo_tourists(queryset):
     )
 
 
-def legacy_access_provenance_is_ambiguous(period, folder_accesses):
-    """Flag legacy rows whose exact synthetic subset is not recorded individually.
+def linked_client_metrics(folder_accesses):
+    """Count linked customers and detect legacy overlap in one SQL statement.
 
     The legacy E4 seed writes FolderAccess rows before the `credits-2026-10-18`
     DemoSeedState marker. That timestamp is an upper bound, not a reliable
     per-row boundary, so any otherwise-eligible access in the queried interval
-    before it makes the distinct-client indicator unknowable.
+    before it makes the distinct-client indicator unknowable. Both the distinct
+    count and overlap maximum use the same PostgreSQL statement snapshot, so a
+    concurrent seed commit cannot be observed in only one of those values.
     """
-    seeded_at = DemoSeedState.objects.filter(pk=LEGACY_ACCESS_SEED_KEY).values_list("loaded_at", flat=True).first()
-    if seeded_at is None:
-        return False
-    start_at = period.datetime_filters()["created_at__gte"]
-    if start_at >= seeded_at:
-        return False
-    return folder_accesses.filter(created_at__lt=seeded_at).exists()
+    seeded_at = Subquery(
+        DemoSeedState.objects.filter(pk=LEGACY_ACCESS_SEED_KEY).values("loaded_at")[:1],
+    )
+    metrics = folder_accesses.aggregate(
+        value=Count("tourist_id", distinct=True),
+        legacy_overlap=Max("created_at", filter=Q(created_at__lt=seeded_at)),
+    )
+    if metrics["legacy_overlap"] is not None:
+        return {"status": "unavailable", "value": None}
+    return {"status": "available", "value": metrics["value"]}

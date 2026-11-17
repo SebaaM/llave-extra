@@ -3,6 +3,8 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from accounts.models import User
@@ -186,10 +188,20 @@ def test_legacy_demo_link_is_not_reported_as_real(admin_client):
         local_time(date(2026, 11, 16)),
     )
 
-    response = client.get(VISITS_URL, PERIOD_QUERY)
+    with CaptureQueriesContext(connection) as queries:
+        response = client.get(VISITS_URL, PERIOD_QUERY)
 
     assert response.status_code == 200
     assert response.data["linked_clients"] == {"status": "unavailable", "value": None}
+    folder_queries = [
+        query["sql"] for query in queries.captured_queries
+        if FolderAccess._meta.db_table.lower() in query["sql"].lower()
+    ]
+    assert len(folder_queries) == 1
+    linked_query = folder_queries[0].lower()
+    assert "count(distinct" in linked_query
+    assert "max(" in linked_query
+    assert DemoSeedState._meta.db_table.lower() in linked_query
     assert response.data["valid_attributed_visits"] == 1
     assert response.data["businesses"]["results"] == [
         {"provider_id": str(provider.pk), "provider_name": "Visita verificada", "visits": 1},
