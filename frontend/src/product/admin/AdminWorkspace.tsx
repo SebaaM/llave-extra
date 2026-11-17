@@ -11,12 +11,14 @@ import { RecordDetail, NewRecord } from './RecordDetail'
 import { ResourceList } from './ResourceList'
 import { keyForRoute } from './routes'
 import { Settings } from './Settings'
+import { VisitAnalyticsPage } from './VisitAnalyticsPage'
 import type { Page, Row } from './types'
 import { LoadState } from './UI'
 import { formatValue } from './formatValue'
 import './admin.css'
 
 const mainLinks = [['', 'Inicio', '⌂'], ['usuarios', 'Usuarios', '◉'], ['prestadores', 'Prestadores', '▣'], ['beneficios', 'Beneficios', '✳'], ['beneficios-destacados', 'Beneficios destacados', '★'], ['colaboradores', 'Colaboradores', '♡'], ['consumos', 'Consumos', '◫'], ['comisiones', 'Comisiones', '◎'], ['reglas-comisiones', 'Reglas de comisión', '▤'], ['billeteras', 'Billeteras', '▤'], ['ajustes', 'Ajustes de créditos', '↗'], ['productos', 'Productos', '◈'], ['categorias-tienda', 'Categorías de tienda', '▣'], ['pedidos', 'Pedidos', '▦'], ['cancelaciones', 'Cancelaciones', '⊘'], ['reglas-creditos', 'Reglas de créditos', '✦'], ['movimientos-stock', 'Movimientos de stock', '⇅'], ['operaciones-pago', 'Operaciones de pago', '◎'], ['actividad', 'Actividad', '◷'], ['configuracion', 'Configuración', '⚙'], ['cuenta', 'Mi cuenta', '○']] as const
+const analyticsLink = ['analitica', 'Analítica de visitas', '◷'] as const
 export function AdminWorkspace({ user, path, search }: { user: User; path: string; search: string }) {
   const [menu, setMenu] = useState(false)
   const parts = path.replace(/^\/gestion\/?/, '').split('/').filter(Boolean)
@@ -25,8 +27,9 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   const [groupChoice, setGroupChoice] = useState({ section, id: activeGroup })
   if (groupChoice.section !== section) setGroupChoice({ section, id: activeGroup })
   const resource = resourceByKey.get(keyForRoute(section) ?? '')
-  const title = mainLinks.find(([route]) => route === section)?.[1] ?? resource?.title ?? 'Sección no disponible'
-  const renderLink = ([route, label, icon]: typeof mainLinks[number]) => <ProductLink key={route} href={route ? `/gestion/${route}` : '/gestion'} aria-current={section === route ? 'page' : undefined} onClick={() => setMenu(false)}><span aria-hidden="true">{icon}</span>{label}</ProductLink>
+  const isAnalyticsRoute = section === 'analitica' && parts.length === 2 && parts[1] === 'visitas'
+  const title = (isAnalyticsRoute ? analyticsLink[1] : mainLinks.find(([route]) => route === section)?.[1]) ?? resource?.title ?? 'Sección no disponible'
+  const renderLink = ([route, label, icon]: readonly [string, string, string]) => <ProductLink key={route} href={route === 'analitica' ? '/gestion/analitica/visitas' : route ? `/gestion/${route}` : '/gestion'} aria-current={(route === 'analitica' ? isAnalyticsRoute : section === route) ? 'page' : undefined} onClick={() => setMenu(false)}><span aria-hidden="true">{icon}</span>{label}</ProductLink>
   let content
   if (!section) content = <Dashboard />
   else if (section === 'configuracion') content = <Settings search={search} />
@@ -34,6 +37,7 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   else if (section === 'actividad') content = <Activity search={search} />
   else if (section === 'comisiones' || section === 'reglas-comisiones') content = <Commissions section={section === 'comisiones' ? 'commissions' : 'commission-rules'} />
   else if (section === 'beneficios-destacados') content = <FeaturedBenefitsPage search={search} />
+  else if (isAnalyticsRoute) content = <VisitAnalyticsPage key={search} search={search} />
   else if (resource) content = parts[1] === 'nuevo' && resource.fields ? <NewRecord key={`${resource.key}:nuevo`} resource={resource} search={search} /> : parts[1] ? <RecordDetail key={`${resource.key}:${parts[1]}`} resource={resource} id={parts[1]} search={search} /> : <ResourceList key={resource.key} resource={resource} search={search} />
   else content = <section className="admin-panel"><h2>Sección no disponible</h2><ProductLink href="/gestion">Volver al inicio</ProductLink></section>
   return <div className="workspace admin-workspace">
@@ -51,7 +55,7 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
             <button type="button" className="admin-nav-toggle" data-current={activeGroup === group.id} aria-expanded={expanded} aria-controls={id} onClick={() => setGroupChoice({ section, id: expanded ? undefined : group.id })}>
               <span className="admin-nav-icon" aria-hidden="true">{group.icon}</span>{group.label}<span className="admin-nav-chevron" aria-hidden="true">⌄</span>
             </button>
-            <div id={id} className="admin-nav-group" hidden={!expanded}>{linksFor(group.routes).map(renderLink)}</div>
+            <div id={id} className="admin-nav-group" hidden={!expanded}>{linksFor(group.routes).map(renderLink)}{group.id === 'creditos' && renderLink(analyticsLink)}</div>
           </div>
         })}
       </nav>
@@ -68,7 +72,7 @@ const primaryRoutes: readonly string[] = ['', 'pedidos', 'productos', 'beneficio
 const navGroups: readonly { id: string; label: string; icon: string; routes: readonly string[] }[] = [
   { id: 'red', label: 'Red y usuarios', icon: '◉', routes: ['usuarios', 'prestadores', 'colaboradores'] },
   { id: 'tienda', label: 'Tienda', icon: '▦', routes: ['categorias-tienda', 'movimientos-stock', 'cancelaciones', 'operaciones-pago'] },
-  { id: 'creditos', label: 'Créditos y visitas', icon: '✦', routes: ['consumos', 'billeteras', 'ajustes', 'reglas-creditos', 'reglas-comisiones'] },
+  { id: 'creditos', label: 'Créditos y visitas', icon: '✦', routes: ['consumos', 'billeteras', 'ajustes', 'reglas-creditos', 'reglas-comisiones', 'analitica'] },
   { id: 'administracion', label: 'Administración', icon: '⚙', routes: ['actividad', 'configuracion'] },
 ]
 
