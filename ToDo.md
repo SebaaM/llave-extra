@@ -1,5 +1,8 @@
 # Pendientes
 
+- [x] Preparar auditoría CI con excepción visible, acotada y con vencimiento para picomatch 4.0.7 sin parche oficial. No equivale a corregir la vulnerabilidad. [Verificación](docs/verification/19-auditoria-picomatch.md).
+- [ ] Sustituir la excepción de GHSA-fc5q-39xc-vjpf por una actualización corregida y verificada antes del 25/11/2026 a las 00:00 UTC; no prorrogar automáticamente.
+
 - [x] Permitir quitar un destacado desde su fila y retirar un beneficio de la carpeta desde la misma tarjeta del catálogo privado. [Verificación](docs/verification/18-selecciones-reversibles.md).
 
 - [x] Pulir visualmente el informe de visitas: filtros alineados, búsqueda separada, navegación junto a la lista y adaptación móvil. [Verificación](docs/verification/17-analitica-e6.md#ajuste-visual-del-informe--17112026).

@@ -1,5 +1,9 @@
 # Contexto y decisiones
 
+## Auditoría de picomatch — excepción temporal propuesta en PR · 17/11/2026
+
+El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39xc-vjpf de picomatch 4.0.7. npm sigue sin publicar 4.0.8. Tras el pedido de corregir o actualizar la auditoría, este corte prepara una aceptación temporal y visible del riesgo de tooling, no una corrección de la biblioteca. La auditoría moderate conserva el informe real; su evaluador permite únicamente paquete/versión/rangos/rutas previstos y caduca el 25/11/2026 a las 00:00 UTC. Nuevas alertas, rutas de aplicación, errores o informes incoherentes bloquean. El cambio permanece sujeto a revisión en el PR #30, sin merge; [evidencia y retirada](docs/verification/19-auditoria-picomatch.md).
+
 ## Selecciones reversibles en los catálogos — 17/11/2026
 
 La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
