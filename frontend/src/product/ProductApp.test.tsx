@@ -163,9 +163,20 @@ describe('Sesión y cuenta del Cliente', () => {
       return Promise.resolve(json({}, 404))
     }))
 
-    const ProductApp = await prepareApp('/mi-viaje')
+    const ProductApp = await prepareApp('/tienda')
     render(<ProductApp />)
+    await screen.findByText('a@example.test')
+    expect(calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url))).toHaveLength(0)
+    await act(async () => {
+      setUrl('/mi-viaje')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
     await screen.findByRole('heading', { name: 'Tu pasaporte local.' })
+    const creditsA = await screen.findByRole('region', { name: 'Créditos disponibles' })
+    await waitFor(() => expect(within(creditsA).getByText('777')).toBeTruthy())
+    for (const resource of ['wallet', 'progress', 'consumptions']) {
+      expect(calls.filter(url => url.endsWith(`/me/${resource}/`))).toHaveLength(1)
+    }
     expect(calls.some(url => /\/folders\/[^/]+\/(providers|network)\//.test(url))).toBe(false)
     expect(screen.getByRole('navigation', { name: 'Tu viaje' })).toBeTruthy()
 

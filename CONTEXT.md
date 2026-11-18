@@ -1,5 +1,19 @@
 # Contexto y decisiones
 
+## Auditoría de picomatch — excepción temporal propuesta en PR · 17/11/2026
+
+El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39xc-vjpf de picomatch 4.0.7. npm sigue sin publicar 4.0.8. Tras el pedido de corregir o actualizar la auditoría, este corte prepara una aceptación temporal y visible del riesgo de tooling, no una corrección de la biblioteca. La auditoría moderate conserva el informe real; su evaluador permite únicamente paquete/versión/rangos/rutas previstos y caduca el 25/11/2026 a las 00:00 UTC. Nuevas alertas, rutas de aplicación, errores o informes incoherentes bloquean. El cambio permanece sujeto a revisión en el PR #30, sin merge; [evidencia y retirada](docs/verification/19-auditoria-picomatch.md).
+
+## Selecciones reversibles en los catálogos — 17/11/2026
+
+La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
+
+## E6.1 — Visitas atribuidas · 17/11/2026
+
+Ajuste visual solicitado: fechas y Colaborador alineados, búsqueda y acciones separadas, y navegación de comercios junto al pie de la lista. La paginación de colaboradores es independiente y solo aparece cuando hay varias páginas. Este refinamiento no cambia métricas, permisos ni contrato API.
+
+El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integración a `develop` pendiente. Las métricas por rol y los controles operativos siguientes permanecen fuera de este corte.
+
 ## Continuidad de la atribución QR — 16/11/2026
 
 Si la lectura de la selección falla por un 5xx o un error de red, se conserva únicamente la pista de IDs ya guardada. Se oculta el contenido privado y se impide consumir con esa referencia hasta revalidarla en el servidor, incluso tras recargar. Una denegación confirmada (401/403/404 definitivo) sigue eliminando la pista. El PR #18 consta integrado en `develop` en `c43eeea`. [Verificación](docs/verification/14-seleccion-qr-contextual.md#corrección-de-continuidad--16112026).

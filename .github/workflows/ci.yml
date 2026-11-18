@@ -69,4 +69,12 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run test
       - run: pnpm run build
-      - run: pnpm audit --audit-level moderate
+      - name: Audit dependencies with a bounded tooling exception
+        shell: bash
+        run: |
+          report="$RUNNER_TEMP/frontend-audit.json"
+          set +e
+          pnpm audit --audit-level moderate --json > "$report"
+          audit_status=$?
+          set -e
+          node scripts/check-audit-report.mjs "$report" "$audit_status"

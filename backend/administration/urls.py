@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .analytics import AttributedVisitsView
 from .dashboard import DashboardView
 from .invitations import InviteView
 from .media import AdminImageView, AdminQRPNGView, AdminQRView
@@ -40,6 +41,7 @@ urlpatterns = [
     path("admin/settings/shop/", ShopSettingsView.as_view(), name="admin-settings-shop"),
     path("admin/activity/", ActivityView.as_view(), name="admin-activity"),
     path("admin/dashboard/", DashboardView.as_view(), name="admin-dashboard"),
+    path("admin/analytics/visits/", AttributedVisitsView.as_view(), name="admin-analytics-visits"),
     path("admin/users/<int:pk>/invite/", InviteView.as_view(), name="admin-user-invite"),
     path("admin/collaborators/<uuid:pk>/recommendations/", AdminRecommendationsView.as_view(), name="admin-recommendations"),
     path("admin/collaborators/<uuid:pk>/summary/", CollaboratorSummaryView.as_view(), name="admin-collaborator-summary"),

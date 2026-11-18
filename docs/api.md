@@ -234,6 +234,29 @@ Los comandos usan `POST <recurso>/{id}/actions/<acción>/`, `Idempotency-Key` ob
 
 `GET collaborators/{id}/summary/` aplica la misma guarda ADMIN activo/staff/superusuario y devuelve exclusivamente `{collaborator_id,linked_clients,valid_attributed_consumptions}`; 404 si el perfil no existe y cero si no tiene historia. `linked_clients` cuenta Clientes distintos (`tourist_id`) en todo el historial de `FolderAccess`, sin duplicarlos al cambiar la versión del QR. No cuenta escaneos ni exige un grant vigente para conservar el vínculo histórico. `valid_attributed_consumptions` cuenta consumos con ese colaborador y estado `VALID`; excluye directos, anulados y atribuidos a otro colaborador. Las consultas son independientes para evitar multiplicación entre vínculos y consumos. La baja del perfil, rotación del QR o cambios de selección no eliminan historia; no expone clientes individuales, correo ni credenciales. Este resumen acotado no implementa analíticas E6.
 
+`GET /api/v1/admin/analytics/visits/` es solo para ADMIN activo con `is_staff` e `is_superuser`. Acepta `from` y `to` como fechas ISO inclusivas (ambas o ninguna), `collaborator_id` UUID opcional y `page` positivo (predeterminado 1; una página inexistente devuelve 400). Sin fechas usa hoy y los 29 días civiles anteriores en `America/Argentina/Ushuaia`; el intervalo máximo es 366 días. `collaborator_id` limita tanto los clientes vinculados como las visitas. Devuelve `period`, `linked_clients`, `valid_attributed_visits` y `businesses` paginados de a 25, ordenados por visitas descendentes, nombre y UUID. `businesses.count` es el total de prestadores con visitas dentro del filtro, y las métricas no cambian al paginar. La métrica de visitas cuenta filas `Consumption` referidas, `VALID`, no DEMO y dentro del rango local; no filtra el estado público actual del Prestador, por lo que conserva visitas históricas. Directos y anulados no cuentan. La respuesta no contiene identidades de Clientes y aplica `Cache-Control: no-store`.
+
+Ejemplo de respuesta:
+
+```json
+{
+  "period": {"from": "2026-11-01", "to": "2026-11-30", "timezone": "America/Argentina/Ushuaia"},
+  "linked_clients": {"status": "available", "value": 24},
+  "valid_attributed_visits": 31,
+  "businesses": {
+    "count": 2,
+    "page": 1,
+    "page_size": 25,
+    "results": [
+      {"provider_id": "0a000000-0000-4000-8000-000000000001", "provider_name": "Comercio de ejemplo", "visits": 18},
+      {"provider_id": "0a000000-0000-4000-8000-000000000002", "provider_name": "Otro comercio", "visits": 13}
+    ]
+  }
+}
+```
+
+La procedencia DEMO usa marcas verificadas: `Consumption.benefit_demo`, `Provider.demo` y `AdminAudit` (`action=DEMO_ACTIVITY`, `resource=users`) para los Clientes sintéticos. El marcador histórico `DemoSeedState(key=credits-2026-10-18)` identifica accesos directos de la semilla E4 sin marca individual. Si el período incluye accesos anteriores a `loaded_at` de esa semilla, la ventana exacta no puede reconstruirse y `linked_clients` devuelve `{status:"unavailable",value:null}`; el conteo de visitas continúa disponible por separado. No se infiere ausencia de DEMO a partir de nombres, emails ni diagnósticos.
+
 Filtros de tarjetas/bandeja: `active_users → users/?is_active=true`; `published_providers → providers/?status=PUBLISHED`; `current_benefits → benefits/?current=true`; `enabled_collaborators → collaborators/?enabled=true&user_active=true`; borradores por `status=DRAFT`; pedidos por `state=PAID|READY|PAYMENT_REVIEW|REFUND_PENDING`; cancelaciones por `state=OPEN`; ajustes por `resolved=false`; productos sin stock por `active=true&stock=0`. `GET activity/` incluye tanto auditorías del panel como `OrderAudit` existente, en el mismo DTO saneado; para estas últimas `resource="orders"` y `object_id` es el pedido.
 
 Validación administrativa: las respuestas 400 asocian listas de mensajes seguros a los campos permitidos y usan `non_field_errors` para errores globales. Publicar un beneficio requiere condiciones; las fechas invertidas identifican `valid_from` y `valid_until`, también en PATCH parcial. Los errores internos de modelos se sanean sin devolver valores privados, SQL ni mensajes arbitrarios de `full_clean`. Un 409 conserva la semántica de versión/idempotencia y no es validación de campos.

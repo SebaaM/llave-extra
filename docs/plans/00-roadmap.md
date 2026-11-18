@@ -63,6 +63,8 @@ Productos demo, stock, pedidos por dinero o créditos, canjes atómicos, reserva
 
 Métricas por rol, referencias atribuidas, consumo/crédito/venta derivados del servidor, controles de seguridad, backups/restauración, tareas de reconciliación y documentación. Sin despliegue productivo ni cambio del sitio actual. Archivo: `06-analitica-salida.md`.
 
+E6.1 implementada y revisada localmente: informe administrativo de visitas atribuidas. Ver [plan por etapas](06-analitica-salida.md) y [verificación](../verification/17-analitica-e6.md). El PR hacia `develop` y las etapas E6.2–E6.4 siguen pendientes.
+
 ## Task 7: F1 - Prototipos de frontend
 
 Etapa histórica: tres opciones React/Tailwind navegables (guía/pasaporte/beneficios), misma identidad y datos mock, usadas para elegir Beneficios como portada y Pasaporte en Mi viaje. La conexión a la API se entregó en F2. El código y las rutas de los prototipos se retiraron en el plan 07; las áreas de Colaborador, Prestador y Administrador conservan permisos propios. Archivo: `frontend.md`.
