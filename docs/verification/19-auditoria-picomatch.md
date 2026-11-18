@@ -26,6 +26,14 @@ Se permite **solo** el aviso exacto, con severidad high, versión 4.0.7 y rangos
 - ESLint incluye los dos módulos Node nuevos y aprobó. Tipos, una prueba de proxy, build y las 437 pruebas UI en 40 archivos aprobaron. Las comprobaciones de política finales (24) se volvieron a ejecutar después de la corrección del revisor. Los jobs remotos deben confirmarse en la CI del PR antes de declarar su cierre.
 - El lockfile y pnpm-workspace.yaml no cambian. No hay cambios de backend, API, datos, permisos de producto ni frontend servido; no se repitió la suite PostgreSQL local.
 
+## Primera CI y estabilización de la prueba de cuenta
+
+El [pull_request del corte de política](https://github.com/SebaaM/llave-extra/actions/runs/44209131712) aprobó backend y frontend, incluida la auditoría y su advertencia. El [push del mismo corte](https://github.com/SebaaM/llave-extra/actions/runs/44209128927) detectó una carrera previa en `ProductApp.test.tsx`: el contador del viaje de A pasó de tres a seis entre el título de la página y el resumen de Inicio. La auditoría no llegó a ejecutarse en ese job porque la prueba falló antes.
+
+Abrir directamente Mi viaje activa una lectura durante restauración de sesión y otra en el efecto de ruta. El título no garantiza que ambas hayan llegado a fetch. La corrección solo modifica la preparación del escenario: restaurar A desde Tienda, confirmar cero consultas privadas de viaje, navegar con act a Mi viaje, esperar su saldo y exigir una lectura por recurso antes de tomar el contador base. Se conservan las comprobaciones de que Inicio no lee otra vez, el aislamiento A/B y el borrado inmediato antes del logout remoto. No se fijó seis como valor esperado ni se agregaron reintentos, sleeps o timeouts.
+
+El archivo focal corregido aprobó 15 pruebas y la revisión independiente aceptó el cambio de fixture. Después del ajuste volvieron a aprobar lint, tipos, build, 24 pruebas de política, una de proxy y las 437 pruebas UI. Esto no modifica la doble carga al abrir directamente Mi viaje ni la lógica de autenticación. Los resultados del corte final se comprueban en el PR.
+
 ## Retirada
 
 Cuando exista un parche publicado, verificar su origen, actualizar la resolución transitiva y ejecutar instalación congelada, lint, tipos, pruebas, build y auditoría. Retirar la excepción —o el evaluador si ya no aporta otra política— y sus instrucciones correspondientes. Si no existe una solución al vencer, mantener CI bloqueada y pedir una nueva decisión explícita; no ampliar el plazo automáticamente. El estado remoto vigente se consulta en el PR.

@@ -25,7 +25,7 @@
 - [x] Conectar las pruebas a pnpm test y evaluar el resultado real de pnpm audit en CI, conservando la auditoría activa.
 - [x] Reproducir el rechazo base y la excepción visible sobre el mismo informe real, sin cambiar node_modules compartidos.
 - [x] Ejecutar lint, tipos, pruebas, build y revisión independiente del diff.
-- [ ] Publicar un commit separado en el PR #30 y comprobar push/pull_request sin fusionar.
+- [x] Publicar un commit separado en el PR #30 y comprobar push/pull_request sin fusionar. La primera PR aprobó; el push expuso una carrera previa del fixture de cuenta, documentada y corregida sin cambiar autenticación. El corte final se confirma en la CI vigente del PR.
 
 ## Foco de revisión
 
