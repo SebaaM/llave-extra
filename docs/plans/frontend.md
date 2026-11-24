@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 > Documento de planificación histórica: para arranque, rutas y roles vigentes consultar [README](../../README.md), [sitemap](../sitemap.md) y las correcciones 07 y 08.
 
->>>>>>> develop
 # F1 · Tres prototipos de frontend (archivo histórico)
 
 ## Entrega posterior: catálogo visual de tienda — 26/10/2026

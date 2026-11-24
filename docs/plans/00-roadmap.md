@@ -2,8 +2,6 @@
 
 # Plan de implementación aprobado
 
-<<<<<<< HEAD
-=======
 El 10/11/2026 se aprueba implementar [perfiles y comisiones por consumos referidos](../superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md). La cuenta reutiliza E2. La comisión depende del beneficio exacto registrado con E4 y de la declaración posterior del Prestador. El Administrador sigue el flujo en el backoffice y verifica la transferencia externa directa al Colaborador. El 12/11 se define que el Prestador configura la tasa por beneficio, con respaldo global de 5 %, y que la validación QR y PIN fija la tasa de cada consumo nuevo. [Plan de implementación](../superpowers/plans/2026-11-10-perfiles-y-comisiones.md)
 
 Campaña de auditoría iniciada el 05/11/2026 en un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838`. La continuación del 06/11 verificó variantes de navegador y permisos, y sumó cuatro correcciones. El [registro de la corrida](../security/runs/20261105-1823-7467838/resumen.md) distingue controles ejecutados, hallazgos y pendientes.
@@ -20,17 +18,12 @@ Corrección histórica aprobada 30/10/2026: navegación y contenido de Cliente s
 
 Estado posterior, 30/10/2026: frontend visual T1–T8 implementado en `feature/frontend-cliente-visual`; sus revisiones por etapa están registradas. El cierre de QA, revisión integral y entrega sigue pendiente. Ver [antes/después y evidencia](../verification/11-frontend-cliente-visual.md). Los párrafos siguientes describen cortes históricos.
 
->>>>>>> develop
 Pedido vigente 27/10/2026: implementar primero la API del [plan visual del Cliente](../superpowers/plans/2026-10-27-frontend-cliente-visual.md). Backend T2/T2b implementado en `e3f04fa`, rama `feature/api-cliente-visual` nacida de develop `754982d` (PR #10 integrado). Categorías públicas completas y nombre actual del comercio en historial privado propio; no cambia POST/replay, reglas de negocio ni frontend. Suite 108 PostgreSQL/Redis, QA HTTP real y revisiones por tarea e integral aprobadas. Entrega en [PR #14](https://github.com/SebaaM/llave-extra/pull/14) hacia develop, abierto sin fusionar, tras autorización explícita del usuario. CI vigente en sus comprobaciones. [Evidencia](../verification/12-api-cliente-visual.md). Las pantallas y tipos/hooks siguen pendientes, al igual que E6 y la tienda transaccional. Los estados siguientes conservan el historial previo.
 Pedido del 26/10/2026: adelantar únicamente el catálogo visual de la tienda de F3. Implementación pública con datos de ejemplo en frontend, sin compra/canje ni modificación de inventario real. [Plan acotado](../superpowers/plans/2026-10-26-catalogo-tienda-visual.md) y [evidencia](../verification/10-catalogo-tienda-visual.md). No inicia E6 ni auditoría activa; la UI transaccional y pedidos del Cliente continúan pendientes.
 
 Pedido vigente 24/10/2026: dashboard ADMIN React y configuración implementados en `/gestion` (`affa345`), con 274 pruebas PostgreSQL/Redis, 115 UI y 1 proxy aprobadas. Migraciones locales conservan los datos. Revisión integral y focal aprobadas; [PR #12](https://github.com/SebaaM/llave-extra/pull/12) abierto, sin fusionar; CI vigente en sus comprobaciones; rama `feature/panel-admin`, dependiente de #11/#10 sin fusionar. [Plan](../superpowers/plans/2026-10-24-panel-admin.md), [checklist](../verification/09-panel-admin-checklist.md), [evidencia](../verification/09-panel-admin.md) y [guía](../panel-administracion.md). Django `/admin/` conserva sesión independiente; E6 y compra del Cliente quedan fuera. Las pausas históricas siguientes no impiden esta etapa autorizada.
 
-<<<<<<< HEAD
-Plan transversal solicitado el 24/10/2026: [auditoría de seguridad por feature/task](../superpowers/plans/2026-10-24-auditoria-seguridad.md), con [checklist](../security/checklist.md), hallazgos y correcciones mediante subagentes/revisión independiente. Preparación documental; ejecución todavía no iniciada. Audita lo implementado del corte y registra faltantes; no autoriza completar E6/F3 ni declara validación externa de pagos.
-=======
 Plan transversal solicitado el 24/10/2026. La [auditoría de seguridad por feature/task](../superpowers/plans/2026-10-24-auditoria-seguridad.md) cubre lo implementado del corte. El [checklist](../security/checklist.md) registra las verificaciones, los hallazgos y sus correcciones. E6, la interfaz transaccional de tienda y la validación externa de pagos se siguen por separado.
->>>>>>> develop
 
 Estado vigente al 24/10/2026: E5 backend/API/Admin completada y revisada en `4c9a402`, entrega [PR #11](https://github.com/SebaaM/llave-extra/pull/11) contra develop, sin fusionar y dependiente de #10. CI de producto aprobado; HEAD vigente en las comprobaciones del PR. Ver [evidencia](../verification/05-tienda-pagos.md). Pausar antes de E6 y UI de tienda F3; sandbox externo pendiente. Las pausas de entregas anteriores que siguen son históricas.
 

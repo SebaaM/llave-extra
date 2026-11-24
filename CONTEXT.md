@@ -1,7 +1,5 @@
 # Contexto y decisiones
 
-<<<<<<< HEAD
-=======
 ## Auditoría de picomatch — excepción temporal propuesta en PR · 17/11/2026
 
 El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39xc-vjpf de picomatch 4.0.7. npm sigue sin publicar 4.0.8. Tras el pedido de corregir o actualizar la auditoría, este corte prepara una aceptación temporal y visible del riesgo de tooling, no una corrección de la biblioteca. La auditoría moderate conserva el informe real; su evaluador permite únicamente paquete/versión/rangos/rutas previstos y caduca el 25/11/2026 a las 00:00 UTC. Nuevas alertas, rutas de aplicación, errores o informes incoherentes bloquean. El cambio permanece sujeto a revisión en el PR #30, sin merge; [evidencia y retirada](docs/verification/19-auditoria-picomatch.md).
@@ -101,7 +99,6 @@ Corte de producto `1ff72fd`: ajustes visuales implementados y revisiones A/B apr
 
 Las etapas frontend T1–T8 del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md) están implementadas en `feature/frontend-cliente-visual`, con revisiones por etapa y correcciones registradas. El [resumen antes/después y sus límites](docs/verification/11-frontend-cliente-visual.md) distingue las verificaciones realizadas de la revisión integral y QA aún pendientes. La entrega API previa T2/T2b ya está integrada en la base de esta rama; los párrafos siguientes conservan el historial de ese corte.
 
->>>>>>> develop
 ## API del Cliente implementada primero — 27/10/2026
 
 Pedido vigente: ejecutar solo las mejoras de API del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md), con [diseño](docs/superpowers/specs/2026-10-27-frontend-cliente-visual-design.md). Backend T2/T2b implementado en `feature/api-cliente-visual`, desde `origin/develop` `754982d` (PR #10 ya integrado); no incorpora los PR #12/#13 pendientes ni altera el checkout original. Categorías públicas completas de beneficios vigentes y `provider_name` actual en historial propio, sin cambios al POST/replay de consumo, reglas del dominio, migraciones o frontend. Valores de categoría originales filtran primero de forma exacta; respaldo recortado solo si no existe la categoría original, decidido antes de búsqueda.
@@ -195,11 +192,8 @@ Corrección I1 del gate final E5: PAYMENT_REVIEW ya distingue reserva impaga de 
 Gate Task 2/rama aprobado en 4c9a402 tras corregir I1, sin hallazgos restantes. payment_confirmed conserva la evidencia histórica del pago: reserva impaga vence/cancela; stock previamente acreditado y refund pendiente se retienen hasta confirmación. Upgrade 0004→0005 y QA HTTP post-fix aprobados.
 
 En el entorno local se aplicaron solo migraciones, sin seed ni rotación de cuentas/QR. Se conservaron 17 usuarios, 14 prestadores, 14 beneficios, 10 asociaciones históricas, 8 selecciones, 6 consumos y 7 movimientos de billetera. La tienda local queda sin productos/pedidos; los escenarios DEMO están separados en llaveextra-e5, con guía docs/shop-operations.md. Backend8000, frontend5173 y Admin por proxy iniciados y HTTP200. E6, UI de tienda y sandbox externo siguen pendientes.
-<<<<<<< HEAD
-=======
 
 
 ## Entornos Compose y documentación — 31/10/2026
 
 Se prepara Nginx en desarrollo (`compose.yaml`, puerto 8080) y producción (`compose.prod.yaml`, HTTPS 443), con guía vigente en README y mapa de rutas en `docs/sitemap.md`. Los certificados, SMTP, backups y validación real de producción siguen a cargo de la operación; sandbox de pagos pendiente.
->>>>>>> develop

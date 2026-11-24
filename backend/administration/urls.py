@@ -1,9 +1,6 @@
 from django.urls import path
 
-<<<<<<< HEAD
-=======
 from .analytics import AttributedVisitsView
->>>>>>> develop
 from .dashboard import DashboardView
 from .invitations import InviteView
 from .media import AdminImageView, AdminQRPNGView, AdminQRView
@@ -18,10 +15,7 @@ from .resources import (
     CreditRulesView,
     OrdersView,
     PaymentOperationsView,
-<<<<<<< HEAD
-=======
     ProductCategoriesView,
->>>>>>> develop
     ProductsView,
     ProvidersView,
     StockAdjustmentsView,
@@ -29,10 +23,7 @@ from .resources import (
     WalletsView,
     resource_endpoint,
 )
-<<<<<<< HEAD
-=======
 from .summary import CollaboratorSummaryView
->>>>>>> develop
 from .views import (
     ActivityView,
     CatalogSettingsView,
@@ -50,15 +41,10 @@ urlpatterns = [
     path("admin/settings/shop/", ShopSettingsView.as_view(), name="admin-settings-shop"),
     path("admin/activity/", ActivityView.as_view(), name="admin-activity"),
     path("admin/dashboard/", DashboardView.as_view(), name="admin-dashboard"),
-<<<<<<< HEAD
-    path("admin/users/<int:pk>/invite/", InviteView.as_view(), name="admin-user-invite"),
-    path("admin/collaborators/<uuid:pk>/recommendations/", AdminRecommendationsView.as_view(), name="admin-recommendations"),
-=======
     path("admin/analytics/visits/", AttributedVisitsView.as_view(), name="admin-analytics-visits"),
     path("admin/users/<int:pk>/invite/", InviteView.as_view(), name="admin-user-invite"),
     path("admin/collaborators/<uuid:pk>/recommendations/", AdminRecommendationsView.as_view(), name="admin-recommendations"),
     path("admin/collaborators/<uuid:pk>/summary/", CollaboratorSummaryView.as_view(), name="admin-collaborator-summary"),
->>>>>>> develop
     path("admin/<str:resource>/<uuid:pk>/image/", AdminImageView.as_view(), name="admin-resource-image"),
     path("admin/<str:resource>/<uuid:pk>/qr/", AdminQRView.as_view(), name="admin-resource-qr"),
     path("admin/<str:resource>/<uuid:pk>/qr.png", AdminQRPNGView.as_view(), name="admin-resource-qr-png"),
@@ -77,11 +63,8 @@ urlpatterns = [
     path("admin/adjustments/", resource_endpoint(AdjustmentsView, detail=False), name="admin-adjustments"),
     path("admin/adjustments/<int:pk>/", resource_endpoint(AdjustmentsView, detail=True), name="admin-adjustment"),
     path("admin/products/", resource_endpoint(ProductsView, detail=False), name="admin-products"),
-<<<<<<< HEAD
-=======
     path("admin/product-categories/", resource_endpoint(ProductCategoriesView, detail=False), name="admin-product-categories"),
     path("admin/product-categories/<uuid:pk>/", resource_endpoint(ProductCategoriesView, detail=True), name="admin-product-category"),
->>>>>>> develop
     path("admin/products/<uuid:pk>/", resource_endpoint(ProductsView, detail=True), name="admin-product"),
     path("admin/orders/", resource_endpoint(OrdersView, detail=False), name="admin-orders"),
     path("admin/orders/<uuid:pk>/", resource_endpoint(OrdersView, detail=True), name="admin-order"),

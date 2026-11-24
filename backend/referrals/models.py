@@ -89,8 +89,6 @@ class FolderAccess(models.Model):
 
     def __str__(self):
         return f"{self.tourist} — {self.collaborator}"
-<<<<<<< HEAD
-=======
 
 
 class QRRenewalReceipt(models.Model):
@@ -113,4 +111,3 @@ class QRRenewalReceipt(models.Model):
             models.CheckConstraint(condition=Q(previous_version__gte=1), name="referral_renewal_previous_positive"),
             models.CheckConstraint(condition=Q(renewed_version=F("previous_version") + 1), name="referral_renewal_single_increment"),
         ]
->>>>>>> develop

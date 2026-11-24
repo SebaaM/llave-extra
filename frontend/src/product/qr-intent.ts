@@ -10,10 +10,6 @@ export let consumptionToken: string | null = readFragmentAt('/consumo')
 export let verifyToken: string | null = readFragmentAt('/verificar-email')
 export let resetToken: string | null = readFragmentAt('/restablecer-clave')
 
-<<<<<<< HEAD
-export function setReferralToken(value: string | null) { referralToken = value }
-export function setConsumptionToken(value: string | null) { consumptionToken = value }
-=======
 export function setReferralToken(value: string | null, notify = true) {
   referralToken = value
   if (notify && value) window.dispatchEvent(new Event('llave:referral-intent'))
@@ -28,6 +24,5 @@ export function captureQrIntent() {
   const consumption = readFragmentAt('/consumo')
   if (consumption) setConsumptionToken(consumption)
 }
->>>>>>> develop
 export function setVerifyToken(value: string | null) { verifyToken = value }
 export function setResetToken(value: string | null) { resetToken = value }

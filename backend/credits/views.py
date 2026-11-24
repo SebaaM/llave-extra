@@ -2,10 +2,7 @@ from io import BytesIO
 
 import qrcode
 from django.conf import settings
-<<<<<<< HEAD
-=======
 from django.db import transaction
->>>>>>> develop
 from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -14,41 +11,27 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.views import APIView
 
 from accounts.models import User
-<<<<<<< HEAD
-from accounts.views import client_origin, private_response
-from providers.access import owned_provider
-=======
 from accounts.security import rate_limit
 from accounts.views import client_origin, private_response
 from providers.access import locked_owned_provider, owned_provider, selected_benefits
 from referrals.access import active_folder_access
 from referrals.models import CollaboratorProfile
->>>>>>> develop
 from referrals.views import private
 
 from .models import Consumption, CreditPolicy, ProviderConsumptionCredential, Wallet
 from .serializers import (
     ConsumptionHistorySerializer,
-<<<<<<< HEAD
-=======
     ConsumptionOptionsRequestSerializer,
     ConsumptionOptionsResponseSerializer,
->>>>>>> develop
     ConsumptionRequestSerializer,
     ConsumptionResponseSerializer,
     PinSerializer,
     ProgressResponseSerializer,
     ProviderCredentialResponseSerializer,
-<<<<<<< HEAD
-    WalletResponseSerializer,
-)
-from .services import award_consumption, set_provider_pin, sign_provider_qr
-=======
     ReferredConsumptionRequestSerializer,
     WalletResponseSerializer,
 )
 from .services import award_consumption, parse_provider_qr, set_provider_pin, sign_provider_qr
->>>>>>> develop
 
 
 def customer(user):
@@ -69,26 +52,13 @@ class ConsumptionView(APIView):
     },
                    parameters=[OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)])
     def post(self, request):
-<<<<<<< HEAD
-=======
         return self._post(request, ConsumptionRequestSerializer)
 
     def _post(self, request, serializer_class):
->>>>>>> develop
         customer(request.user)
         key = request.headers.get("Idempotency-Key", "")
         if not 1 <= len(key) <= 128 or any(ord(ch) < 33 or ord(ch) > 126 for ch in key):
             raise ValidationError({"Idempotency-Key": "Clave obligatoria de 1 a 128 caracteres visibles"})
-<<<<<<< HEAD
-        serializer = ConsumptionRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        result, code = award_consumption(request.user, data.get("folder_id"), data["qr_token"],
-                                         data["pin"], key, origin=client_origin(request))
-        return private_response(result, code)
-
-
-=======
         serializer = serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -135,7 +105,6 @@ class ConsumptionOptionsView(APIView):
         return private_response({"benefits": benefits})
 
 
->>>>>>> develop
 class WalletView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -186,14 +155,6 @@ class ProviderCredentialView(APIView):
         token = sign_provider_qr(credential)
         return private_response({"configured": True, "qr_url": f"{settings.PUBLIC_APP_URL}/consumo#token={token}"})
 
-<<<<<<< HEAD
-    @extend_schema(request=PinSerializer, responses={200: ProviderCredentialResponseSerializer})
-    def put(self, request, provider_id):
-        owned_provider(request.user, provider_id)
-        serializer = PinSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        set_provider_pin(provider_id, serializer.validated_data["pin"])
-=======
     @extend_schema(
         request=PinSerializer,
         responses={
@@ -208,7 +169,6 @@ class ProviderCredentialView(APIView):
             serializer = PinSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             set_provider_pin(provider_id, serializer.validated_data["pin"])
->>>>>>> develop
         return private_response({"configured": True})
 
 

@@ -1,14 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-<<<<<<< HEAD
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { invalidatePrivateState, setAccessToken } from '../api'
-import { RecordActions } from './Actions'
-=======
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { invalidatePrivateState, setAccessToken } from '../api'
 import { RecordActions } from './Actions'
 import { AdminWorkspace } from './AdminWorkspace'
->>>>>>> develop
 import { resources } from './data'
 import { RecordForm } from './RecordForm'
 
@@ -21,8 +15,6 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); if (nativeLocks) Object.defineProperty(navigator, 'locks', nativeLocks); else Reflect.deleteProperty(navigator, 'locks') })
 
 describe('gestión administrativa', () => {
-<<<<<<< HEAD
-=======
   it('actualiza el destacado mediante el PATCH de ficha y su versión vigente', async () => {
     const onSaved = vi.fn()
     const requests: Array<{ url: string; method?: string; body: Record<string, unknown> }> = []
@@ -59,7 +51,6 @@ describe('gestión administrativa', () => {
     await screen.findByRole('heading', { name: 'Recuerdos' })
   })
 
->>>>>>> develop
   it('conserva el texto del formulario ante una versión obsoleta', async () => {
     const user = resources.find(item => item.key === 'users')!
     const onSaved = vi.fn()

@@ -2,13 +2,9 @@ export type User = { id: number; email: string; role: 'TOURIST' | 'COLLABORATOR'
 export type Folder = { collaborator_id: string; granted_at: string }
 export type Provider = { id: string; slug: string; name: string; category: string; description: string; address: string; hours: string; contact: string; map_url: string; website: string; image_url: string | null; status: string; demo: boolean }
 export type Benefit = { id: string; title: string; description: string; conditions: string; valid_from: string | null; valid_until: string | null; image_url: string | null; status: string; demo: boolean }
-<<<<<<< HEAD
-export type Consumption = { id: string; provider_id: string; collaborator_id: string | null; award: number; state: string; created_at: string }
-=======
 // Nombre actual del comercio en lectura propia; puede faltar en respuestas anteriores.
 export type Consumption = { id: string; provider_id: string; provider_name?: string | null; collaborator_id: string | null; award: number; state: string; created_at: string }
 export type ConsumptionResult = Consumption & { balance: number }
->>>>>>> develop
 export type Wallet = { balance: number; redemptions_frozen: boolean }
 export type Progress = { total: number; target: number; completed: boolean }
 
@@ -23,25 +19,15 @@ export class AuthCoordinationError extends Error {
   }
 }
 
-<<<<<<< HEAD
-let accessToken: string | null = null
-=======
 type SessionIdentity = { sid: string; userId: string }
 let accessToken: string | null = null
 let refreshBinding: SessionIdentity | 'unrecognized' | 'replaced' | null = null
->>>>>>> develop
 let csrfToken: string | null = null
 let refreshing: { version: number; promise: Promise<string | null> } | null = null
 let authQueue: Promise<void> = Promise.resolve()
 let sessionVersion = 0
 const privateControllers = new Set<AbortController>()
 const logoutPendingKey = 'llave-extra.logout-pending'
-<<<<<<< HEAD
-const verificationRequests = new Map<string, Promise<unknown>>()
-
-export function currentSessionVersion() { return sessionVersion }
-export function hasPendingLogout() { return sessionStorage.getItem(logoutPendingKey) === '1' }
-=======
 let memoryPendingLogout = false
 let explicitlyAuthenticated = false
 const verificationRequests = new Map<string, Promise<unknown>>()
@@ -68,21 +54,11 @@ function canPersistLogoutState() {
     return written
   } catch { return false }
 }
->>>>>>> develop
 export function invalidatePrivateState() {
   sessionVersion += 1
   for (const controller of privateControllers) controller.abort()
   privateControllers.clear()
   accessToken = null
-<<<<<<< HEAD
-  refreshing = null
-}
-export function setAccessToken(value: string | null) { accessToken = value }
-
-function endpoint(path: string) {
-  const url = new URL(path, window.location.origin)
-  if (url.origin !== window.location.origin || !url.pathname.startsWith('/api/v1/')) throw new Error('Ruta de API no autorizada')
-=======
   if (refreshBinding !== 'replaced') refreshBinding = null
   refreshing = null
   explicitlyAuthenticated = false
@@ -109,7 +85,6 @@ function endpoint(path: string) {
   const url = new URL(path, window.location.origin)
   const consumptionV2 = ['/api/v2/consumptions/', '/api/v2/consumptions/options/'].includes(url.pathname)
   if (url.origin !== window.location.origin || (!url.pathname.startsWith('/api/v1/') && !consumptionV2)) throw new Error('Ruta de API no autorizada')
->>>>>>> develop
   return url
 }
 async function jsonOrError(response: Response) {
@@ -143,14 +118,9 @@ function serializeAuthMutation<T>(operation: () => Promise<T>): Promise<T> {
 
 async function refreshInCurrentSession(version: number): Promise<string | null> {
   return serializeAuthMutation(async () => {
-<<<<<<< HEAD
-    if (version !== sessionVersion) return null
-    if (accessToken) return accessToken
-=======
     if (version !== sessionVersion || refreshBinding === 'replaced') return null
     if (accessToken) return accessToken
     const expected = refreshBinding
->>>>>>> develop
     try {
       const response = await fetch(endpoint('/api/v1/auth/refresh/'), {
         method: 'POST',
@@ -160,9 +130,6 @@ async function refreshInCurrentSession(version: number): Promise<string | null> 
       })
       const body = await jsonOrError(response)
       if (version !== sessionVersion) return null
-<<<<<<< HEAD
-      accessToken = body.access
-=======
       const identity = typeof body?.access === 'string' ? readSessionIdentity(body.access) : null
       if (expected && (expected === 'unrecognized' || !identity || expected.sid !== identity.sid || expected.userId !== identity.userId)) {
         // La cookie puede corresponder a otra pestaña. Solo se invalida esta instancia.
@@ -173,7 +140,6 @@ async function refreshInCurrentSession(version: number): Promise<string | null> 
       }
       accessToken = typeof body?.access === 'string' ? body.access : null
       refreshBinding = identity ?? (accessToken ? 'unrecognized' : null)
->>>>>>> develop
       return accessToken
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -186,11 +152,8 @@ async function refreshInCurrentSession(version: number): Promise<string | null> 
 }
 
 async function refreshAccess(): Promise<string | null> {
-<<<<<<< HEAD
-=======
   if (refreshBinding === 'replaced') return null
   if (accessToken) return accessToken
->>>>>>> develop
   const version = sessionVersion
   if (refreshing?.version === version) return refreshing.promise
   const promise = refreshInCurrentSession(version)
@@ -203,15 +166,12 @@ async function refreshAccess(): Promise<string | null> {
   return promise
 }
 
-<<<<<<< HEAD
-=======
 function refreshAfterUnauthorized(rejectedToken: string | null) {
   // Otro 401 de la misma ráfaga puede llegar tras una renovación exitosa.
   if (accessToken === rejectedToken) accessToken = null
   return refreshAccess()
 }
 
->>>>>>> develop
 type RequestOptions = { method?: string; body?: unknown; auth?: boolean; retryAuth?: boolean; idempotencyKey?: string; signal?: AbortSignal }
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const url = endpoint(path)
@@ -233,24 +193,15 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     const headers = new Headers({ Accept: 'application/json' })
     const multipart = options.body instanceof FormData
     if (options.body !== undefined && !multipart) headers.set('Content-Type', 'application/json')
-<<<<<<< HEAD
-    if (isPrivate && accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-=======
     const tokenUsed = isPrivate ? accessToken : null
     if (tokenUsed) headers.set('Authorization', `Bearer ${tokenUsed}`)
->>>>>>> develop
     if (options.idempotencyKey) headers.set('Idempotency-Key', options.idempotencyKey)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && url.pathname.startsWith('/api/v1/auth/')) headers.set('X-CSRFToken', await ensureCsrf())
     if ((isPrivate && version !== sessionVersion) || options.signal?.aborted || controller?.signal.aborted) throw new DOMException('Solicitud cancelada', 'AbortError')
     const response = await fetch(url, { method, headers, body: multipart ? options.body as FormData : options.body === undefined ? undefined : JSON.stringify(options.body), credentials: 'same-origin', cache: 'no-store', signal: controller?.signal ?? options.signal })
     if (isPrivate && version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     if (response.status === 401 && isPrivate && options.retryAuth !== false && retry) {
-<<<<<<< HEAD
-      if (accessToken && headers.get('Authorization') === `Bearer ${accessToken}`) accessToken = null
-      const token = await refreshAccess()
-=======
       const token = await refreshAfterUnauthorized(tokenUsed)
->>>>>>> develop
       if (version !== sessionVersion || controller?.signal.aborted) throw new DOMException('Sesión reemplazada', 'AbortError')
       if (!token) throw new ApiError(401, 'Tu sesión venció. Volvé a ingresar.')
       return send(false)
@@ -268,23 +219,16 @@ export async function restoreSession() {
   // A failed logout may leave the HttpOnly refresh cookie valid. Do not restore
   // it silently after a reload; require an explicit login to establish a session.
   if (hasPendingLogout()) return null
-<<<<<<< HEAD
-=======
   // Sin storage no se puede conocer un logout incierto de la instancia anterior.
   // Solo el login explícito en esta instancia permite continuar en memoria.
   if (!explicitlyAuthenticated && !canPersistLogoutState()) return null
->>>>>>> develop
   const token = await refreshAccess()
   if (!token) return null
   return api<User>('/api/v1/auth/me/')
 }
 export async function signOut() {
   const oldToken = accessToken
-<<<<<<< HEAD
-  sessionStorage.setItem(logoutPendingKey, '1')
-=======
   markPendingLogout(true)
->>>>>>> develop
   invalidatePrivateState()
   try {
     await serializeAuthMutation(async () => {
@@ -296,11 +240,7 @@ export async function signOut() {
       })
       if (!response.ok) await jsonOrError(response)
     })
-<<<<<<< HEAD
-    sessionStorage.removeItem(logoutPendingKey)
-=======
     markPendingLogout(false)
->>>>>>> develop
   } finally { csrfToken = null }
 }
 export async function privateImage(path: string | null) {
@@ -314,15 +254,6 @@ export async function privateImage(path: string | null) {
 }
 async function apiResponse(url: URL) {
   const version = sessionVersion
-<<<<<<< HEAD
-  if (!accessToken) await refreshAccess()
-  let response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} })
-  if (response.status === 401) {
-    if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
-    accessToken = null
-    const token = await refreshAccess()
-    if (token) response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Authorization: `Bearer ${token}` } })
-=======
   const tokenUsed = accessToken ?? await refreshAccess()
   if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
   if (!tokenUsed) throw new ApiError(401, 'No se pudo cargar la imagen autorizada.')
@@ -333,7 +264,6 @@ async function apiResponse(url: URL) {
     const token = await refreshAfterUnauthorized(tokenUsed)
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     if (token) response = await send(token)
->>>>>>> develop
   }
   if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
   if (!response.ok) throw new ApiError(response.status, 'No se pudo cargar la imagen autorizada.')
@@ -347,14 +277,9 @@ export async function authenticate(email: string, password: string) {
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
     const body = await api<{ access: string }>('/api/v1/auth/login/', { method: 'POST', body: { email, password }, auth: false })
     if (version !== sessionVersion) throw new DOMException('Sesión reemplazada', 'AbortError')
-<<<<<<< HEAD
-    sessionStorage.removeItem(logoutPendingKey)
-    accessToken = body.access
-=======
     markPendingLogout(false)
     setAccessToken(body.access)
     explicitlyAuthenticated = true
->>>>>>> develop
   })
   // The shared-cookie lock protects the login response and its Set-Cookie.
   // Keep /me outside it: a 401 may need refreshAccess(), which must acquire

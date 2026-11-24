@@ -1,12 +1,9 @@
 # Guía de desarrollo
 
-<<<<<<< HEAD
-=======
 Actividad demo completa opcional: `docker compose exec -e SHOP_PAYMENT_PROVIDER=fake backend python manage.py seed_activity_demo`. Admite `--customers 20` a `--customers 3000` (300 por defecto), requiere DEBUG/PostgreSQL y conserva datos existentes. No forma parte de `up` ni del seed básico. El retiro existente debe estar habilitado. [Escenarios y accesos privados](docs/demo-activity.md).
 
 La guía vigente de inicio, puertos, cuentas, roles y producción está en [README.md](README.md); el acceso recomendado es Nginx en `http://localhost:8080`. Los enlaces de email usan `PUBLIC_APP_URL`: en instalaciones anteriores puede seguir apuntando a 5173; cambialo en `.env` si querés usar 8080 y reiniciá el backend.
 
->>>>>>> develop
 El entorno local predeterminado corre backend Django 5.2 sobre PostgreSQL 17, frontend React/Vite con Node 24.19.0, Redis para límites compartidos y Mailpit. Docker Compose monta el código para recarga y conserva base y archivos subidos en volúmenes. Vite usa polling de un segundo para detectar cambios en bind mounts de Docker Desktop en Windows. Las dependencias se instalan desde los locks con uv 0.11.3 y pnpm 11.22.0; el nombre del directorio puede contener espacios. En Docker, npm se usa solo como bootstrap para instalar globalmente pnpm 11.22.0; las dependencias del proyecto se instalan con `pnpm install --frozen-lockfile`.
 
 ```powershell
@@ -18,8 +15,6 @@ El entorno local predeterminado corre backend Django 5.2 sobre PostgreSQL 17, fr
 
 En macOS/Linux se usa `./scripts/dev.sh` con los mismos subcomandos (`up --demo`, `test`, `down`). `down` conserva los volúmenes. El código frontend se monta para hot reload; al cambiar `package.json`, `pnpm-lock.yaml` o `pnpm-workspace.yaml`, ejecutar `./scripts/dev.ps1 up` o `./scripts/dev.sh up` para reconstruir la imagen de dependencias. Solo borrar volúmenes manualmente cuando se desee eliminar los datos locales.
 
-<<<<<<< HEAD
-=======
 `up` construye e inicia en segundo plano para ejecutar migraciones y, si corresponde, el seed demo. Si esos pasos terminan correctamente, ejecuta `docker compose logs --follow --tail all`: recupera los logs de inicio disponibles y muestra los nuevos de todos los servicios, con sus prefijos. Al pulsar `Ctrl+C`, el script ejecuta `docker compose stop` sin borrar volúmenes. Un fallo de preparación devuelve el error y no entra en el seguimiento.
 
 La primera prueba del 02/11/2026 confirmó la conexión a los seis servicios y su detención con `Ctrl+C`, pero no verificó líneas de logs por servicio. El usuario detectó la omisión de logs iniciales al adjuntarse con `compose up` a contenedores ya iniciados. La nueva ejecución real de `dev.ps1 up` verificó líneas con prefijo de backend (81), db (27), frontend (19), Mailpit (9), Nginx (61) y Redis (45), recuperando sus logs disponibles. `Ctrl+C` volvió a detener los seis servicios. Sintaxis PowerShell/POSIX sh y `git diff --check` aprobados. No se modificó código del dominio ni el contrato API.
@@ -30,7 +25,6 @@ Con el entorno local ya inicializado, `docker compose up --build` aplica las mig
 
 Los scripts de desarrollo siguen disponibles para inicializar el entorno y cargar datos demo. Esperan a que Django abra su puerto después de migrar antes de ejecutar el seed, sin lanzar migraciones en paralelo. Para comprobar la configuración de arranque: `./scripts/tests/Test-ComposeStartup.ps1`.
 
->>>>>>> develop
 ## uv nativo opcional
 
 Docker Compose es la forma recomendada de ejecutar y probar la aplicación; no requiere Python ni Node en el host. Para que un IDE use el entorno Python local, ejecutá desde PowerShell:
@@ -48,11 +42,7 @@ El endpoint de salud es `/api/v1/health/` y verifica la base de datos, sin devol
 
 El producto usa `/` y `/beneficios` para catálogo público, `/recomendaciones` y `/referencia` para acceso privado por QR, `/consumo` para validación directa o referida y `/mi-viaje` para pasaporte. Los prototipos F1 ya no están enrutados. El frontend usa JWT access solo en memoria, refresh HttpOnly same-origin y CSRF para endpoints de autenticación. Las consultas y fotos del catálogo público no adjuntan JWT; los medios comerciales siguen detrás de endpoints con política de publicación. Las APIs privadas responden `no-store`; las imágenes protegidas se recuperan por endpoints autorizados y Blob, no con URLs bearer. Un QR se transporta en fragmento y se limpia de la barra antes de usar la API. Las fotos demo aprobadas se agregan a campos vacíos con `docker compose exec backend uv run --locked python manage.py seed_demo_media` en DEBUG; ver [créditos](docs/assets.md). El contrato de cada pantalla está descrito en el [plan frontend](docs/plans/frontend.md) y las verificaciones F2 en [Task 9](.superpowers/sdd/00-roadmap/task-9-report.md).
 
-<<<<<<< HEAD
-El backoffice operativo de la red usa `/prestador` (resumen, negocio, beneficios, QR/PIN y cuenta) y `/colaborador` (resumen, recomendaciones, catálogo privado, QR y cuenta). `/espacio` resuelve según el rol; Admin abre el documento Django `/admin/`. El Prestador no elige negocio: carga el único asignado, con estado pendiente si todavía no tiene uno y cierre ante una asignación inconsistente. Puede enviar propuestas en borrador y editar sus campos permitidos; editar un beneficio publicado lo devuelve a revisión según la respuesta del servidor. El Colaborador agrega o quita beneficios concretos de su propia carpeta mediante el selector privado, que sigue disponible si se apaga el catálogo público. Las demás ofertas del mismo negocio no se incorporan automáticamente.
-=======
 El backoffice operativo de la red usa `/prestador` (resumen, negocio, beneficios, QR/PIN y cuenta) y `/colaborador` (resumen, recomendaciones, catálogo privado, QR y cuenta). `/espacio` resuelve según el rol; Admin abre `/gestion` (y Django conserva `/admin/` con sesión independiente). El Prestador no elige negocio: carga el único asignado, con estado pendiente si todavía no tiene uno y cierre ante una asignación inconsistente. Puede enviar propuestas en borrador y editar sus campos permitidos; editar un beneficio publicado lo devuelve a revisión según la respuesta del servidor. El Colaborador agrega o quita beneficios concretos de su propia carpeta mediante el selector privado, que sigue disponible si se apaga el catálogo público. Las demás ofertas del mismo negocio no se incorporan automáticamente.
->>>>>>> develop
 
 Los módulos React de gestión viven en `frontend/src/product/workspace/`, con estilos prefijados y menú móvil accesible. Archivos e imágenes usan el cliente autenticado y `FormData` sin fijar el boundary multipart. QR y PIN no se guardan en almacenamiento del navegador: el QR se consulta solo al entrar en su sección y se renueva al volver al foco; las Object URLs se revocan al salir y las respuestas tardías se descartan al cambiar la sesión. El PIN es de solo escritura y se limpia al enviarlo. Para verificar frontend, ejecutar secuencialmente `docker compose exec frontend pnpm test`, `pnpm lint`, `pnpm typecheck` y `pnpm build` (cada comando dentro del mismo servicio). La suite usa APIs simuladas; el QA real sobre los servicios locales se registra en la verificación del plan 08. Las cuentas demo se consultan únicamente en `docs/cuentas-prueba.local.md`, ignorado por Git; no publicar cuentas, claves, PIN ni QR en capturas o informes.
 
@@ -70,10 +60,6 @@ Las imágenes de prestadores y ofertas se guardan en el volumen `private_media_d
 
 Si el backend no inicia, revisá que Docker esté activo y que la base figure healthy con `docker compose ps`. Si cambiaste credenciales en `.env` después de inicializar el volumen, PostgreSQL conserva las credenciales anteriores; recreá el entorno solo si podés descartar sus datos. Si las fuentes web de Google no están disponibles, la interfaz conserva tipografía de respaldo del sistema.
 
-<<<<<<< HEAD
-El bootstrap añade `JWT_SIGNING_KEY`, `QR_SIGNING_KEY` y `REDIS_URL` a un `.env` E1 existente sin cambiar claves previas. Configuración de producción exige tres claves independientes de al menos 50 caracteres y `DJANGO_ALLOWED_HOSTS`; nunca uses las credenciales locales. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local; no hay proveedor de correo externo configurado. Si SMTP falla al registrar, la cuenta queda creada y el usuario puede pedir reenvío. Mercado Pago externo sigue pendiente de sandbox; E5 incluye outbox/reconciliación mediante comandos acotados, sin scheduler desplegado.
-=======
 El bootstrap añade las claves de sesión, QR y datos bancarios, además de Redis, al `.env` local. `BANK_DETAILS_ENCRYPTION_KEY` codifica 32 bytes aleatorios en Base64 URL-safe. En producción se configura una clave independiente y se conserva con los respaldos protegidos para poder descifrar los datos guardados. La configuración de producción también requiere las tres claves de Django, JWT y QR, independientes y de al menos 50 caracteres, y `DJANGO_ALLOWED_HOSTS`. `seed_demo` se bloquea con `DEBUG=False`. Mailpit está disponible para correo local. Si SMTP falla al registrar, la cuenta queda creada y el usuario puede pedir reenvío. Mercado Pago externo sigue pendiente de sandbox. E5 incluye outbox y reconciliación mediante comandos acotados.
->>>>>>> develop
 
 Tienda E5: [guía de operación y demo](docs/shop-operations.md). `SHOP_PAYMENT_PROVIDER` arranca disabled; fake conserva pagos DEMO en PostgreSQL sin enlaces reales. Para pruebas usar exclusivamente proyecto `llaveextra-e5`, cuentas locales en `work/e5-local/accounts.local.md` con montaje y `DEMO_CREDENTIALS_PATH` propios. `seed_shop_demo --customer <ID_NUMERICO> --administrator <ID_NUMERICO> --receipts <ARCHIVO_LOCAL>` exige DEBUG/fake, usa servicios E4 para créditos y no modifica cuentas existentes. `process_shop_outbox`, `reconcile_shop_orders` y `expire_shop_orders` aceptan `--limit 1..1000`; la guía contiene secuencia reproducible entre procesos, retiro ficticio y gate sandbox pendiente. No ejecutar seeds ni migraciones de prueba contra la base principal.

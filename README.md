@@ -1,34 +1,20 @@
 # Llave Extra
 
-<<<<<<< HEAD
-Red de beneficios turísticos de Ushuaia. El catálogo general de beneficios publicados y vigentes es público cuando el administrador lo habilita. Los **prestadores** ofrecen beneficios; los **colaboradores** refieren turistas a una carpeta privada de recomendaciones mediante un QR único habilitado por el administrador.
-=======
 Red de beneficios turísticos de Ushuaia. Esta guía describe el estado actual y cómo arrancar desde cero. El catálogo público muestra beneficios publicados y vigentes; las carpetas de recomendaciones requieren QR y autorización del servidor. [Sitemap provisorio](docs/sitemap.md) · [API](docs/api.md) · [Reglas](docs/business-rules.md) · [Operación de tienda](docs/shop-operations.md).
->>>>>>> develop
 
 ## Desarrollo desde cero
 
 Requisitos: Git, Docker Desktop con Compose activo y, en macOS/Linux, OpenSSL. Cloná el repositorio, abrí una terminal en la raíz y ejecutá:
 
-<<<<<<< HEAD
-El flujo de ramas vigente está en [GitFlow](docs/gitflow.md): `main` estable, `develop` para integración y ramas `feature/*`, `release/*` y `hotfix/*`. La corrección del catálogo público se desarrolla en `feature/catalogo-publico-admin` con PR hacia `develop`; no se fusionan PRs automáticamente.
-=======
 ```powershell
 ./scripts/dev.ps1 up -Demo
 ```
->>>>>>> develop
 
 En macOS/Linux: `./scripts/dev.sh up --demo`. Se genera `.env` local ignorado con secretos aleatorios, se construyen imágenes, inician PostgreSQL, Redis, Django, Vite, Nginx y Mailpit, se aplican migraciones y se cargan datos demo. Sin datos de ejemplo usá `up` sin el parámetro demo. Los volúmenes persisten; `./scripts/dev.ps1 down` o `./scripts/dev.sh down` detienen sin borrarlos. Para pruebas backend PostgreSQL: `./scripts/dev.ps1 test` o `./scripts/dev.sh test`. [Más detalles y verificaciones](DEV.md).
 
 Al finalizar la preparación, `up` muestra los logs de inicio disponibles de todos los servicios y sigue los nuevos en primer plano mediante `docker compose logs --follow --tail all`. `Ctrl+C` detiene los contenedores y devuelve la consola, conservando los volúmenes.
 
-<<<<<<< HEAD
-Aplicación demo: <http://localhost:5173>. Backoffice Django: <http://localhost:5173/admin/>. API y OpenAPI: <http://localhost:8000/api/v1/health/> y <http://localhost:8000/api/schema/>. Documentación interactiva: <http://localhost:8000/api/docs/>. Mailpit: <http://localhost:8025>. [Contrato de API](docs/api.md), [modelo](docs/data-model.md) y [reglas](docs/business-rules.md).
-
-En desarrollo, Vite reenvía `/admin/`, los archivos `/static/admin/` y la API a Django. Las imágenes privadas del backoffice usan `/api/v1/admin/private-media/`, con autorización de Django. El backoffice solicita su propio inicio de sesión con cookie de sesión y token CSRF; ingresar en la aplicación con JWT no inicia automáticamente esa sesión. `/media/` se reenvía a Django, pero los archivos privados no se publican allí.
-=======
 Actividad abundante y ficticia opcional, con el entorno iniciado y desde otra consola:
->>>>>>> develop
 
 ```powershell
 docker compose exec -e SHOP_PAYMENT_PROVIDER=fake backend python manage.py seed_activity_demo
@@ -36,16 +22,6 @@ docker compose exec -e SHOP_PAYMENT_PROVIDER=fake backend python manage.py seed_
 
 Crea 300 Clientes, 30 negocios, 10 colaboradores y escenarios de consumos, créditos y pedidos para probar backoffice. Admite `--customers 1000`; repetir conserva la actividad previa. Sin cobros externos ni carga automática. [Escenarios, accesos y requisitos](docs/demo-activity.md).
 
-<<<<<<< HEAD
-- `ADMIN`: administra usuarios, carpetas, colaboradores, QR y reglas.
-- `PROVIDER`: prestador/negocio; es distinto del colaborador.
-- `COLLABORATOR`: refiere turistas a prestadores de su carpeta asignada.
-- `TOURIST`: consulta el catálogo general y sus recomendaciones privadas tras obtener acceso por QR autorizado.
-
-E2 entrega API de registro, ingreso, verificación y recuperación por correo local, QR de colaborador y acceso privado. E3 agrega prestadores, beneficios y carpetas con filtros de servidor. E4 implementa consumos y créditos. El producto usa la portada Beneficios y Mi viaje estilo Pasaporte; `/beneficios` muestra catálogo público, `/recomendaciones` la carpeta privada por QR y `/consumo` permite validación directa o referida. Los prototipos F1 se retiraron. El administrador habilita perfiles, rota QR y controla el catálogo en `/admin/`. Para añadir fotos aprobadas a registros demo ya existentes sin alterar otros datos, ejecutar `docker compose exec backend uv run --locked python manage.py seed_demo_media` con `DEBUG` local; ver [fuentes y licencias](docs/assets.md). Tienda y analítica siguen pendientes. Mailpit valida solo SMTP local, no entregabilidad externa.
-
-La herramienta de backend es uv 0.11.3 (Python 3.13.16) y la del frontend pnpm 11.22.0 (Node 24.19.0). Docker Compose sigue siendo el arranque predeterminado y no necesita uv, Python ni Node instalados en el host. La opción de uv para IDE y ejecución nativa, con sus requisitos de PostgreSQL/Redis/SMTP, está en [DEV.md](DEV.md).
-=======
 ### Cuentas de prueba locales
 
 El seed crea las siguientes cuentas sintéticas y genera sus contraseñas en `docs/cuentas-prueba.local.md` (ignorado por Git). Consultá ese archivo local: no hay contraseñas fijas versionadas. Una ejecución normal no cambia contraseñas existentes; si falta el archivo, la recuperación explícita está en [DEV.md](DEV.md). No usar estas cuentas en producción.
@@ -102,4 +78,3 @@ Este Compose es una base de despliegue: todavía requiere validación integral e
 - **Administrador (`ADMIN`)**: gestiona usuarios y habilitaciones, asigna el negocio del Prestador, publica beneficios, configura catálogo y reglas de créditos, opera consumos, saldos, productos, pedidos y acciones auditadas desde `/gestion` y Django Admin. Las analíticas E6 siguen pendientes.
 
 Las verificaciones y el control de acceso son del servidor; ocultar una opción en pantalla no concede ni revoca permisos. [Panel de administración](docs/panel-administracion.md) · [GitFlow](docs/gitflow.md) · [Contexto](CONTEXT.md).
->>>>>>> develop

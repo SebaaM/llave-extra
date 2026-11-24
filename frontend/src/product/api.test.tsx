@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-<<<<<<< HEAD
-=======
 const sidA = '00000000-0000-4000-8000-000000000001'
 const sidB = '00000000-0000-4000-8000-000000000002'
 
@@ -14,7 +12,6 @@ function accessJwt(userId: number, sid: string, jti: string, expired = false) {
   // La autenticidad se verifica en el servidor, simulado en esta suite.
   return `${header}.${payload}.synthetic-signature`
 }
->>>>>>> develop
 
 const nativeLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
 beforeEach(() => {
@@ -33,9 +30,6 @@ afterEach(() => {
 })
 
 describe('cliente de API con sesión de cliente', () => {
-<<<<<<< HEAD
-  it('reintenta multipart conservando FormData y autorización sin fijar boundary', async () => {
-=======
   it.each([
     { userId: 2, image: false },
     { userId: 1, image: false },
@@ -125,25 +119,16 @@ describe('cliente de API con sesión de cliente', () => {
   it('reintenta multipart conservando FormData y autorización sin fijar boundary', async () => {
     const oldAccess = accessJwt(1, sidA, 'a'.repeat(32), true)
     const newAccess = accessJwt(1, sidA, 'b'.repeat(32))
->>>>>>> develop
     const attempts: RequestInit[] = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input)
       if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-form' })
-<<<<<<< HEAD
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-renovado' })
-=======
       if (url.endsWith('/auth/refresh/')) return json({ access: newAccess })
->>>>>>> develop
       attempts.push(init!)
       return attempts.length === 1 ? json({ detail: 'Expirado' }, 401) : json({ id: 'benefit-form' })
     }))
     const { api, setAccessToken } = await import('./api')
-<<<<<<< HEAD
-    setAccessToken('access-anterior')
-=======
     setAccessToken(oldAccess)
->>>>>>> develop
     const form = new FormData()
     form.append('title', 'Propuesta')
     form.append('image', new File(['image'], 'imagen.png', { type: 'image/png' }))
@@ -152,11 +137,7 @@ describe('cliente de API con sesión de cliente', () => {
     expect(attempts.every(attempt => attempt.body === form)).toBe(true)
     expect(attempts.every(attempt => !new Headers(attempt.headers).has('Content-Type'))).toBe(true)
     expect(attempts.every(attempt => attempt.cache === 'no-store' && attempt.credentials === 'same-origin')).toBe(true)
-<<<<<<< HEAD
-    expect(new Headers(attempts[1].headers).get('Authorization')).toBe('Bearer access-renovado')
-=======
     expect(new Headers(attempts[1].headers).get('Authorization')).toBe(`Bearer ${newAccess}`)
->>>>>>> develop
     expect(attempts.every(attempt => new Headers(attempt.headers).get('Idempotency-Key') === 'multipart-test')).toBe(true)
   })
 
@@ -190,19 +171,12 @@ describe('cliente de API con sesión de cliente', () => {
   })
 
   it('comparte una sola rotación de refresh entre solicitudes privadas concurrentes', async () => {
-<<<<<<< HEAD
-=======
     const newAccess = accessJwt(1, sidA, 'b'.repeat(32))
->>>>>>> develop
     const calls: Array<{ url: string; init?: RequestInit }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input); calls.push({ url, init })
       if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-demo' })
-<<<<<<< HEAD
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-rotado' })
-=======
       if (url.endsWith('/auth/refresh/')) return json({ access: newAccess })
->>>>>>> develop
       if (url.endsWith('/me/wallet/')) return json({ balance: 0, redemptions_frozen: false })
       if (url.endsWith('/me/progress/')) return json({ total: 0, target: 0, completed: true })
       return json({ detail: 'No encontrado' }, 404)
@@ -213,38 +187,23 @@ describe('cliente de API con sesión de cliente', () => {
     expect(progress).toEqual({ total: 0, target: 0, completed: true })
     expect(calls.filter(call => call.url.endsWith('/auth/refresh/'))).toHaveLength(1)
     const privateCalls = calls.filter(call => /\/me\/(wallet|progress)\/$/.test(call.url))
-<<<<<<< HEAD
-    expect(privateCalls.every(call => new Headers(call.init?.headers).get('Authorization') === 'Bearer access-rotado')).toBe(true)
-=======
     expect(privateCalls.every(call => new Headers(call.init?.headers).get('Authorization') === `Bearer ${newAccess}`)).toBe(true)
->>>>>>> develop
     expect(privateCalls.every(call => call.init?.credentials === 'same-origin' && call.init?.cache === 'no-store')).toBe(true)
   })
 
   it('reintenta un consumo 401 con la misma clave idempotente y el PIN solo en el cuerpo', async () => {
-<<<<<<< HEAD
-=======
     const oldAccess = accessJwt(1, sidA, 'a'.repeat(32), true)
     const newAccess = accessJwt(1, sidA, 'b'.repeat(32))
->>>>>>> develop
     const calls: Array<{ url: string; init?: RequestInit }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = String(input); calls.push({ url, init })
       if (url.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-demo' })
-<<<<<<< HEAD
-      if (url.endsWith('/auth/refresh/')) return json({ access: 'access-nuevo' })
-=======
       if (url.endsWith('/auth/refresh/')) return json({ access: newAccess })
->>>>>>> develop
       if (url.endsWith('/consumptions/')) return calls.filter(call => call.url.endsWith('/consumptions/')).length === 1 ? json({ detail: 'Sesión vencida' }, 401) : json({ id: 'registro' }, 201)
       return json({}, 404)
     }))
     const { api, setAccessToken } = await import('./api')
-<<<<<<< HEAD
-    setAccessToken('access-vencido')
-=======
     setAccessToken(oldAccess)
->>>>>>> develop
     const key = '6178f532-c3fc-49ed-a4ea-820c6801b4dc'
     await expect(api('/api/v1/consumptions/', { method: 'POST', body: { folder_id: 'folder', qr_token: 'token-demo', pin: '123456' }, idempotencyKey: key })).resolves.toEqual({ id: 'registro' })
     const attempts = calls.filter(call => call.url.endsWith('/consumptions/'))
@@ -252,10 +211,6 @@ describe('cliente de API con sesión de cliente', () => {
     expect(attempts.map(call => new Headers(call.init?.headers).get('Idempotency-Key'))).toEqual([key, key])
     expect(attempts[0].url).not.toContain('token-demo')
     expect(JSON.parse(String(attempts[0].init?.body))).toEqual({ folder_id: 'folder', qr_token: 'token-demo', pin: '123456' })
-<<<<<<< HEAD
-    expect(new Headers(attempts[0].init?.headers).get('Authorization')).toBe('Bearer access-vencido')
-    expect(new Headers(attempts[1].init?.headers).get('Authorization')).toBe('Bearer access-nuevo')
-=======
     expect(new Headers(attempts[0].init?.headers).get('Authorization')).toBe(`Bearer ${oldAccess}`)
     expect(new Headers(attempts[1].init?.headers).get('Authorization')).toBe(`Bearer ${newAccess}`)
   })
@@ -283,7 +238,6 @@ describe('cliente de API con sesión de cliente', () => {
     await expect(late).resolves.toEqual({ ok: true })
     expect(currentSessionVersion()).toBe(version)
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith('/auth/refresh/'))).toHaveLength(1)
->>>>>>> develop
   })
 
   it('descarta una respuesta privada que termina después de cerrar la sesión', async () => {

@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-"""Shop transactions. Lock order: User -> Wallet -> Order -> Product (ascending UUID)."""
-=======
 """Shop locks: User -> Wallet -> Order -> Product -> ProductCategory, each by PK."""
->>>>>>> develop
 import hashlib
 import json
 import uuid
@@ -26,10 +22,7 @@ from .models import (
     OrderLine,
     PaymentOperation,
     Product,
-<<<<<<< HEAD
-=======
     ProductCategory,
->>>>>>> develop
     ShopSettings,
     StockAdjustment,
 )
@@ -38,8 +31,6 @@ MAX_CART_LINES = 20
 MAX_QUANTITY = 99
 
 
-<<<<<<< HEAD
-=======
 def lock_product_categories(category_ids):
     """Lock affected categories after products, in PK order, within atomic."""
     ids = {pk for pk in category_ids if pk is not None}
@@ -47,7 +38,6 @@ def lock_product_categories(category_ids):
             .filter(pk__in=ids).order_by("pk")}
 
 
->>>>>>> develop
 def require_customer(user, *, verified=True):
     if not user.is_active or user.role != User.Role.TOURIST or (verified and not user.email_verified):
         raise PermissionDenied("Se requiere Cliente activo con email verificado")
@@ -136,23 +126,16 @@ def checkout(user_id, *, mode, items, idempotency_key):
     products = list(Product.objects.select_for_update().filter(pk__in=cart).order_by("pk"))
     if len(products) != len(cart):
         raise ValidationError("Producto inexistente")
-<<<<<<< HEAD
-=======
     # Hold product locks while acquiring category locks in a stable order. A category
     # update takes only its own lock, so it cannot invert this order.
     category_ids = {product.category_id for product in products if product.category_id}
     categories = lock_product_categories(category_ids)
->>>>>>> develop
     price_field = "price_credits" if mode == Order.Mode.CREDITS else "price_money"
     total = 0 if mode == Order.Mode.CREDITS else Decimal("0.00")
     for product in products:
         price = getattr(product, price_field)
-<<<<<<< HEAD
-        if not product.active or price is None or product.stock < cart[product.pk]:
-=======
         if (not product.active or (product.category_id and not categories[product.category_id].active)
                 or price is None or product.stock < cart[product.pk]):
->>>>>>> develop
             raise Conflict("Producto no disponible en esa modalidad o stock insuficiente")
         total += price * cart[product.pk]
     order_id = uuid.uuid4()

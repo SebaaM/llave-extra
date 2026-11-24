@@ -10,8 +10,6 @@ El administrador habilita colaboradores; cada colaborador habilitado agrega o qu
 
 El catálogo general público es una superficie separada: lista únicamente beneficios publicados y vigentes de prestadores publicados, con DTO explícito sin relaciones de carpeta. Un interruptor singleton de Admin cierra listado, detalle y medios públicos por URL directa. Las vistas privadas por QR conservan su propia autorización y no consultan ese interruptor.
 
-El catálogo general público es una superficie separada: lista únicamente beneficios publicados y vigentes de prestadores publicados, con DTO explícito sin relaciones de carpeta. Un interruptor singleton de Admin cierra listado, detalle y medios públicos por URL directa. Las vistas privadas por QR conservan su propia autorización y no consultan ese interruptor.
-
 ## Autoridad y consistencia
 
 El backend calcula importes, créditos, progreso y permisos. Créditos y stock usan transacciones PostgreSQL y bloqueos de fila. Referencias históricas no se eliminan por bajas lógicas. API y logs no exponen PIN, tokens o contraseñas. Recursos subidos requieren validación.

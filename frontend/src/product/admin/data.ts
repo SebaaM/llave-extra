@@ -20,10 +20,7 @@ const providerFields: Field[] = [
   { name: 'status', label: 'Publicación', kind: 'select', options: statusOptions },
 ]
 const benefitFields: Field[] = [
-<<<<<<< HEAD
-=======
   { name: 'featured', label: 'Destacado en el inicio', kind: 'boolean' },
->>>>>>> develop
   { name: 'provider', label: 'Prestador', kind: 'lookup', lookup: 'providers', required: true, createOnly: true },
   { name: 'title', label: 'Título', required: true }, { name: 'description', label: 'Descripción', kind: 'textarea' },
   { name: 'conditions', label: 'Condiciones', kind: 'textarea' },
@@ -37,29 +34,17 @@ export const resources: Resource[] = [
     { name: 'is_active', label: 'Cuenta activa', kind: 'boolean', editOnly: true },
   ], filters: [{ name: 'role', label: 'Rol', options: roleOptions }, { name: 'is_active', label: 'Cuenta activa', options: yesNo }, { name: 'email_verified', label: 'Email verificado', options: yesNo }] },
   { key: 'providers', title: 'Prestadores', singular: 'Prestador', columns: ['name', 'category', 'status', 'user_ids'], fields: providerFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }], detail: ['description', 'address', 'hours', 'contact', 'website', 'demo', 'provenance', 'user_ids', 'image_url'] },
-<<<<<<< HEAD
-  { key: 'benefits', title: 'Beneficios', singular: 'Beneficio', columns: ['title', 'provider_name', 'status', 'valid_until'], fields: benefitFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }, { name: 'current', label: 'Vigencia', options: [['true', 'Vigente']] }], detail: ['description', 'conditions', 'valid_from', 'valid_until', 'demo', 'provenance', 'image_url'] },
-=======
   { key: 'benefits', title: 'Beneficios', singular: 'Beneficio', columns: ['title', 'provider_name', 'status', 'featured', 'valid_until'], fields: benefitFields, filters: [{ name: 'status', label: 'Estado', options: statusOptions }, { name: 'current', label: 'Vigencia', options: [['true', 'Vigente']] }], detail: ['description', 'conditions', 'valid_from', 'valid_until', 'featured', 'demo', 'provenance', 'image_url'] },
->>>>>>> develop
   { key: 'collaborators', title: 'Colaboradores', singular: 'Colaborador', columns: ['user_email', 'enabled', 'benefit_ids'], fields: [{ name: 'user', label: 'Usuario Colaborador', kind: 'lookup', lookup: 'users', lookupQuery: 'role=COLLABORATOR&is_active=true', createOnly: true, required: true }, ...networkFields], filters: [{ name: 'enabled', label: 'Habilitado', options: yesNo }, { name: 'user_active', label: 'Usuario activo', options: yesNo }], detail: ['benefit_ids', ...networkFields.map(field => field.name)] },
   { key: 'consumptions', title: 'Consumos', singular: 'Consumo', columns: ['tourist_email', 'provider_name', 'award', 'state', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['VALID', 'Válido'], ['ANNULLED', 'Anulado']] }], detail: ['collaborator_email', 'rule_snapshot', 'annulled_at', 'annul_reason'] },
   { key: 'wallets', title: 'Billeteras', singular: 'Billetera', columns: ['tourist_email', 'balance', 'redemptions_frozen'], detail: ['movements'] },
   { key: 'adjustments', title: 'Ajustes de créditos', singular: 'Ajuste', columns: ['tourist_email', 'shortfall', 'resolved_at', 'resolution'], filters: [{ name: 'resolved', label: 'Resolución', options: [['false', 'Pendiente'], ['true', 'Resuelto']] }], detail: ['consumption', 'funded_amount', 'forgiven_amount', 'resolution_reason'] },
-<<<<<<< HEAD
-  { key: 'products', title: 'Productos', singular: 'Producto', columns: ['name', 'active', 'stock', 'price_money', 'price_credits'], fields: [
-    { name: 'name', label: 'Nombre', required: true }, { name: 'description', label: 'Descripción', kind: 'textarea' }, media,
-    { name: 'active', label: 'Activo', kind: 'boolean' }, { name: 'price_money', label: 'Precio en pesos', kind: 'number', precision: 2 },
-    { name: 'price_credits', label: 'Precio en créditos', kind: 'number' },
-  ], filters: [{ name: 'active', label: 'Activo', options: yesNo }, { name: 'stock', label: 'Stock', options: [['0', 'Sin stock']] }], detail: ['description', 'demo', 'image_url'] },
-=======
   { key: 'products', title: 'Productos', singular: 'Producto', columns: ['name', 'category_name', 'active', 'stock', 'price_money', 'price_credits'], fields: [
     { name: 'name', label: 'Nombre', required: true }, { name: 'description', label: 'Descripción', kind: 'textarea' }, { name: 'category', label: 'Categoría', kind: 'lookup', lookup: 'product-categories' }, media,
     { name: 'active', label: 'Publicado', kind: 'boolean', editOnly: true }, { name: 'price_money', label: 'Precio en pesos', kind: 'number', precision: 2 },
     { name: 'price_credits', label: 'Precio en créditos', kind: 'number' },
   ], filters: [{ name: 'active', label: 'Publicación', options: [['true', 'Publicado'], ['false', 'Borrador']] }, { name: 'availability', label: 'Disponibilidad', options: [['in_stock', 'Con stock'], ['low', 'Stock bajo'], ['out', 'Agotado']] }, { name: 'price_mode', label: 'Modalidad de precio', options: [['money', 'Pesos'], ['credits', 'Créditos'], ['both', 'Ambas']] }], detail: ['description', 'demo', 'image_url'] },
   { key: 'product-categories', title: 'Categorías de tienda', singular: 'Categoría', columns: ['name', 'active', 'published_products_count'], fields: [{ name: 'name', label: 'Nombre', required: true }, { name: 'active', label: 'Activa', kind: 'boolean', editOnly: true }], filters: [{ name: 'active', label: 'Activa', options: yesNo }] },
->>>>>>> develop
   { key: 'orders', title: 'Pedidos', singular: 'Pedido', columns: ['customer_email', 'mode', 'state', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['PENDING_PAYMENT', 'Pendiente de pago'], ['PAID', 'Pagado'], ['READY', 'Preparado'], ['PICKED_UP', 'Entregado'], ['CANCELED', 'Cancelado'], ['EXPIRED', 'Vencido'], ['PAYMENT_REVIEW', 'Pago en revisión'], ['REFUND_PENDING', 'Reintegro pendiente'], ['REFUNDED', 'Reintegrado']] }, { name: 'mode', label: 'Medio', options: [['CREDITS', 'Créditos'], ['MONEY', 'Dinero']] }], detail: ['total_money', 'total_credits', 'pickup_snapshot', 'reserved_until', 'payment_provider', 'payment_confirmed', 'lines', 'cancellations', 'payment_operations', 'audit'] },
   { key: 'cancellations', title: 'Cancelaciones', singular: 'Cancelación', columns: ['customer_email', 'reason', 'state', 'created_at'], filters: [{ name: 'state', label: 'Estado', options: [['OPEN', 'Abierta'], ['APPROVED', 'Aprobada'], ['REJECTED', 'Rechazada']] }], detail: ['order', 'resolution_reason', 'resolved_at', 'resolved_by'] },
   { key: 'credit-rules', title: 'Reglas de créditos', singular: 'Regla', columns: ['provider_name', 'reward'], fields: [{ name: 'provider', label: 'Prestador', kind: 'lookup', lookup: 'providers', required: true, createOnly: true }, { name: 'reward', label: 'Créditos por visita', kind: 'number', required: true }], detail: ['provider'] },
@@ -74,10 +59,7 @@ export const orderHistories: Record<string, readonly string[]> = {
   audit: ['created_at', 'actor_email', 'action', 'reason'],
 }
 export const fieldLabels: Record<string, string> = Object.assign(Object.fromEntries(resources.flatMap(resource => (resource.fields ?? []).map(field => [field.name, field.label]))), {
-<<<<<<< HEAD
-=======
   category_name: 'Categoría', published_products_count: 'Productos publicados afectados',
->>>>>>> develop
   email: 'Email', role: 'Rol', is_active: 'Activo', email_verified: 'Email verificado', name: 'Nombre', category: 'Categoría', status: 'Estado', user_ids: 'Usuarios asignados',
   title: 'Título', provider_name: 'Prestador', valid_until: 'Válido hasta', enabled: 'Habilitado', benefit_ids: 'Beneficios elegidos', user_email: 'Usuario',
   tourist_email: 'Cliente', award: 'Créditos otorgados', state: 'Estado', created_at: 'Fecha', balance: 'Saldo', redemptions_frozen: 'Canjes suspendidos',
@@ -108,10 +90,7 @@ const auditActions: Record<string, string> = {
   'orders.prepare': 'Pedido preparado', 'orders.deliver': 'Pedido entregado', 'orders.refund': 'Reintegro solicitado',
   'cancellations.approve': 'Cancelación aprobada', 'cancellations.reject': 'Cancelación rechazada',
   'payment-operations.retry': 'Operación de pago reprogramada', 'credit-rules.remove': 'Regla de créditos eliminada',
-<<<<<<< HEAD
-=======
   'benefit-commission-rate.update': 'Porcentaje de comisión del beneficio actualizado',
->>>>>>> develop
   CHECKOUT: 'Pedido creado', CANCELLATION_REQUESTED: 'Cancelación solicitada', CANCELLATION_APPROVED: 'Cancelación aprobada',
   CANCELLATION_REJECTED: 'Cancelación rechazada', REFUND_REQUESTED: 'Reintegro solicitado', PAYMENT_RETRY: 'Pago reprogramado',
 }

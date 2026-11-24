@@ -6,8 +6,6 @@
 @media(prefers-reduced-motion:reduce){.shop-art-link>svg{transition:none}.shop-art-link:hover>svg{transform:none}}
 
 .shop-page h1,.shop-page h2,.shop-page h3,.shop-detail h1{font-weight:800}
-<<<<<<< HEAD
-=======
 .product-shell .shop-art-preview { min-width: 0; align-self: start; }
 .product-shell .shop-art-preview > button { display: block; min-height: 44px; min-width: 44px; margin-bottom: 12px; padding: 10px 16px; border: 1px solid var(--client-petrol); border-radius: 10px; background: white; color: var(--client-petrol); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
 .product-shell .shop-art-preview .shop-detail-art { width: 100%; max-width: none; }
@@ -30,4 +28,3 @@
 .shop-out-of-stock{font-weight:700;color:#8c4b16!important}
 .shop-pickup{margin-top:35px;padding:20px;background:#e9ede3;border-radius:8px}
 .shop-coming{margin-top:25px}
->>>>>>> develop

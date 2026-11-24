@@ -1,11 +1,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 
-<<<<<<< HEAD
-from .models import CancellationRequest, Order, OrderLine, Product
-=======
 from .models import CancellationRequest, Order, OrderLine, Product, ProductCategory
->>>>>>> develop
 
 
 class StrictSerializer(serializers.Serializer):
@@ -34,14 +30,6 @@ class CancellationInputSerializer(StrictSerializer):
     reason = serializers.CharField(max_length=500)
 
 
-<<<<<<< HEAD
-class ProductSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Product
-        fields = ("id", "name", "description", "stock", "price_money", "price_credits", "image_url")
-=======
 class PublicCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
@@ -66,7 +54,6 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ("id", "name", "description", "stock", "price_money", "price_credits", "image_url", "category")
->>>>>>> develop
 
     def get_image_url(self, obj) -> str | None:
         return reverse("shop-product-media", kwargs={"pk": obj.pk}) if obj.image else None

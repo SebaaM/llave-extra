@@ -19,9 +19,6 @@ from providers.models import Benefit, FolderBenefit, Provider, ProviderMembershi
 from referrals.models import CollaboratorProfile
 from shop.models import CancellationRequest, Order, PaymentOperation, Product
 from shop.payments.processing import request_refund, retry_operation
-<<<<<<< HEAD
-from shop.services import adjust_stock, advance_order, require_admin, resolve_cancellation
-=======
 from shop.services import (
     adjust_stock,
     advance_order,
@@ -29,7 +26,6 @@ from shop.services import (
     require_admin,
     resolve_cancellation,
 )
->>>>>>> develop
 
 from .commands import CommandResult, record_audit, run_command
 from .permissions import IsProgramAdmin
@@ -221,11 +217,8 @@ class ActionView(APIView):
 
 def _versioned(model, pk, version):
     obj = get_object_or_404(model.objects.select_for_update(), pk=pk)
-<<<<<<< HEAD
-=======
     if isinstance(obj, Product) and obj.category_id:
         obj._state.fields_cache["category"] = lock_product_categories([obj.category_id])[obj.category_id]
->>>>>>> develop
     require_admin_resource_version(obj, version)
     return obj
 

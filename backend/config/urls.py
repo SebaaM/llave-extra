@@ -16,13 +16,10 @@ urlpatterns = [
     path("api/v1/", include("credits.urls")),
     path("api/v1/shop/", include("shop.urls")),
     path("api/v1/", include("administration.urls")),
-<<<<<<< HEAD
-=======
     path("api/v1/", include("commissions.urls")),
     path("api/v1/", include("commissions.collaborator")),
     path("api/v2/consumptions/", ReferredConsumptionView.as_view()),
     path("api/v2/consumptions/options/", ConsumptionOptionsView.as_view()),
->>>>>>> develop
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

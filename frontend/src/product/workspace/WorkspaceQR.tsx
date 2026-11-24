@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useCallback, useEffect, useState } from 'react'
-=======
 import { useCallback, useEffect, useRef, useState } from 'react'
->>>>>>> develop
 import { api, ApiError, currentSessionVersion, privateImage } from '../api'
 import { safeExternal } from '../catalog'
 import { messageOf } from '../shared'
@@ -11,8 +7,6 @@ import { Feedback } from './UI'
 
 type Credential = { configured?: boolean; qr_url?: string; url?: string }
 export function WorkspaceQR({ kind, credentialPath }: { kind: 'provider' | 'collaborator'; credentialPath: string }) {
-<<<<<<< HEAD
-=======
   return kind === 'collaborator' ? <CollaboratorQR key={`${credentialPath}:${currentSessionVersion()}`} path={credentialPath} /> : <ProviderQR kind={kind} credentialPath={credentialPath} />
 }
 
@@ -100,7 +94,6 @@ function CollaboratorQR({ path }: { path: string }) {
 }
 
 function ProviderQR({ kind, credentialPath }: { kind: 'provider' | 'collaborator'; credentialPath: string }) {
->>>>>>> develop
   const [notice, setNotice] = useState('')
   const [denied, setDenied] = useState(false)
   const deny = useCallback(() => setDenied(true), [])
