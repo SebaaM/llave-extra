@@ -145,6 +145,12 @@ class Consumption(models.Model):
     provider = models.ForeignKey("providers.Provider", verbose_name="Prestador", on_delete=models.PROTECT)
     collaborator = models.ForeignKey("referrals.CollaboratorProfile", verbose_name="Colaborador", on_delete=models.PROTECT,
                                      null=True, blank=True)
+<<<<<<< HEAD
+=======
+    benefit_id = models.UUIDField("Identificador histórico del beneficio", null=True, blank=True, editable=False)
+    benefit_title = models.CharField("Título histórico del beneficio", max_length=200, blank=True, editable=False)
+    benefit_demo = models.BooleanField("Beneficio de demostración", default=False, editable=False)
+>>>>>>> develop
     award = models.PositiveIntegerField("Créditos otorgados")
     rule_snapshot = models.JSONField("Instantánea de la regla")
     state = models.CharField("Estado", max_length=10, choices=State.choices, default=State.VALID)
@@ -160,6 +166,14 @@ class Consumption(models.Model):
             models.UniqueConstraint(fields=["tourist", "provider"], name="one_consumption_per_tourist_provider_lifetime"),
             models.CheckConstraint(condition=Q(award__lte=MAX_CREDITS), name="consumption_award_bound"),
             models.CheckConstraint(
+<<<<<<< HEAD
+=======
+                condition=(Q(benefit_id__isnull=True, benefit_title="", benefit_demo=False)
+                           | (Q(benefit_id__isnull=False, collaborator__isnull=False) & ~Q(benefit_title=""))),
+                name="consumption_benefit_snapshot_complete",
+            ),
+            models.CheckConstraint(
+>>>>>>> develop
                 condition=(Q(state="VALID", annulled_at__isnull=True, annulled_by__isnull=True, annul_reason="") |
                            (Q(state="ANNULLED", annulled_at__isnull=False, annulled_by__isnull=False) & ~Q(annul_reason=""))),
                 name="consumption_annul_audit_complete",

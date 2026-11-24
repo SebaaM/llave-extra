@@ -1,5 +1,9 @@
 from django.db import IntegrityError, transaction
+<<<<<<< HEAD
 from django.db.models import Q
+=======
+from django.db.models import Count, F, Q
+>>>>>>> develop
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -8,13 +12,30 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from accounts.models import AuthSession, User
+<<<<<<< HEAD
+=======
+from config.query_params import reject_null_filters
+>>>>>>> develop
 from credits.models import AdjustmentCase, Consumption, ProviderCreditRule, Wallet
 from credits.services import Conflict
 from providers.catalog import catalog_benefits
 from providers.models import Benefit, Provider
 from referrals.models import CollaboratorProfile
+<<<<<<< HEAD
 from shop.models import CancellationRequest, Order, PaymentOperation, Product, StockAdjustment
 from shop.services import require_admin
+=======
+from shop.models import (
+    CancellationRequest,
+    Order,
+    PaymentOperation,
+    Product,
+    ProductCategory,
+    ShopSettings,
+    StockAdjustment,
+)
+from shop.services import lock_product_categories, require_admin
+>>>>>>> develop
 
 from .commands import record_audit
 from .permissions import IsProgramAdmin
@@ -34,6 +55,12 @@ from .resource_serializers import (
     OrderReadSerializer,
     OrderSummarySerializer,
     PaymentOperationReadSerializer,
+<<<<<<< HEAD
+=======
+    ProductCategoryPatchRequestSerializer,
+    ProductCategoryReadSerializer,
+    ProductCategoryWriteSerializer,
+>>>>>>> develop
     ProductPatchRequestSerializer,
     ProductReadSerializer,
     ProductWriteSerializer,
@@ -52,6 +79,11 @@ from .resource_serializers import (
 from .resource_versions import require_admin_resource_version
 from .views import AdminPagination, validate_model
 
+<<<<<<< HEAD
+=======
+BenefitConflictSchema = inline_serializer("AdminBenefitConflict", fields={"detail": serializers.CharField()})
+
+>>>>>>> develop
 
 class ResourceView(generics.GenericAPIView):
     permission_classes = [IsProgramAdmin]
@@ -68,7 +100,11 @@ class ResourceView(generics.GenericAPIView):
     search_fields = ()
     id_filters = {"provider": serializers.UUIDField(), "tourist": serializers.IntegerField(min_value=1),
                   "collaborator": serializers.UUIDField(), "customer": serializers.IntegerField(min_value=1),
+<<<<<<< HEAD
                   "product": serializers.UUIDField()}
+=======
+                  "product": serializers.UUIDField(), "category": serializers.UUIDField()}
+>>>>>>> develop
 
     def get_serializer_class(self):
         return self.read_serializer
@@ -85,7 +121,11 @@ class ResourceView(generics.GenericAPIView):
                                ("page", "page_size", "search", "role", "is_active", "email_verified", "status",
                                 "provider", "enabled", "state", "mode", "kind", "active", "product", "customer",
                                 "tourist", "collaborator", "created_from", "created_to", "current",
+<<<<<<< HEAD
                                 "user_active", "stock", "resolved")])
+=======
+                                "user_active", "stock", "resolved", "category", "availability", "price_mode", "ordering")])
+>>>>>>> develop
     def get(self, request, pk=None):
         if pk is not None:
             obj = get_object_or_404(self.queryset(), pk=pk)
@@ -97,12 +137,20 @@ class ResourceView(generics.GenericAPIView):
                 data["movements"] = paginator.get_paginated_response(
                     WalletEntryReadSerializer(page, many=True).data).data
             return Response(data)
+<<<<<<< HEAD
+=======
+        reject_null_filters(request.query_params, "search", *self.filters)
+>>>>>>> develop
         queryset = self.queryset()
         for name, lookup in self.filters.items():
             value = request.query_params.get(name)
             if value is None or value == "":
                 continue
+<<<<<<< HEAD
             if name in ("is_active", "email_verified", "enabled", "active", "user_active"):
+=======
+            if name in ("is_active", "email_verified", "enabled", "active", "user_active", "featured"):
+>>>>>>> develop
                 if value not in ("true", "false"):
                     raise ValidationError({name: "Usá true o false."})
                 value = value == "true"
@@ -122,6 +170,30 @@ class ResourceView(generics.GenericAPIView):
             if request.query_params["stock"] != "0":
                 raise ValidationError({"stock": "Solo se admite 0."})
             queryset = queryset.filter(stock=0)
+<<<<<<< HEAD
+=======
+        if self.resource == "products":
+            availability = request.query_params.get("availability", "")
+            threshold = (ShopSettings.objects.filter(pk=1).values_list("low_stock_threshold", flat=True).first())
+            threshold = 5 if threshold is None else threshold
+            if availability == "in_stock":
+                queryset = queryset.filter(stock__gt=0)
+            elif availability == "low":
+                queryset = queryset.filter(stock__gt=0, stock__lte=threshold)
+            elif availability == "out":
+                queryset = queryset.filter(stock=0)
+            elif availability:
+                raise ValidationError({"availability": "Disponibilidad inválida."})
+            price_mode = request.query_params.get("price_mode", "")
+            if price_mode == "money":
+                queryset = queryset.filter(price_money__isnull=False, price_credits__isnull=True)
+            elif price_mode == "credits":
+                queryset = queryset.filter(price_money__isnull=True, price_credits__isnull=False)
+            elif price_mode == "both":
+                queryset = queryset.filter(price_money__isnull=False, price_credits__isnull=False)
+            elif price_mode:
+                raise ValidationError({"price_mode": "Modalidad inválida."})
+>>>>>>> develop
         if self.resource == "adjustments" and request.query_params.get("resolved") is not None:
             if request.query_params["resolved"] not in ("true", "false"):
                 raise ValidationError({"resolved": "Usá true o false."})
@@ -143,7 +215,21 @@ class ResourceView(generics.GenericAPIView):
                     raise ValidationError({name: "Fecha inválida."}) from None
                 queryset = queryset.filter(**{lookup: parsed})
         page = AdminPagination()
+<<<<<<< HEAD
         items = page.paginate_queryset(queryset.order_by("-pk"), request, view=self)
+=======
+        ordering = "-pk"
+        if self.resource == "products":
+            ordering = request.query_params.get("ordering", "name")
+            if ordering.lstrip("-") not in ("name", "category", "active", "stock", "price_money", "price_credits") or ordering.startswith("--"):
+                raise ValidationError({"ordering": "Orden inválido."})
+            if ordering.lstrip("-") == "category":
+                ordering = ("-" if ordering.startswith("-") else "") + "category__name"
+            elif ordering.lstrip("-") in ("price_money", "price_credits"):
+                field = F(ordering.lstrip("-"))
+                ordering = field.desc(nulls_last=True) if ordering.startswith("-") else field.asc(nulls_last=True)
+        items = page.paginate_queryset(queryset.order_by(ordering, "pk"), request, view=self)
+>>>>>>> develop
         return page.get_paginated_response((self.list_serializer or self.read_serializer)(items, many=True).data)
 
     def post(self, request, pk=None):
@@ -157,8 +243,13 @@ class ResourceView(generics.GenericAPIView):
             validate_model(obj)
             try:
                 obj.save()
+<<<<<<< HEAD
             except IntegrityError:
                 raise Conflict("Registro duplicado o vinculación incompatible.") from None
+=======
+            except IntegrityError as error:
+                raise self.write_conflict(error) from None
+>>>>>>> develop
             record_audit(request.user, f"{self.resource}.create", self.resource, obj.pk,
                          serializer.validated_data.keys())
         return Response(self.read_serializer(self.queryset().get(pk=obj.pk)).data, status=status.HTTP_201_CREATED)
@@ -186,7 +277,15 @@ class ResourceView(generics.GenericAPIView):
                 setattr(obj, name, value)
             validate_model(obj)
             if changed:
+<<<<<<< HEAD
                 obj.save(update_fields=changed)
+=======
+                try:
+                    with transaction.atomic():
+                        obj.save(update_fields=changed)
+                except IntegrityError as error:
+                    raise self.write_conflict(error) from None
+>>>>>>> develop
                 self.after_patch(obj, changed)
                 record_audit(request.user, f"{self.resource}.update", self.resource, obj.pk, changed)
         return Response(self.read_serializer(self.queryset().get(pk=obj.pk)).data)
@@ -197,6 +296,12 @@ class ResourceView(generics.GenericAPIView):
     def patch_data(self, obj, data):
         return data
 
+<<<<<<< HEAD
+=======
+    def write_conflict(self, error):
+        return Conflict("Registro duplicado o vinculación incompatible.")
+
+>>>>>>> develop
     def after_patch(self, obj, changed):
         pass
 
@@ -251,7 +356,11 @@ class BenefitsView(ResourceView):
     model, read_serializer, write_serializer = Benefit, BenefitReadSerializer, BenefitWriteSerializer
     resource, create_allowed, patch_allowed = "benefits", True, True
     joins = ("provider",)
+<<<<<<< HEAD
     filters = {"status": "status", "provider": "provider_id"}
+=======
+    filters = {"status": "status", "provider": "provider_id", "featured": "featured"}
+>>>>>>> develop
     search_fields = ("title", "description", "provider__name")
 
     def create_object(self, data):
@@ -270,6 +379,15 @@ class BenefitsView(ResourceView):
         Provider.objects.select_for_update().get(pk=provider_id)
         return get_object_or_404(Benefit.objects.select_for_update(), pk=pk, provider_id=provider_id)
 
+<<<<<<< HEAD
+=======
+    def write_conflict(self, error):
+        diagnostics = getattr(error.__cause__, "diag", None)
+        if getattr(diagnostics, "constraint_name", None) == "benefit_featured_slots_exhausted":
+            return Conflict("Ya hay cinco beneficios destacados. Quitá uno para destacar otro.")
+        return super().write_conflict(error)
+
+>>>>>>> develop
 
 class CollaboratorsView(ResourceView):
     model, read_serializer, write_serializer = CollaboratorProfile, CollaboratorReadSerializer, CollaboratorWriteSerializer
@@ -315,9 +433,46 @@ class AdjustmentsView(ResourceView):
 class ProductsView(ResourceView):
     model, read_serializer, write_serializer = Product, ProductReadSerializer, ProductWriteSerializer
     resource, create_allowed, patch_allowed = "products", True, True
+<<<<<<< HEAD
     filters = {"active": "active"}
     search_fields = ("name", "description")
 
+=======
+    joins = ("category",)
+    filters = {"active": "active", "category": "category_id"}
+    search_fields = ("name", "description")
+
+    def create_object(self, data):
+        category = data.get("category")
+        lock_product_categories([category.pk if category else None])
+        return super().create_object(data)
+
+    def lock_for_patch(self, pk):
+        obj = get_object_or_404(Product.objects.select_for_update(), pk=pk)
+        requested = self.request.data.get("category", obj.category_id)
+        if requested in (None, ""):
+            category_id = None
+        else:
+            try:
+                category_id = serializers.UUIDField().run_validation(requested)
+            except ValidationError:
+                raise ValidationError({"category": "Identificador inválido."}) from None
+        locked = lock_product_categories([obj.category_id, category_id])
+        if obj.category_id:
+            obj._state.fields_cache["category"] = locked[obj.category_id]
+        return obj
+
+
+class ProductCategoriesView(ResourceView):
+    model, read_serializer, write_serializer = ProductCategory, ProductCategoryReadSerializer, ProductCategoryWriteSerializer
+    resource, create_allowed, patch_allowed = "product-categories", True, True
+    filters = {"active": "active"}
+    search_fields = ("name",)
+
+    def queryset(self):
+        return super().queryset().annotate(published_products_count=Count("products", filter=Q(products__active=True)))
+
+>>>>>>> develop
 
 class OrdersView(ResourceView):
     model, read_serializer, resource = Order, OrderReadSerializer, "orders"
@@ -382,7 +537,17 @@ def resource_endpoint(view_class, *, detail):
                 "results": (view_class.list_serializer or view_class.read_serializer)(many=True)},
     )
 
+<<<<<<< HEAD
     @extend_schema(operation_id=f"admin_{name}_{'retrieve' if detail else 'list'}", responses=response)
+=======
+    parameters = (
+        [OpenApiParameter("featured", bool, description="Filtra por selección en el carrusel, sin exigir publicación ni vigencia.")]
+        if view_class is BenefitsView and not detail else []
+    )
+    write_conflicts = {409: BenefitConflictSchema} if view_class is BenefitsView else {}
+
+    @extend_schema(operation_id=f"admin_{name}_{'retrieve' if detail else 'list'}", parameters=parameters, responses=response)
+>>>>>>> develop
     def get(self, request, pk=None):
         return view_class.get(self, request, pk)
 
@@ -395,11 +560,19 @@ def resource_endpoint(view_class, *, detail):
             BenefitsView: BenefitPatchRequestSerializer,
             CollaboratorsView: CollaboratorPatchRequestSerializer,
             ProductsView: ProductPatchRequestSerializer,
+<<<<<<< HEAD
+=======
+            ProductCategoriesView: ProductCategoryPatchRequestSerializer,
+>>>>>>> develop
             CreditRulesView: CreditRulePatchRequestSerializer,
         }[view_class]
 
         @extend_schema(operation_id=f"admin_{name}_update", request=request_serializer,
+<<<<<<< HEAD
                        responses=view_class.read_serializer)
+=======
+                       responses={200: view_class.read_serializer, **write_conflicts})
+>>>>>>> develop
         def patch(self, request, pk=None):
             return view_class.patch(self, request, pk)
 
@@ -408,7 +581,11 @@ def resource_endpoint(view_class, *, detail):
         method_names.append("post")
 
         @extend_schema(operation_id=f"admin_{name}_create", request=view_class.write_serializer,
+<<<<<<< HEAD
                        responses={201: view_class.read_serializer})
+=======
+                       responses={201: view_class.read_serializer, **write_conflicts})
+>>>>>>> develop
         def post(self, request, pk=None):
             return view_class.post(self, request, pk)
 

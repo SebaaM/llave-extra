@@ -1,5 +1,107 @@
 # Contexto y decisiones
 
+<<<<<<< HEAD
+=======
+## Auditoría de picomatch — excepción temporal propuesta en PR · 17/11/2026
+
+El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39xc-vjpf de picomatch 4.0.7. npm sigue sin publicar 4.0.8. Tras el pedido de corregir o actualizar la auditoría, este corte prepara una aceptación temporal y visible del riesgo de tooling, no una corrección de la biblioteca. La auditoría moderate conserva el informe real; su evaluador permite únicamente paquete/versión/rangos/rutas previstos y caduca el 25/11/2026 a las 00:00 UTC. Nuevas alertas, rutas de aplicación, errores o informes incoherentes bloquean. El cambio permanece sujeto a revisión en el PR #30, sin merge; [evidencia y retirada](docs/verification/19-auditoria-picomatch.md).
+
+## Selecciones reversibles en los catálogos — 17/11/2026
+
+La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
+
+## E6.1 — Visitas atribuidas · 17/11/2026
+
+Ajuste visual solicitado: fechas y Colaborador alineados, búsqueda y acciones separadas, y navegación de comercios junto al pie de la lista. La paginación de colaboradores es independiente y solo aparece cuando hay varias páginas. Este refinamiento no cambia métricas, permisos ni contrato API.
+
+El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integración a `develop` pendiente. Las métricas por rol y los controles operativos siguientes permanecen fuera de este corte.
+
+## Continuidad de la atribución QR — 16/11/2026
+
+Si la lectura de la selección falla por un 5xx o un error de red, se conserva únicamente la pista de IDs ya guardada. Se oculta el contenido privado y se impide consumir con esa referencia hasta revalidarla en el servidor, incluso tras recargar. Una denegación confirmada (401/403/404 definitivo) sigue eliminando la pista. El PR #18 consta integrado en `develop` en `c43eeea`. [Verificación](docs/verification/14-seleccion-qr-contextual.md#corrección-de-continuidad--16112026).
+
+## Tasa por beneficio — 12/11/2026
+
+En «Mis beneficios», el Prestador puede elegir 3 %, 7 %, 10 % o la tasa global para cada beneficio de su negocio. El Administrador configura la tasa global, con un respaldo de 5 %. El porcentaje es igual para todos los colaboradores del beneficio y queda fijado al validar el consumo con QR y PIN. Las excepciones anteriores por Prestador siguen vigentes para los casos sin tasa registrada. Las aprobaciones conservan su historial.
+
+El Colaborador consulta sus consumos referidos en `/colaborador/comisiones`. «Pendiente de cobro» suma las comisiones aprobadas pendientes de conciliación en todas las páginas. El historial conserva la atribución original e incluye consumos históricos y anulados.
+
+## Perfiles y comisiones por consumos referidos — 10/11/2026
+
+El Cliente y el Colaborador completan nombre y apellido y reenvían la verificación de email desde sus cuentas. El Colaborador registra CBU y alias opcional en una pestaña propia. Los referidos nuevos guardan el beneficio elegido junto al QR y el PIN único del negocio. Se conserva una acreditación por Cliente y Prestador. El Prestador declara el resultado y monto aproximado. `/gestion/comisiones` muestra el estado actual y el historial desde la validación hasta el cierre. El pago va del Prestador al Colaborador fuera de la aplicación y el Administrador registra su verificación. [Diseño](docs/superpowers/specs/2026-11-10-perfiles-y-comisiones-design.md) · [Plan](docs/superpowers/plans/2026-11-10-perfiles-y-comisiones.md) · [Guía del panel](docs/panel-administracion.md#comisiones-por-consumos-referidos)
+## Contacto público — 13/11/2026
+
+L
+
+## Avance de la auditoría de seguridad — 05/11/2026
+
+La campaña usa un worktree de `feature/auditoria-seguridad` desde `origin/develop` `7467838` y un laboratorio Docker independiente. Al 06/11 integró 18 correcciones con un commit por hallazgo. La segunda pasada agregó comprobaciones en Edge y una matriz HTTP de alcance. La auditoría sigue incompleta. El [resumen de la corrida](docs/security/runs/20261105-1823-7467838/resumen.md) y el [registro de hallazgos](docs/security/hallazgos.md) detallan la cobertura y los pendientes.
+
+## Selección de destacados del inicio — 05/11/2026
+
+`/gestion/beneficios-destacados` permite que el Administrador busque todos los beneficios y elija de cero a cinco. PostgreSQL asigna cupos únicos al marcar cada beneficio. El carrusel conserva el orden público y aplica publicación, vigencia e interruptor del catálogo. Si la base tenía más de cinco marcas, la migración conserva las primeras cinco según el orden del carrusel.
+
+## Backoffice de tienda y catálogo real — 04/11/2026
+
+Plan autorizado en [backoffice de tienda y catálogo real](docs/superpowers/plans/2026-11-03-backoffice-tienda-catalogo-real.md), implementado en `feature/backoffice-tienda-catalogo` y publicado en [PR #20](https://github.com/SebaaM/llave-extra/pull/20), integrado a `develop` en `7467838`. Incluye categorías opcionales, gestión de productos/stock/retiro y catálogo público conectado a la API; no habilita compra ni canje en React. La revisión visual del 05/11 agrupó filtros, formularios e inventario, recuperó el ordenamiento de productos en móvil y ajustó las fotos y precios de la tienda. QA visual en navegador con respuestas sintéticas documentada en [verificación](docs/verification/16-backoffice-tienda-catalogo.md). El CI vigente se consulta en el PR y el sandbox externo de pagos sigue pendiente.
+
+Ajuste del 05/11 para `/gestion`: acceso directo a Inicio, Pedidos, Productos y Beneficios; grupos desplegables por tarea y Mi cuenta en la cabecera. La barra lateral en escritorio usa la altura disponible y en móvil el menú abierto fluye con la página. La [guía del panel](docs/panel-administracion.md) describe la nueva distribución.
+
+## Seed de actividad completa opcional — 02/11/2026
+
+El usuario pidió más volumen, consumos y escenarios para probar backoffice mediante un comando separado. `seed_activity_demo` agrega por defecto 300 Clientes, 30 negocios, 10 colaboradores y 12 productos; la prueba nueva generó 980 consumos, 205 pedidos en ocho estados y 20 ajustes abiertos. Cantidad configurable 20–3000 Clientes. Usa servicios E4/E5, redención QR válida, selección canónica, fake explícito sin HTTP externo, checkpoints y bloqueo PostgreSQL. No se ejecuta al iniciar ni cambia datos/configuración existentes. Accesos privados por base en archivo ignorado; guía en `docs/demo-activity.md`. Verificación en `docs/verification/15-seed-actividad-demo.md`; no se cargó la base principal ni se habilita compra React o integración externa.
+
+## Arranque local en primer plano — 02/11/2026
+
+Los scripts `dev.ps1 up` y `dev.sh up` preparan servicios, migraciones y demo opcional antes de mostrar el historial disponible y seguir los logs de todos los servicios mediante `docker compose logs --follow --tail all`. Corrección del usuario: adjuntarse con otro `compose up` después de iniciarlos no mostraba sus logs de inicio. `Ctrl+C` ejecuta `docker compose stop`, conservando volúmenes. Los errores de preparación se propagan antes de adjuntarse. No cambia el dominio ni OpenAPI.
+
+## Estado vigente del Cliente — 2/11/2026
+
+Implementados QR contextual, renovación manual, resumen administrativo, destacados del hero y «Cómo funciona» en catálogo. Rama `feature/cliente-qr-destacados`, con base `develop` `054342e` incorporada localmente en `84d872b`, incluida su corrección de CI. Entrega publicada en [PR #18](https://github.com/SebaaM/llave-extra/pull/18), borrador hacia `develop`, sin merge y con residual técnico/QA/aprobación del cliente pendientes. La PR #16 fue fusionada externamente el 31/10; sus estados anteriores en borrador son históricos.
+
+El catálogo es la vista habitual, sin sección permanente ni menú Recomendaciones. Abrir un QR e iniciar sesión muestra «Recomendaciones de [nombre]» con la selección vigente, sin copiarla a una colección del turista. Se registra el vínculo para resumen; consumo referido conserva atribución y QR del negocio + PIN. La pista por pestaña contiene solo IDs y se revalida en servidor. Hay salida explícita a consumo directo antes del primer POST; una referencia rechazada nunca se convierte automáticamente a directa. El comando incierto conserva cuerpo/clave dentro de la SPA.
+
+El QR del colaborador es estable por versión y solo se renueva por acción manual confirmada; consultar, copiar, descargar o editar beneficios no lo cambia. Los códigos anteriores siguen siendo válidos hasta renovar. El backoffice muestra clientes distintos que ingresaron por QR y visitas válidas atribuidas, sin habilitar analítica E6 general.
+
+El hero muestra únicamente beneficios marcados por Administrador como «Destacado en el inicio», sujetos a publicación/vigencia e interruptor del catálogo. La marca empieza en falso, sin selección automática; el carrusel recorre todas las páginas y el catálogo normal conserva todos los beneficios públicos. «Cómo funciona» se comparte en inicio y catálogo, explica visitas/créditos/propósito de canje y enlaza la tienda. El canje de la UI de tienda sigue sin habilitarse, informado en lenguaje cotidiano.
+
+Producto hasta `02781f2`: revisiones por tarea aprobadas y revisión integral con dos casos principales de paginación corregidos. Sobre el árbol con base/lock vigentes aprobaron 366 UI + 1 proxy, instalación congelada, auditoría de dependencias, lint/tipos/build; backend de producto conserva el corte de 383 pruebas PostgreSQL/Redis y se agregan seis casos focales de nombres aprobados, sin cambios de producto backend. Ruff/OpenAPI/drift y HTTP real con fixtures temporales están registrados. Queda un residual Important antes del merge: si una página retirada devuelve 404 y su recuperación falla por 503/red, se borra la pista; recargar requiere reabrir el QR para conservar atribución. No se declara revisión integral limpia. La revisión visual manual del corte nuevo sigue pendiente porque Computer Use agotó la autorización de Opera. [Antes/después, decisiones y límites](docs/verification/14-seleccion-qr-contextual.md), [plan contextual](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md) y [plan de destacados/recorrido](docs/superpowers/plans/2026-11-01-destacados-hero.md).
+
+## Decisión vigente: catálogo y selección contextual por QR — 30/10/2026
+
+### Accesos móviles — 13/11/2026
+
+E
+
+El usuario decidió retirar la sección permanente Recomendaciones del Cliente, porque ya dispone del catálogo de beneficios. Esta decisión sustituye la pantalla propia y el enlace condicional descritos en los apartados históricos siguientes. En escritorio quedan Beneficios, Tienda, Cómo funciona, Mi viaje y Cuenta; en la barra móvil, Beneficios y Mi viaje.
+
+Precisión posterior: si el turista abre el QR de un colaborador, después de iniciar sesión se muestra una selección dinámica con el nombre de ese colaborador y sus negocios/beneficios elegidos. No se copia la selección ni se crea una colección administrable por el turista. Sí se registra el vínculo de ingreso para resumen/analítica del backoffice y la visita sigue atribuida al colaborador. La autorización de lectura y medios sigue en el servidor con selección canónica vigente. Flujo confirmado y resumen acotado en [selección contextual](docs/superpowers/specs/2026-10-30-seleccion-qr-contextual.md); su ubicación en la ficha administrativa se adopta como decisión reversible de implementación.
+
+Precisión adicional del usuario: el QR/URL del colaborador debe permanecer estable; editar su selección no genera otro QR y no hay renovación automática. El colaborador decide renovarlo manualmente desde su espacio de trabajo. Consultar, copiar o descargar el QR no debe renovarlo. El usuario confirmó conservar QR del negocio + PIN para validar el consumo; no se modifica E4 ni se permite validar solo con PIN. Implementación según el [plan contextual](docs/superpowers/plans/2026-10-30-seleccion-qr-contextual.md).
+
+El catálogo general no hereda contenidos privados. La ruta antigua `/recomendaciones` se dirige al catálogo; la entrada QR conserva su contexto propio. El retiro de la sección permanente estaba en implementación según [plan acotado](docs/superpowers/plans/2026-10-30-cliente-solo-catalogo.md), interrumpido para incorporar esta precisión. Este corte nuevo tendrá otra PR en borrador hacia develop, sin merge hasta aprobación del cliente; la PR #16 fue integrada el 31/10.
+
+## Corrección del CI de develop — 02/11/2026
+
+El merge externo del PR #16 dejó `develop` en `8250205` el 31/10. Su ejecución de CI y el push previo `f565cee` fallaron exclusivamente en la auditoría frontend por GHSA-g3hv-75wg-m249, minimatch 10.2.6 transitivo de ESLint/typescript-eslint; backend, lint, tipos, pruebas y build remotos aprobaron. Corrección aislada en `feature/corregir-ci-develop`: override temporal a minimatch 11.0.1 y lockfile regenerado, sin suprimir auditorías ni modificar API, dominio o dependencias directas. La verificación Linux detectó además una carrera en las pruebas de navegación Admin; ambas ahora esperan el render del panel después del cambio de URL. [Evidencia y validación](docs/verification/14-ci-develop.md). Se conserva GitFlow mediante PR hacia develop, sin fusionarlo desde este trabajo; los cambios locales previos quedan intactos. Los estados anteriores del PR #16 se conservan como historial.
+
+## Correcciones aprobadas de la vista del Cliente — 30/10/2026
+
+Histórico: la pantalla de Recomendaciones y su enlace condicional de esta entrega fueron sustituidos por la decisión de catálogo único indicada arriba.
+
+El usuario confirma recomendaciones recibidas en pantalla propia, visible al tener beneficios disponibles; el Cliente no recomienda ni gestiona carpetas. Navegación inferior solo móvil, navbar escritorio y red/lista automática por ancho. Inicio: Hero, Red, En tu recorrido, Próxima parada, Mapa y Pasaporte. Hero con carrusel manual y pasaporte como libreta abierta con iniciales, preservando historial, billetera y barra de visitas. Texto cotidiano sin nombres de roles ni jerga del proyecto. [Antes/después y verificación](docs/verification/13-ajustes-vista-cliente.md). Continúa en [PR #16](https://github.com/SebaaM/llave-extra/pull/16), borrador hacia develop, sin merge hasta aprobación del cliente.
+
+Corrección posterior del usuario implementada en `ab9d6eb`: simplificar el navbar del Cliente en escritorio usando los enlaces públicos visibles (Beneficios, Tienda y Cómo funciona) y sumar Recomendaciones cuando corresponda, Mi viaje y Cuenta al iniciar sesión. En escritorio no se ocultan enlaces en un desplegable Menú; la barra inferior y el menú móvil conservan su funcionamiento. Cambio acotado a navegación y sus pruebas, con 66 pruebas focales, lint, tipos y build aprobados; revisión independiente aprobada y QA real de escritorio/móvil sin desborde.
+
+El Cliente puede ingresar desde la web y usar beneficios directamente, o recibir una selección por QR. Esa selección pertenece al colaborador: no se crea una carpeta administrable por el Cliente ni se le otorgan acciones de recomendación. El enlace condicional no sustituye la autorización del servidor.
+
+Corte de producto `1ff72fd`: ajustes visuales implementados y revisiones A/B aprobadas. La revisión integral detectó dos casos de recomendaciones obsoletas (estado local al cambiar generación y red privada vacía que no limpia tarjetas hermanas), corregidos en ese commit y aprobados en revisión independiente del delta, sin hallazgos pendientes de código. Suite definitiva de 308 pruebas UI + 1 proxy, lint, tipos y build aprobados. QA real parcial en 320/390/1440 px registrada; no equivale a QA HTTP integral. Los apartados siguientes conservan estados históricos y no sustituyen este pedido vigente.
+
+## Mejora visual del Cliente — 30/10/2026
+
+Las etapas frontend T1–T8 del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md) están implementadas en `feature/frontend-cliente-visual`, con revisiones por etapa y correcciones registradas. El [resumen antes/después y sus límites](docs/verification/11-frontend-cliente-visual.md) distingue las verificaciones realizadas de la revisión integral y QA aún pendientes. La entrega API previa T2/T2b ya está integrada en la base de esta rama; los párrafos siguientes conservan el historial de ese corte.
+
+>>>>>>> develop
 ## API del Cliente implementada primero — 27/10/2026
 
 Pedido vigente: ejecutar solo las mejoras de API del [plan visual](docs/superpowers/plans/2026-10-27-frontend-cliente-visual.md), con [diseño](docs/superpowers/specs/2026-10-27-frontend-cliente-visual-design.md). Backend T2/T2b implementado en `feature/api-cliente-visual`, desde `origin/develop` `754982d` (PR #10 ya integrado); no incorpora los PR #12/#13 pendientes ni altera el checkout original. Categorías públicas completas de beneficios vigentes y `provider_name` actual en historial propio, sin cambios al POST/replay de consumo, reglas del dominio, migraciones o frontend. Valores de categoría originales filtran primero de forma exacta; respaldo recortado solo si no existe la categoría original, decidido antes de búsqueda.
@@ -93,3 +195,11 @@ Corrección I1 del gate final E5: PAYMENT_REVIEW ya distingue reserva impaga de 
 Gate Task 2/rama aprobado en 4c9a402 tras corregir I1, sin hallazgos restantes. payment_confirmed conserva la evidencia histórica del pago: reserva impaga vence/cancela; stock previamente acreditado y refund pendiente se retienen hasta confirmación. Upgrade 0004→0005 y QA HTTP post-fix aprobados.
 
 En el entorno local se aplicaron solo migraciones, sin seed ni rotación de cuentas/QR. Se conservaron 17 usuarios, 14 prestadores, 14 beneficios, 10 asociaciones históricas, 8 selecciones, 6 consumos y 7 movimientos de billetera. La tienda local queda sin productos/pedidos; los escenarios DEMO están separados en llaveextra-e5, con guía docs/shop-operations.md. Backend8000, frontend5173 y Admin por proxy iniciados y HTTP200. E6, UI de tienda y sandbox externo siguen pendientes.
+<<<<<<< HEAD
+=======
+
+
+## Entornos Compose y documentación — 31/10/2026
+
+Se prepara Nginx en desarrollo (`compose.yaml`, puerto 8080) y producción (`compose.prod.yaml`, HTTPS 443), con guía vigente en README y mapa de rutas en `docs/sitemap.md`. Los certificados, SMTP, backups y validación real de producción siguen a cargo de la operación; sandbox de pagos pendiente.
+>>>>>>> develop

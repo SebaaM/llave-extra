@@ -42,17 +42,20 @@ function Initialize-Environment {
   $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
   $jwtBytes = New-Object byte[] 48
   $qrBytes = New-Object byte[] 48
+  $bankBytes = New-Object byte[] 32
   try {
     $rng.GetBytes($jwtBytes)
     $rng.GetBytes($qrBytes)
+    $rng.GetBytes($bankBytes)
   } finally {
     $rng.Dispose()
   }
   $keys = @{
     JWT_SIGNING_KEY = [Convert]::ToBase64String($jwtBytes)
     QR_SIGNING_KEY = [Convert]::ToBase64String($qrBytes)
+    BANK_DETAILS_ENCRYPTION_KEY = [Convert]::ToBase64String($bankBytes).Replace('+', '-').Replace('/', '_').TrimEnd('=')
     REDIS_URL = 'redis://redis:6379/0'
-    PUBLIC_APP_URL = 'http://localhost:5173'
+    PUBLIC_APP_URL = 'http://localhost:8080'
     DEFAULT_FROM_EMAIL = 'no-reply@llaveextra.local'
   }
   foreach ($key in $keys.Keys) {
@@ -67,11 +70,20 @@ function Initialize-Environment {
 switch ($Action) {
   'up' {
     Initialize-Environment
-    docker compose up -d --build
+    docker compose up -d --build --wait
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    docker compose exec backend python manage.py migrate
-    if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    if ($Demo -or $Mode -eq '--demo') { docker compose exec backend python manage.py seed_demo }
+    if ($Demo -or $Mode -eq '--demo') {
+      docker compose exec backend python manage.py seed_demo
+      if ($LASTEXITCODE) { exit $LASTEXITCODE }
+    }
+    $followExitCode = 0
+    try {
+      docker compose logs --follow --tail all
+      $followExitCode = $LASTEXITCODE
+    } finally {
+      docker compose stop
+    }
+    if ($followExitCode) { exit $followExitCode }
   }
   'test' {
     Initialize-Environment

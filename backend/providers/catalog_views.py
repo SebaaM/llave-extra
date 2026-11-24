@@ -2,7 +2,11 @@ from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import permissions, serializers
+<<<<<<< HEAD
 from rest_framework.exceptions import NotFound
+=======
+from rest_framework.exceptions import NotFound, ValidationError
+>>>>>>> develop
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -53,14 +57,31 @@ class CatalogBenefitsView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, description="24 por defecto; máximo 48"),
             OpenApiParameter("search", OpenApiTypes.STR),
             OpenApiParameter("category", OpenApiTypes.STR),
+<<<<<<< HEAD
         ],
         responses=PublicBenefitPageSerializer,
+=======
+            OpenApiParameter("featured", OpenApiTypes.BOOL, description="Opcional; solo true o false. La selección tiene hasta cinco beneficios y sigue sujeta a publicación y vigencia."),
+        ],
+        responses={200: PublicBenefitPageSerializer, 400: OpenApiTypes.OBJECT},
+>>>>>>> develop
     )
     def get(self, request):
         require_catalog()
         benefits = catalog_benefits()
+<<<<<<< HEAD
         search = request.query_params.get("search", "").strip()
         category = request.query_params.get("category", "")
+=======
+        featured = request.query_params.get("featured")
+        if featured is not None and featured not in ("true", "false"):
+            raise ValidationError({"featured": "Usá true o false."})
+        search = request.query_params.get("search", "").strip()
+        category = request.query_params.get("category", "")
+        for name, value in (("search", search), ("category", category)):
+            if "\x00" in value:
+                raise ValidationError({name: "El filtro contiene un carácter inválido."})
+>>>>>>> develop
         trimmed_category = category.strip()
         if trimmed_category:
             if category != trimmed_category and not benefits.filter(provider__category__iexact=category).exists():
@@ -71,6 +92,11 @@ class CatalogBenefitsView(APIView):
                 Q(title__icontains=search) | Q(description__icontains=search)
                 | Q(provider__name__icontains=search)
             )
+<<<<<<< HEAD
+=======
+        if featured is not None:
+            benefits = benefits.filter(featured=featured == "true")
+>>>>>>> develop
         benefits = benefits.order_by("provider__name", "title", "pk")
         paginator = CatalogPagination()
         page = paginator.paginate_queryset(benefits, request, view=self)

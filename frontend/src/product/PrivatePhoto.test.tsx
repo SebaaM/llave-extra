@@ -8,7 +8,11 @@ vi.mock('./api', async importOriginal => {
   return { ...actual, privateImage }
 })
 
+<<<<<<< HEAD
 import { PrivatePhoto } from './BenefitsPages'
+=======
+import { PrivatePhoto } from './PrivatePhoto'
+>>>>>>> develop
 import { ApiError, invalidatePrivateState } from './api'
 
 afterEach(() => {

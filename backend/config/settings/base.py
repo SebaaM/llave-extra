@@ -5,11 +5,17 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 DEBUG = False
+BANK_DETAILS_ENCRYPTION_KEY = os.environ.get("BANK_DETAILS_ENCRYPTION_KEY", "")
+REQUIRE_REFERRED_BENEFIT = os.environ.get("REQUIRE_REFERRED_BENEFIT", "true").strip().lower() != "false"
 ALLOWED_HOSTS = [host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if host]
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "drf_spectacular", "accounts", "referrals", "providers", "credits", "shop", "administration",
+<<<<<<< HEAD
+=======
+    "commissions.apps.CommissionsConfig",
+>>>>>>> develop
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -51,6 +57,10 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Llave Extra API", "DESCRIPTION": "API versionada de Llave Extra.", "VERSION": "1.0.0",
+<<<<<<< HEAD
+=======
+    "ENUM_NAME_OVERRIDES": {"CommissionStateEnum": "commissions.models.CommissionState"},
+>>>>>>> develop
     "POSTPROCESSING_HOOKS": ["drf_spectacular.hooks.postprocess_schema_enums",
                              "administration.schema.require_admin_patch_versions"],
 }
@@ -69,11 +79,18 @@ def positive_env(name: str, default: int) -> int:
 
 
 RATE_LIMITS = {
+    "register": (positive_env("RATE_REGISTER_MAX", 10), positive_env("RATE_REGISTER_WINDOW", 300)),
     "login": (positive_env("RATE_LOGIN_MAX", 10), positive_env("RATE_LOGIN_WINDOW", 300)),
     "reset": (positive_env("RATE_RESET_MAX", 5), positive_env("RATE_RESET_WINDOW", 3600)),
     "resend": (positive_env("RATE_RESEND_MAX", 5), positive_env("RATE_RESEND_WINDOW", 3600)),
     "redeem": (positive_env("RATE_REDEEM_MAX", 20), positive_env("RATE_REDEEM_WINDOW", 300)),
     "consumption": (positive_env("RATE_CONSUMPTION_MAX", 8), positive_env("RATE_CONSUMPTION_WINDOW", 300)),
+<<<<<<< HEAD
+=======
+    "consumption_options": (30, 300),
+    "contact_origin": (positive_env("RATE_CONTACT_ORIGIN_MAX", 5), positive_env("RATE_CONTACT_ORIGIN_WINDOW", 900)),
+    "contact_global": (positive_env("RATE_CONTACT_GLOBAL_MAX", 60), positive_env("RATE_CONTACT_GLOBAL_WINDOW", 3600)),
+>>>>>>> develop
 }
 RATE_LIMITS["reset_submit"] = RATE_LIMITS["reset"]
 SIMPLE_JWT = {
@@ -87,6 +104,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@llaveextra.local")
 EMAIL_HOST = os.environ.get("MAILPIT_HOST", "mailpit")
 EMAIL_PORT = int(os.environ.get("MAILPIT_PORT", "1025"))
+EMAIL_TIMEOUT = positive_env("EMAIL_TIMEOUT", 5)
+CONTACT_RECIPIENT_EMAIL = os.environ.get("CONTACT_RECIPIENT_EMAIL", "").strip()
 REFRESH_COOKIE_NAME = "llave_refresh"
 REFRESH_COOKIE_SECURE = not DEBUG
 REFRESH_COOKIE_SAMESITE = "Lax"

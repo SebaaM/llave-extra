@@ -2,6 +2,7 @@ import { Empty } from './UI'
 import { useState } from 'react'
 import type { User } from '../api'
 import { ProductLink } from '../navigation'
+<<<<<<< HEAD
 import { ProviderWorkspace } from './ProviderWorkspace'
 import { CollaboratorWorkspace } from './CollaboratorWorkspace'
 import './workspace.css'
@@ -14,6 +15,30 @@ export function Workspace({ user, path }: { user: User; path: string }) {
   const links = provider ? [['', 'Resumen', '◫'], ['/negocio', 'Mi negocio', '⌂'], ['/beneficios', 'Mis beneficios', '✳'], ['/qr', 'QR y PIN', '▦'], ['/cuenta', 'Mi cuenta', '○']] : [['', 'Resumen', '◫'], ['/recomendaciones', 'Mis recomendaciones', '♡'], ['/catalogo', 'Explorar catálogo', '✳'], ['/qr', 'Mi QR', '▦'], ['/cuenta', 'Mi cuenta', '○']]
   const selected = links.find(([suffix]) => `${base}${suffix}` === path)
   const title = selected?.[1] ?? 'Sección no disponible'
+=======
+import { ProfileSettings } from '../ProfileSettings'
+import { ProviderWorkspace } from './ProviderWorkspace'
+import { CollaboratorWorkspace } from './CollaboratorWorkspace'
+import { ReferredConsumptions } from './ReferredConsumptions'
+import { CollaboratorCommissions } from './CollaboratorCommissions'
+import './workspace.css'
+import { workspaceHome } from './data'
+import { QRIcon } from './QRIcon'
+
+export function Workspace({ user, path, notice, onResend }: { user: User; path: string; notice: string; onResend: () => Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const provider = user.role === 'PROVIDER'
+  const base = workspaceHome(user)
+  const links = provider ? [['', 'Resumen', '◫'], ['/negocio', 'Mi negocio', '⌂'], ['/beneficios', 'Mis beneficios', '✳'], ['/consumos-referidos', 'Consumos referidos', '◫'], ['/qr', 'QR y PIN', '▦'], ['/cuenta', 'Mi cuenta', '○']] : [['', 'Resumen', '◫'], ['/recomendaciones', 'Mis recomendaciones', '♡'], ['/catalogo', 'Explorar catálogo', '✳'], ['/comisiones', 'Mis comisiones', '◎'], ['/qr', 'Mi QR', '▦'], ['/cuenta', 'Mi cuenta', '○']]
+  const selected = links.find(([suffix]) => `${base}${suffix}` === path)
+  const title = selected?.[1] ?? 'Sección no disponible'
+  let content
+  if (!selected) content = <Empty title="Esta sección no está disponible" text="Usá el menú para volver a tu panel." />
+  else if (selected[0] === '/cuenta') content = provider ? <Account user={user} /> : <ProfileSettings user={user} notice={notice} onResend={onResend} />
+  else if (selected[0] === '/consumos-referidos') content = <ReferredConsumptions />
+  else if (selected[0] === '/comisiones') content = <CollaboratorCommissions />
+  else content = provider ? <ProviderWorkspace section={selected[0]} /> : <CollaboratorWorkspace section={selected[0]} />
+>>>>>>> develop
   return <div className="workspace">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
     <aside className="workspace-sidebar">
@@ -25,7 +50,12 @@ export function Workspace({ user, path }: { user: User; path: string }) {
     </aside>
     <div className="workspace-body"><header className="workspace-header"><span>USHUAIA · RED LOCAL</span><div><span className="workspace-email">{user.email}</span><button className="button button-ghost" onClick={() => window.dispatchEvent(new Event('llave:logout'))}>Salir</button></div></header>
       <main id="contenido" className="workspace-main"><div className="workspace-heading"><p className="eyebrow">TU ESPACIO, TU COMUNIDAD</p><h1>{title}</h1></div>
+<<<<<<< HEAD
         {!selected ? <Empty title="Esta sección no está disponible" text="Usá el menú para volver a tu panel." /> : path.endsWith('/cuenta') ? <Account user={user} /> : provider ? <ProviderWorkspace section={selected[0]} /> : <CollaboratorWorkspace section={selected[0]} />}
+=======
+        {!provider && selected?.[0] !== '/qr' && <ProductLink className="button button-dark workspace-quick-qr" href={`${base}/qr`}><QRIcon /> Mostrar mi QR</ProductLink>}
+        {content}
+>>>>>>> develop
         <footer className="workspace-footer">LLAVE EXTRA <span>Conectamos lo mejor de Ushuaia.</span></footer>
       </main>
     </div>

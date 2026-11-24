@@ -1,21 +1,44 @@
 # Contrato de API E3–E5, catálogo público y administración
 
 Catálogo visual frontend (26/10/2026): `/tienda` y `/tienda/:slug` muestran ejemplos estáticos identificados, sin consumir endpoints `shop`, crear pedidos ni modificar stock/créditos. No introduce rutas o cambios en OpenAPI. El contrato transaccional E5 sigue disponible para una futura integración, fuera del alcance de esta vista previa.
+<<<<<<< HEAD
+
+Fuente ejecutable: `backend/config/urls.py` y los `@extend_schema` de las aplicaciones, incluidas `backend/providers/recommendations.py`, `backend/credits/views.py` y `backend/shop/views.py`. Generar y validar con `docker compose exec -T backend uv run --locked python manage.py spectacular --file /tmp/llave-extra-openapi.yaml --validate`; el esquema interactivo está en `/api/docs/` y JSON/YAML en `/api/schema/`. Cambios incompatibles requieren una nueva versión de ruta `/api/vN/`; campos nuevos opcionales no cambian versión. Cliente es el nombre de producto del rol técnico `TOURIST`; hay cuatro roles en total.
+=======
+>>>>>>> develop
 
 Fuente ejecutable: `backend/config/urls.py` y los `@extend_schema` de las aplicaciones, incluidas `backend/providers/recommendations.py`, `backend/credits/views.py` y `backend/shop/views.py`. Generar y validar con `docker compose exec -T backend uv run --locked python manage.py spectacular --file /tmp/llave-extra-openapi.yaml --validate`; el esquema interactivo está en `/api/docs/` y JSON/YAML en `/api/schema/`. Cambios incompatibles requieren una nueva versión de ruta `/api/vN/`; campos nuevos opcionales no cambian versión. Cliente es el nombre de producto del rol técnico `TOURIST`; hay cuatro roles en total.
 
-Todas las rutas de dominio usan `/api/v1/`. `GET /auth/csrf/` entrega token CSRF y cookie; enviarlo como `X-CSRFToken` en los POST de autenticación. El frontend futuro usará el proxy Vite del mismo origen. No se configura CORS con credenciales abiertas. `POST /auth/login/` devuelve `access` y deja refresh en cookie `HttpOnly` con ruta `/api/v1/auth/`; `POST /auth/refresh/` lo rota y devuelve nuevo `access`; `POST /auth/logout/` revoca sesión y borra cookie. Si la cookie falta, logout acepta un access bearer válido para revocar la sesión. Access dura 5 minutos, refresh 7 días. `GET /auth/me/` requiere `Authorization: Bearer <access>`.
+Las rutas de dominio usan `/api/v1/`, con `/api/v2/consumptions/` para las nuevas acreditaciones referidas. `GET /auth/csrf/` entrega token CSRF y cookie. Enviá el token como `X-CSRFToken` en los POST de autenticación. El frontend usa el proxy Vite del mismo origen. `POST /auth/login/` devuelve `access` y deja refresh en cookie `HttpOnly` con ruta `/api/v1/auth/`. `POST /auth/refresh/` lo rota y devuelve nuevo `access`. `POST /auth/logout/` exige CSRF. Con bearer válido revoca su sesión y borra la cookie si está ausente, es inválida o corresponde a esa misma sesión. Una cookie válida de otra sesión se conserva. Con bearer vencido solo se acepta una cookie de refresh vigente para esa sesión. Sin bearer, esa cookie vigente autoriza el cierre de su propia sesión. La cookie debe tener el JTI actual, corresponder a un usuario activo y conservar el fingerprint vigente de contraseña. Una cookie anterior a una rotación recibe 401. Access dura 5 minutos y refresh dura 7 días. `GET /auth/me/` requiere `Authorization: Bearer <access>`.
 
 | Ruta | Entrada | Resultado |
 | --- | --- | --- |
-| `POST /auth/register/` | `email`, `password`, `referral_token` opcional | 201: cuenta Cliente (`TOURIST`), email pendiente; referencia válida se redime atómicamente; campos de privilegio rechazados |
+| `POST /auth/register/` | `email`, `password`, `referral_token` opcional | 201: cuenta Cliente (`TOURIST`), email pendiente; referencia válida se redime atómicamente; campos de privilegio rechazados; 429: cuota excedida o control de intentos no disponible |
 | `POST /auth/verify-email/` | `token` | 200: email verificado; token de un uso, 24 h |
 | `POST /auth/resend-verification/` | `email` | 202 genérico |
 | `POST /auth/forgot-password/` | `email` | 202 genérico |
 | `POST /auth/reset-password/` | `token`, `password` | 200: contraseña nueva, sesiones revocadas; token de un uso, 1 h |
-| `POST /referrals/redeem/` | `token` de QR en cuerpo; bearer | 200: grant idempotente al turista autenticado |
+| `POST /referrals/redeem/` | `token` de QR en cuerpo; bearer | 200: `{collaborator_id,collaborator_name,granted_at}`, vínculo idempotente al Cliente autenticado |
 | `GET /me/folders/` | bearer Cliente (`TOURIST`) | Solo IDs de referencias activas; prestadores por las rutas de carpeta E3 |
-| `GET /collaborator/qr/` | bearer colaborador habilitado | URL firmada actual; `qr.png` descarga la imagen |
+| `GET /collaborator/qr/` | bearer colaborador activo y habilitado | `{url,version}`: URL firmada estable y precondición opaca no secreta; `GET /collaborator/qr.png` descarga la misma imagen para esa configuración y generación |
+| `POST /collaborator/qr/renew/` | bearer colaborador activo/habilitado, solo `{version}` e `Idempotency-Key` | 200: `{id,status:"renewed",version}` sin QR/URL; renovación propia manual, idempotente y auditada atómicamente |
+| `POST /contact/` | Público, sin sesión; JSON con `name`, `email`, `message` (máximos 100, 254 y 3000 caracteres) | 204 si el transporte acepta el mensaje; 400 si la entrada es inválida; 413 si el cuerpo supera 64 KiB; 415 si el formato no es JSON; 429 si aplica el límite; 503 si el envío no está disponible |
+
+El formulario de contacto admite únicamente los tres campos de texto anteriores. No acepta destinatario, copia, asunto ni adjuntos. El servidor envía texto plano a `CONTACT_RECIPIENT_EMAIL` desde `DEFAULT_FROM_EMAIL` y usa el correo validado del visitante como `Reply-To`. No almacena el mensaje en la base de datos de la aplicación ni envía una respuesta automática. Redis limita por origen confiable y de forma global; si el control de intentos no está disponible, no se envía el mensaje. Un 204 confirma aceptación por SMTP, no entrega en la bandeja final. Consulta la [guía de correo](contact-email.md) para la configuración y la validación local.
+
+Un cambio de email desde Django Admin devuelve la cuenta al estado de verificación pendiente e invalida los enlaces emitidos anteriormente y las sesiones API de la cuenta. El reenvío y la recuperación mantienen la respuesta genérica aunque la dirección cambie durante la solicitud.
+
+El QR de referencia nuevo usa prefijo `r2.` y firma determinista por perfil/generación, sin timestamp. Los QR históricos siguen válidos hasta cambiar la generación; desplegar este formato no rota perfiles. Consultar, copiar, descargar o editar la selección no renueva la credencial. Cambiar la configuración de URL pública o claves de firma puede cambiar la URL emitida.
+
+La renovación obtiene el perfil exclusivamente desde la cuenta, bloquea Usuario → perfil y comprueba permisos y precondición vigentes. No admite IDs de otro usuario/perfil ni campos extra. `version` es un digest opaco de la credencial y su titular, independiente de los beneficios seleccionados. Falta/formato de versión o clave inválidos responden 400; precondición obsoleta o clave reutilizada con otro cuerpo, 409; cuenta sin habilitación actual, 403. Una misma clave y cuerpo devuelve el resultado original sin volver a incrementar la generación, incluso si luego hubo otra renovación; el replay también exige permisos actuales. Después de confirmar o reintentar con éxito, hacer GET autoritativo para obtener el QR vigente. Ante una respuesta incierta, conservar clave y cuerpo originales en memoria para reintentar.
+
+La tabla específica `referrals.QRRenewalReceipt` registra actor, perfil, clave/digest, generaciones anterior/nueva, precondición resultante y fecha en la misma transacción; no almacena QR, URL ni PIN ni usa el motor de comandos administrativos. Renovar invalida los QR y accesos anteriores, conservando `FolderAccess`, selección e historial de consumos/créditos. El consumo sigue requiriendo QR del negocio + PIN y nunca convierte una referencia inválida en consumo directo.
+
+### Cuenta propia
+
+`GET /api/v1/auth/profile/` devuelve `{first_name,last_name,complete}` para Cliente y Colaborador activos. `PATCH` recibe exclusivamente `first_name` y `last_name`, ambos requeridos. La verificación y el reenvío usan las rutas de autenticación existentes.
+
+`GET /api/v1/auth/bank-details/` devuelve `{configured,cbu_masked,alias_masked}` al Colaborador activo. `PUT` recibe `{cbu,alias}` y exige email verificado. El alias vacío quita el valor. El CBU y el alias se cifran antes de guardarlos. Todas las respuestas son privadas y `no-store`.
 
 ### Prestadores y carpetas (E3)
 
@@ -29,7 +52,11 @@ Las rutas siguientes son anónimas, de solo lectura y siempre responden `Cache-C
 | --- | --- |
 | `GET /catalog/config/` | `{enabled: boolean}` |
 | `GET /catalog/categories/` | `{results: string[]}` con categorías exactas, únicas y ordenadas por comparación sin distinguir mayúsculas; solo de beneficios públicos publicados/vigentes. Omite valores vacíos o compuestos solo por espacios, conserva los demás valores originales e ignora parámetros de paginación y búsqueda. |
+<<<<<<< HEAD
 | `GET /catalog/benefits/?page=1&page_size=24&search=...&category=...` | `{count, next, previous, results}`; 24 por página, máximo 48; búsqueda en título, descripción y nombre de prestador. La categoría coincide exactamente sin distinguir mayúsculas; si el parámetro tiene espacios laterales, primero se busca el valor original y solo se recorta cuando no existe esa categoría entre los beneficios públicos vigentes. Un valor solo de espacios no filtra. |
+=======
+| `GET /catalog/benefits/?page=1&page_size=24&search=...&category=...&featured=true` | `{count, next, previous, results}`; 24 por página, máximo 48; búsqueda en título, descripción y nombre de prestador. `featured` es opcional y admite únicamente `true` o `false` (otro valor, incluido vacío, responde 400): filtra destacados antes de ordenar/paginar y sin el parámetro mantiene el catálogo completo. Conserva publicación, vigencia e interruptor; no hay selección automática ni fallback. La categoría coincide exactamente sin distinguir mayúsculas; si el parámetro tiene espacios laterales, primero se busca el valor original y solo se recorta cuando no existe esa categoría entre los beneficios públicos vigentes. Un valor solo de espacios no filtra. |
+>>>>>>> develop
 | `GET /catalog/benefits/{benefit_id}/` | DTO público de un beneficio vigente |
 | `GET /catalog/benefits/{benefit_id}/media/` | Imagen del beneficio, revalidando interruptor, publicación y vigencia |
 | `GET /catalog/providers/{provider_id}/media/` | Imagen del prestador cuando tiene al menos un beneficio público vigente; revalida la misma política |
@@ -38,6 +65,10 @@ El beneficio expone solo `id`, `title`, `description`, `conditions`, `valid_from
 
 | Ruta relativa a `/api/v1/` | Rol | Resultado |
 | --- | --- | --- |
+<<<<<<< HEAD
+=======
+| `GET /folders/{folder_id}/benefits/?page=1&page_size=24` | Cliente con grant activo | `{count,next,previous,collaborator:{id,name},results}`; 24 por defecto, máximo 48; ofertas seleccionadas vigentes con su prestador y medios privados |
+>>>>>>> develop
 | `GET /folders/{folder_id}/providers/` | turista con grant activo | Prestadores únicos con alguna selección vigente de esa carpeta |
 | `GET /folders/{folder_id}/providers/{provider_id}/` | idem | Ficha del prestador |
 | `GET /folders/{folder_id}/providers/{provider_id}/benefits/` | idem | Solo beneficios concretos seleccionados, publicados y vigentes |
@@ -51,6 +82,7 @@ El beneficio expone solo `id`, `title`, `description`, `conditions`, `valid_from
 | `GET .../media/` de la zona `/provider/` | prestador titular | Imagen privada propia |
 | `GET /collaborator/folder/` | colaborador habilitado | Referencia actual y prestadores únicos derivados de selecciones vigentes; PATCH sigue 405 |
 
+<<<<<<< HEAD
 La edición de una oferta publicada la devuelve a `DRAFT`; el administrador revisa y publica desde Django Admin. Solo Admin asigna el negocio único de cada usuario Prestador, habilita colaboradores y decide publicación. El Colaborador habilitado agrega/quita beneficios concretos de su propia carpeta. Los serializers de escritura rechazan campos ajenos a la lista permitida; `status`, `demo`, titularidad, roles, PIN y créditos no se aceptan en las ofertas. `image_url` apunta a un endpoint autorizado sin token QR; el archivo físico vive en `PRIVATE_MEDIA_ROOT`, fuera de `MEDIA_ROOT`. Admin usa una ruta de medio protegida por sesión y rol administrador. Imágenes: PNG/JPEG/WebP decodificables, máximo 5 MB y 4096 píxeles por lado. Cliente web: eliminar fragmentos QR antes de cargar recursos y mantener `Referrer-Policy: no-referrer`.
 
 ### Selección propia del Colaborador y QR del Prestador
@@ -73,13 +105,62 @@ La carpeta propia deduplica negocios; el detalle/medio de oferta del Cliente req
 Para E4, `POST /consumptions/` requiere `Idempotency-Key`, `qr_token` y PIN; `folder_id` admite UUID, `null` u omisión. La respuesta de `POST` conserva su DTO idempotente original. `GET /me/consumptions/` lista solo los consumos del Cliente autenticado, ordenados por fecha descendente, e incluye `collaborator_id` UUID o `null` y `provider_name`, que refleja el nombre actual del Prestador. El historial propio conserva visitas válidas y anuladas aunque el Prestador se oculte o desactive el catálogo público; no consulta ni expone campos privados del Prestador. El modo directo omite la atribución; el referido conserva el perfil aportado. Una clave usada entre modos da `409`, mientras que omisión y `null` tienen el mismo replay. El interruptor del catálogo público no impide la acreditación presencial.
 
 `providers.access.locked_provider_eligibility(user, profile_id, provider_id)` se ejecuta dentro de la transacción de acreditación y devuelve `(profile, provider)`; `profile` es `None` solo en modo directo. Orden de bloqueos: usuario turista → perfil colaborador si se aportó → prestador → beneficio publicado/vigente (seleccionado en esa carpeta para el referido) → regla → Wallet. `locked_folder_access` comprueba la referencia actual dentro de la transacción; E3 verifica publicación y `FolderBenefit`. Agregar/quitar selecciones desde API y Admin bloquea perfil → prestador → beneficio, serializando con la acreditación. Los queries con `select_related(user)` usan `FOR UPDATE OF self` para no introducir locks de User después del perfil. Una referencia aportada que falle jamás se degrada a directo. Ninguna ruta acredita sin prestador publicado y beneficio vigente, ni infiere elegibilidad de un `FolderAccess` histórico. Las bajas y cambios de publicación se serializan con los bloqueos correspondientes; el replay financiero permanece intacto.
+=======
+La selección contextual se muestra tras ingresar con el QR de un colaborador y autenticar la cuenta. No se copia al Cliente ni crea una colección administrable: `FolderAccess` registra el vínculo de ingreso y `FolderBenefit` sigue siendo la selección vigente. `collaborator_name` y `collaborator.name` usan el nombre completo recortado del titular o `tu guía local` si está vacío; nunca usan su correo como alternativa. El catálogo continúa siendo la vista habitual del Cliente y el historial de referencias no debe reconstruir una selección contextual.
 
-Errores: 400 entrada o enlace inválido, 401 sesión inválida, 403 rol/carpeta no autorizados o CSRF ausente, 429 límite compartido Redis. Login, solicitud de recuperación y reenvío tienen cuotas independientes por IP de origen y por email normalizado para cada operación; el consumo de reset tiene su propia cuota por origen con el mismo máximo y ventana configurables de recuperación. Un fallo Redis en límites críticos también devuelve 429 cerrado. Recuperación y reenvío responden 202 tanto para emails existentes como desconocidos mientras no se alcance una cuota. Las respuestas de acceso llevan `Cache-Control: no-store` y `Referrer-Policy: no-referrer`.
+La nueva lista plana privada ordena por nombre del prestador, título y UUID del beneficio, sin deduplicar las ofertas del mismo negocio. `results` contiene el DTO privado `BenefitRead` (`id,title,description,conditions,valid_from,valid_until,image_url,status,demo`) más `provider` con `ProviderRead` (`id,slug,name,category,description,address,hours,contact,map_url,website,image_url,status,demo`). Los medios apuntan a las rutas `/folders/{folder_id}/providers/.../media/` y revalidan autorización en cada solicitud. Solo admite `page` y `page_size`; otros parámetros reciben 400. Verifica `active_folder_access` al ingresar y de nuevo antes de devolver datos; anónimo recibe 401, referencia ajena/revocada o rol no autorizado 404. Opera con el catálogo público apagado y no hereda ofertas hermanas ni futuras. Sus respuestas y errores llevan `no-store` y `no-referrer`.
+>>>>>>> develop
+
+La edición de una oferta publicada la devuelve a `DRAFT`; el administrador revisa y publica desde Django Admin. Solo Admin asigna el negocio único de cada usuario Prestador, habilita colaboradores y decide publicación. El Colaborador habilitado agrega/quita beneficios concretos de su propia carpeta. Los serializers de escritura rechazan campos ajenos a la lista permitida; `status`, `demo`, titularidad, roles, PIN y créditos no se aceptan en las ofertas. `image_url` apunta a un endpoint autorizado sin token QR; el archivo físico vive en `PRIVATE_MEDIA_ROOT`, fuera de `MEDIA_ROOT`. Admin usa una ruta de medio protegida por sesión y rol administrador. Imágenes: PNG/JPEG/WebP decodificables, máximo 5 MB y 4096 píxeles por lado. Cliente web: eliminar fragmentos QR antes de cargar recursos y mantener `Referrer-Policy: no-referrer`.
+
+### Selección propia del Colaborador y QR del Prestador
+
+Las APIs siguientes requieren JWT de Colaborador activo con perfil propio habilitado y devuelven `Cache-Control: no-store`, también ante errores. El perfil se determina desde la sesión; no se acepta un ID de perfil o prestador en el cuerpo. El interruptor del catálogo público no afecta estas rutas.
+
+| Ruta relativa a `/api/v1/` | Entrada / resultado |
+| --- | --- |
+| `GET /collaborator/catalog/benefits/?page=1&page_size=24&search=&category=` | `{count,next,previous,results}`, 24 por página y máximo 48. Búsqueda y categoría como el catálogo público. Los caracteres nulos devuelven 400. Solo publicación y vigencia actual. Cada beneficio contiene `id,title,description,conditions,valid_from,valid_until,demo,provider:{id,name,category,demo}` |
+| `GET /collaborator/recommendations/` | `{recommendations:[{benefit_id,available,benefit}]}`. `benefit` contiene el DTO de lectura privado existente más `provider` con ficha y medios privados propios. Si no está disponible, `benefit:null`, sin divulgar contenido borrador |
+| `PUT /collaborator/recommendations/{benefit_id}/` | Objeto vacío `{}`; 201 al agregar, 200 al repetir, sin cuerpo de respuesta. Campos extra 400, beneficio no elegible 404, rol/perfil no habilitado 403 |
+| `DELETE /collaborator/recommendations/{benefit_id}/` | 204 idempotente, solo selección propia; no afecta otras carpetas |
+| `GET /collaborator/recommendations/{benefit_id}/media/` | Imagen solo de una selección propia vigente; 404 si es ajena, no seleccionada o no disponible |
+| `GET /collaborator/folder/providers/{provider_id}/media/` | Medio del negocio únicamente si tiene alguna selección propia vigente |
+
+La carpeta propia deduplica negocios; el detalle/medio de oferta del Cliente requiere exactamente la selección elegida, sin heredar otras ofertas o publicaciones futuras. Quitar una selección o perder publicación/vigencia revoca la visibilidad privada en la próxima solicitud, manteniendo el historial.
+
+`GET /provider/providers/{provider_id}/consumption-credential/qr.png` requiere el mismo Prestador titular que la credencial JSON. Genera PNG local con `qrcode`, `no-store`, `no-referrer`, `nosniff` y descarga `consumo.png`. Devuelve 404 si falta configurar el PIN. La credencial JSON conserva `{configured,qr_url?}` y `PUT {pin}` acepta entre 6 y 12 dígitos, solo escritura. El PUT revalida la titularidad dentro de la transacción. Devuelve 403 si la cuenta carece del rol activo y 404 si la membresía del negocio falta o fue revocada.
+
+Para E4, `POST /consumptions/` requiere `Idempotency-Key`, `qr_token` y PIN; `folder_id` admite UUID, `null` u omisión. La respuesta de `POST` conserva su DTO idempotente original. `GET /me/consumptions/` lista solo los consumos del Cliente autenticado, ordenados por fecha descendente, e incluye `collaborator_id` UUID o `null` y `provider_name`, que refleja el nombre actual del Prestador. El historial propio conserva visitas válidas y anuladas aunque el Prestador se oculte o desactive el catálogo público; no consulta ni expone campos privados del Prestador. El modo directo omite la atribución; el referido conserva el perfil aportado. Una clave usada entre modos da `409`, mientras que omisión y `null` tienen el mismo replay. El interruptor del catálogo público no impide la acreditación presencial.
+
+`providers.access.locked_provider_eligibility(user, profile_id, provider_id)` se ejecuta dentro de la transacción de acreditación y devuelve `(profile, provider)`; `profile` es `None` solo en modo directo. Orden de bloqueos: usuario turista → perfil colaborador si se aportó → prestador → beneficio publicado/vigente (seleccionado en esa carpeta para el referido) → regla → Wallet. `locked_folder_access` comprueba la referencia actual dentro de la transacción; E3 verifica publicación y `FolderBenefit`. Agregar/quitar selecciones desde API y Admin bloquea perfil → prestador → beneficio, serializando con la acreditación. Los queries con `select_related(user)` usan `FOR UPDATE OF self` para no introducir locks de User después del perfil. Una referencia aportada que falle jamás se degrada a directo. Ninguna ruta acredita sin prestador publicado y beneficio vigente, ni infiere elegibilidad de un `FolderAccess` histórico. Las bajas y cambios de publicación se serializan con los bloqueos correspondientes; el replay financiero permanece intacto.
+
+Errores: 400 entrada o enlace inválido, 401 sesión inválida, 403 rol/carpeta no autorizados o CSRF ausente, 429 cuota excedida o control de intentos no disponible. Registro, login, solicitud de recuperación y reenvío tienen cuotas independientes por IP de origen y por email normalizado para cada operación; el consumo de reset tiene su propia cuota por origen con el mismo máximo y ventana configurables de recuperación. El registro usa `RATE_REGISTER_MAX` (10 por defecto) y `RATE_REGISTER_WINDOW` (300 segundos); ambas cuotas se consultan antes de crear cuenta, token o correo. Si se aporta QR también se conserva la cuota independiente `redeem`. Un fallo Redis en límites críticos devuelve 429 cerrado sin crear datos ni enviar correo. Recuperación y reenvío responden 202 tanto para emails existentes como desconocidos mientras no se alcance una cuota. Las respuestas de acceso llevan `Cache-Control: no-store` y `Referrer-Policy: no-referrer`.
 
 El origen del límite se toma de `REMOTE_ADDR` en llamadas directas. En Compose, Django confía en la cabecera privada `X-Llave-Client-IP` **solo** cuando el peer TCP coincide exactamente con el hostname `frontend` indicado por `TRUSTED_PROXY_HOST`; Vite descarta `X-Forwarded-For`, `X-Real-IP` y cualquier `X-Llave-Client-IP` entrante, y establece este último con `req.socket.remoteAddress`. Un cliente que llama directamente al puerto 8000 no puede elegir su origen por cabecera. En otro despliegue se debe configurar `TRUSTED_PROXY_HOST` con el hostname/IP exacto del proxy que sanea esa cabecera, o dejarlo vacío para usar únicamente `REMOTE_ADDR`; nunca apuntarlo a toda una subred compartida. La IP representa el cliente visto por el proxy: quienes comparten NAT también comparten la cuota de origen.
 
 El token de referencia va únicamente en el fragmento URL y cuerpo del POST, nunca en query/path o URL de imagen. La futura interfaz debe borrar el fragmento con `history.replaceState` antes de incorporar recursos externos o analítica. Los tokens de email también usan fragmentos y se prueban por API en E2; las pantallas llegarán después de elegir el prototipo F1. No registrar cuerpos de estas solicitudes ni incluir tokens en URLs de métricas. Un QR compartido sigue siendo utilizable hasta que el administrador lo rote o deshabilite.
 
+<<<<<<< HEAD
+=======
+### Acreditación referida y comisiones
+
+`POST /api/v2/consumptions/options/` recibe `{folder_id,qr_token}` y devuelve `{benefits:[{id,title}]}` para el Cliente activo con acceso vigente. La lista contiene los beneficios seleccionados, publicados y vigentes del negocio identificado por el QR.
+
+`POST /api/v2/consumptions/` recibe `{folder_id,qr_token,pin,benefit_id}` y exige `Idempotency-Key`. En una sola transacción revalida el beneficio exacto y conserva su UUID y título históricos. Devuelve el DTO E4. El mismo cuerpo y clave recuperan la respuesta anterior. Usar la misma clave con otro beneficio devuelve 409. Con `REQUIRE_REFERRED_BENEFIT=true`, valor predeterminado, v1 admite consumos directos y reintentos exactos anteriores. Un referido v1 nuevo devuelve 409 con indicación de actualizar. Durante un despliegue escalonado se puede usar `false` hasta servir el cliente nuevo y activar el corte inmediatamente después.
+
+`GET /api/v1/admin/commissions/` y `GET /api/v1/provider/commissions/` devuelven listas paginadas. `GET <colección>/{consumption_id}/` devuelve la ficha con su declaración, aprobación, pago, eventos y acciones disponibles. El Administrador puede filtrar por estado, Prestador y Colaborador. El Prestador ve los referidos de su negocio asignado. Los estados de la lista son `AWAITING_PROVIDER`, `TO_PAY`, `COMPLETED`, `NO_COMMISSION`, `ANNULLED`, `HISTORICAL` y `DEMO`. `next_step` identifica la acción pendiente. `created_at` permite mostrar la verificación por QR y PIN desde la lista.
+
+Cada acción se envía a `POST <colección>/{consumption_id}/actions/{action}/` con `Idempotency-Key` y `version`. `declare` recibe `outcome` (`CONSUMED` o `NOT_CONSUMED`) y `amount` decimal o nulo. `report-payment` recibe `date`, `reference`, `amount` y, para identificar una aprobación previa cuando corresponda, `approval_id`. El Administrador usa `request-correction`, `approve`, `complete-no-commission`, `reconcile`, `reopen`, `reject-report`, `open-incident` y `close-incident`. `reconcile` exige constancia del comprobante y de la recepción. Las acciones devuelven `{id,state}`. Las versiones obsoletas y claves reutilizadas con otra carga devuelven 409.
+
+`GET /api/v1/admin/commission-rules/` devuelve `{global,providers}`. `PUT .../global/` y `PUT .../providers/{provider_id}/` reciben `{rate,version}` con `Idempotency-Key`. Admiten decimales de 0 a 100 o nulo para quitar la regla explícita. Las excepciones por Prestador siguen disponibles para consumos anteriores al cambio sin tasa registrada. Los nuevos consumos referidos usan el porcentaje del beneficio o la tasa global, con respaldo de 5 % si no hay regla global explícita. La validación QR y PIN guarda la tasa y su origen en la misma transacción. En las fichas, `rate_fixed_at_validation` indica que `current_rate` ya quedó fijada. Una aprobación conserva base, porcentaje e importe.
+
+`GET /api/v1/provider/providers/{provider_id}/benefits/{benefit_id}/commission-rate/` devuelve `{rate,version,global_rate}` para un beneficio del negocio asignado. El `PUT` en la misma ruta recibe `{rate,version}` con `Idempotency-Key`: 3, 7, 10 o nulo para usar la tasa global. La edición queda auditada, se aplica a nuevas validaciones y conserva el estado de publicación del beneficio. La respuesta es privada y `no-store`.
+
+`POST /api/v1/admin/commissions/{consumption_id}/bank-details/` requiere un motivo de consulta y estado habilitado. La revelación queda auditada y usa una respuesta `no-store`.
+
+`GET /api/v1/collaborator/commissions/?page=1` devuelve `{count,next,previous,pending_total,results}` para la cuenta Colaborador activa. Cada fila contiene `id,created_at,provider_name,benefit_title,state,rate,approved_amount,payment_reported`. El historial usa la atribución persistida e incluye casos históricos y anulados. El total en ARS considera todas las aprobaciones positivas en estado `TO_PAY`, incluso con pago informado hasta que se concilie, y se calcula sobre todas las páginas. La respuesta es privada y de solo lectura.
+
+>>>>>>> develop
 ### Red visual de prestadores
 
 `GET /catalog/network/?page=1` es público y queda cerrado por el interruptor del catálogo. `GET /folders/{folder_id}/network/?page=1` requiere Cliente autenticado con `active_folder_access` vigente; la carpeta y sus asignaciones se vuelven a comprobar en cada página. Ambos devuelven `{count,next,previous,presentation,results}`. `presentation` contiene únicamente `title`, `layout`, `theme`, `background`, `page_size`, `interval_seconds` y `city` (`Ushuaia`). Cada elemento de `results` contiene `provider`, `benefit_id` y `benefit_title`; el público usa `PublicProviderSerializer` y la carpeta usa `ProviderReadSerializer` con sus medios autorizados. No se aceptan parámetros aparte de `page`.
@@ -88,6 +169,7 @@ La red agrupa prestadores únicos con al menos un beneficio publicado y vigente 
 
 ### Tienda E5
 
+<<<<<<< HEAD
 Catálogo independiente de la red privada: productos activos y sus imágenes son públicos, sin carpetas, prestadores ni QR. Los medios permanecen fuera de MEDIA_ROOT; cada GET revalida que el producto siga activo. Todas las respuestas de tienda incluyen `Cache-Control: no-store`. La previsualización de imágenes inactivas en Admin usa sesión Django y requiere administrador activo, staff y superusuario.
 
 | Ruta relativa a `/api/v1/shop/` | Entrada / resultado |
@@ -95,6 +177,16 @@ Catálogo independiente de la red privada: productos activos y sus imágenes son
 | `GET products/` | Página de 24 productos: `{count,next,previous,results}` |
 | `GET products/{uuid}/` | `{id,name,description,stock,price_money,price_credits,image_url}`; 404 si está inactivo |
 | `GET products/{uuid}/media/` | Imagen de producto activo; 404 si falta o se desactivó |
+=======
+Catálogo independiente de la red privada: son públicos los productos activos sin categoría o con categoría activa. Listado, detalle e imagen aplican la misma política; desactivar una categoría oculta sus productos sin alterar sus datos y reactivarla recupera los que siguen activos. Los medios permanecen fuera de MEDIA_ROOT. Todas las respuestas de tienda incluyen `Cache-Control: no-store`. La previsualización de imágenes inactivas en Admin usa sesión Django y requiere administrador activo, staff y superusuario.
+
+| Ruta relativa a `/api/v1/shop/` | Entrada / resultado |
+| --- | --- |
+| `GET products/` | `{count,next,previous,results}`; 24 por defecto, `page_size` hasta 100. Filtros `search`, `category` UUID y `ordering` (`name`, `price_money`, `price_credits`, con `-` para descendente); desempate por ID. La tienda solicita seis. |
+| `GET catalog/` | `{categories:[{id,name}],pickup}`; categorías completas con productos públicos, independientemente de la página; retiro `{name,address,hours}` solo si está habilitado, si no `null`. |
+| `GET products/{uuid}/` | `{id,name,description,category,stock,price_money,price_credits,image_url}`; `category` es `{id,name}` o `null`; 404 si no es público. |
+| `GET products/{uuid}/media/` | Imagen del producto público; 404 si falta o deja de ser visible. |
+>>>>>>> develop
 | `GET orders/` | Pedidos del Cliente autenticado activo, paginados de 24 |
 | `POST orders/` | `Idempotency-Key` obligatorio y `{mode,items:[{product_id,quantity}]}`; 201 nuevo, 200 replay |
 | `GET orders/{uuid}/` | Pedido propio; 404 para ajeno |
@@ -112,6 +204,11 @@ El cliente solicita cancelación antes de entrega; una solicitud abierta bloquea
 
 PostgreSQL protege snapshots, identidad, líneas, claves, auditoría y payload externo. Valida totales contra líneas y existencia de clave al commit; una línea no puede insertarse después de confirmar la clave. Orden de locks: User → Wallet → Order → Product por UUID ascendente. Checkout de pedido nuevo bloquea User/Wallet antes de Product y crea el pedido todavía invisible para otras transacciones; los servicios E4 solo vuelven a adquirir locks ya poseídos. Trabajadores y transiciones sobre pedidos existentes deben usar `shop.services.locked_order` dentro de atomic; ninguna llamada HTTP dentro de esa transacción.
 
+<<<<<<< HEAD
+=======
+Al comprar, el checkout bloquea las categorías involucradas por UUID después de todos los productos y rechaza las inactivas; una desactivación bloquea la categoría sin bloquear sus productos. El replay de un pedido anterior conserva su resultado aunque la categoría haya cambiado.
+
+>>>>>>> develop
 Errores de tienda: 400 formato/campos/carrito; 401 sesión requerida; 403 rol o verificación; 404 producto/pedido no visible; 409 stock, billetera, retiro, modalidad, estado o idempotencia incompatibles. OpenAPI se genera desde serializers y vistas; no se versiona una copia estática.
 
 `POST /api/v1/shop/payments/webhook/?type=order&data.id={id}` exige HMAC específico Orders y devuelve 200 tras inbox durable o 401 genérico. No usa JWT ni acredita dinero por body. Query firmado único, manifest literal con casing/ts preservados, cuerpo máximo 8 KiB, ventana de 10 minutos y 60 segundos futuros. Dedupe por entrega, nunca por ID remoto permanente. Un body firmado dispara GET y cotejos completos; no prueba importes/estado. Inbox temprano y búsqueda por referencia recuperan CREATE incierto aun sin webhook. HTTP fuera de atomic, request/seller congelados y leases/versiones impiden aplicar respuestas obsoletas. Polling incluye PAID/READY/cancelados/vencidos y estados terminales; refund posterior a entrega genera incidencia financiera sin reponer inventario. Guía: [operación E5](shop-operations.md).
@@ -128,8 +225,13 @@ Las rutas siguientes son relativas a `/api/v1/`. Todas las rutas `/admin/` requi
 | `GET/PATCH /admin/settings/general/` | Los siete campos públicos más `version` |
 | `GET/PATCH /admin/settings/catalog/` | `enabled`, `network_title`, `network_layout`, `network_theme`, `network_background`, `network_page_size`, `network_interval_seconds`, `version` |
 | `GET/PATCH /admin/settings/credits/` | `base_reward`, `target_visits`, `version` |
+<<<<<<< HEAD
 | `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `payment_provider` de solo lectura y `version` |
 | `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`; 20 por defecto, máximo 100; orden fecha descendente, ID descendente y origen como desempates. `actor` es ID numérico positivo de usuario; acción/recurso exactos. Búsqueda en email del actor, acción, recurso y motivo |
+=======
+| `GET/PATCH /admin/settings/shop/` | `pickup_name`, `pickup_address`, `pickup_hours`, `pickup_enabled`, `low_stock_threshold` (por defecto 5), `payment_provider` de solo lectura y `version` |
+| `GET /admin/activity/?search=...&actor=...&action=...&resource=...&page=1&page_size=20` | `{count,next,previous,results}`. 20 por defecto, máximo 100. Orden fecha descendente, ID descendente y origen como desempates. `actor` es ID numérico positivo de usuario. Acción y recurso son exactos. Búsqueda en email del actor, acción, recurso y motivo. Los filtros con caracteres nulos devuelven 400. |
+>>>>>>> develop
 
 El DTO de actividad contiene solo `id`, `source`, `actor_email`, `action`, `resource`, `object_id`, `changed_fields`, `reason`, `created_at`. La identidad estable de actividad es el par `(source,id)`: `source="admin"` para AdminAudit y `source="order"` para OrderAudit, incluso cuando ambos tienen `resource="orders"`. La auditoría registra nombres de campos modificados, sin sus valores. Configuración usa acción `settings.update` y recurso `settings.general`, `settings.catalog`, `settings.credits` o `settings.shop`; guarda efecto y auditoría en la misma transacción. Una modificación sin cambios efectivos no crea actividad.
 
@@ -143,18 +245,36 @@ Infraestructura para próximos comandos sensibles: `Idempotency-Key` obligatorio
 
 ### Gestión operativa administrativa
 
+<<<<<<< HEAD
 Todas las rutas de esta sección son relativas a `/api/v1/admin/` y aplican la misma guarda estricta ADMIN/activo/staff/superusuario a listas, detalles, acciones y archivos. Las colecciones usan `GET <recurso>/?page=1&page_size=20&search=...` y responden `{count,next,previous,results}`; 20 por defecto, máximo 100 y orden por PK descendente. `GET <recurso>/{id}/` devuelve un objeto. Los recursos de solo lectura rechazan POST/PATCH/DELETE con 405. Los IDs de usuarios, billeteras, ajustes, reglas, cancelaciones y ajustes de stock son enteros; prestadores, beneficios, colaboradores, consumos, productos, pedidos y operaciones de pago usan UUID. `image_url` es una ruta local autorizada y puede ser `null`.
 
+=======
+La colección `GET /api/v1/admin/benefits/?featured=true` lista la selección completa de hasta cinco beneficios del carrusel, aunque alguno no sea público o vigente. `featured=false` lista los no seleccionados. Al alcanzar cinco, POST o PATCH con una marca nueva responde `409`; desmarcar un beneficio libera su cupo. El catálogo público sigue aplicando publicación, vigencia e interruptor al leer la selección.
+
+Todas las rutas de esta sección son relativas a `/api/v1/admin/` y aplican la misma guarda estricta ADMIN/activo/staff/superusuario a listas, detalles, acciones y archivos. Las colecciones usan `GET <recurso>/?page=1&page_size=20&search=...` y responden `{count,next,previous,results}`; 20 por defecto, máximo 100 y orden por PK descendente. `GET <recurso>/{id}/` devuelve un objeto. Los recursos de solo lectura rechazan POST/PATCH/DELETE con 405. Los IDs de usuarios, billeteras, ajustes, reglas, cancelaciones y ajustes de stock son enteros; prestadores, beneficios, colaboradores, consumos, productos, pedidos y operaciones de pago usan UUID. `image_url` es una ruta local autorizada y puede ser `null`.
+
+Los filtros de texto de las colecciones administrativas devuelven 400 si contienen caracteres nulos.
+
+>>>>>>> develop
 | Recurso | Campos de lectura | Escrituras y filtros |
 | --- | --- | --- |
 | `users` | `id,email,first_name,last_name,role,is_active,email_verified,version` | POST `email,first_name?,last_name?,role` (`TOURIST`,`PROVIDER`,`COLLABORATOR`); PATCH `version,first_name?,last_name?,is_active?`. Filtros `role,is_active,email_verified`; búsqueda email/nombres. No se edita ADMIN, rol, contraseña, verificación ni flags; desactivar revoca sesiones. Alta crea contraseña inutilizable. |
 | `providers` | `id,slug,name,category,description,address,hours,contact,map_url,website,image_url,status,demo,provenance,user_ids,version` | POST/PATCH `slug,name,category,description,address,hours,contact,map_url,website,image,status` (`version` solo precondición PATCH). `demo` y `provenance` son readonly. Filtro `status`; búsqueda nombre/slug/categoría/contacto. Imagen multipart `image` o `null`. |
+<<<<<<< HEAD
 | `benefits` | `id,provider,provider_name,title,description,conditions,valid_from,valid_until,image_url,status,demo,provenance,version` | POST `provider,title,description,conditions,valid_from,valid_until,image,status`; PATCH oferta con `version`, sin cambiar prestador. `demo` de alta hereda prestador; `demo` y `provenance` son readonly. Filtros `provider,status,current=true`; este último aplica publicación y vigencia actual aun si el catálogo público está apagado. Búsqueda título/descripción/negocio. |
+=======
+| `benefits` | `id,provider,provider_name,title,description,conditions,valid_from,valid_until,image_url,status,featured,demo,provenance,version` | POST `provider,title,description,conditions,valid_from,valid_until,image,status,featured?`; PATCH oferta con `version`, sin cambiar prestador. `featured` («Destacado en el inicio») arranca falso y solo Admin lo escribe; marcarlo no publica el beneficio. PATCH conserva la precondición de versión y auditoría atómica existentes: una versión anterior devuelve 409, un cambio con versión vigente audita una vez y un no-op no crea auditoría. No es un comando con replay por `Idempotency-Key`; esos comandos corresponden a las acciones administrativas. `demo` de alta hereda prestador; `demo` y `provenance` son readonly. Filtros `provider,status,current=true`; este último aplica publicación y vigencia actual aun si el catálogo público está apagado. Búsqueda título/descripción/negocio. |
+>>>>>>> develop
 | `collaborators` | `id,user,user_email,enabled,network_title,network_layout,network_theme,network_background,network_page_size,network_interval_seconds,benefit_ids,version` | POST `user` de rol Colaborador y presentación; PATCH presentación más `version`, sin cambiar titular ni habilitación. Filtros `enabled,user_active`; búsqueda email/título. `benefit_ids` son selecciones canónicas `FolderBenefit`. |
 | `consumptions` | `id,tourist,tourist_email,provider,provider_name,collaborator,collaborator_email,award,rule_snapshot,state,created_at,annulled_at,annul_reason` | Solo lectura. Filtros `state,provider,tourist,collaborator`; búsqueda cliente/negocio. |
 | `wallets` | `id,tourist,tourist_email,balance,redemptions_frozen`; detalle agrega `movements:{count,next,previous,results}` con movimientos `id,kind,delta,reference,source_entry,created_at` | Solo lectura. Filtro `tourist`; búsqueda email. Movimientos usan la paginación de la URL de detalle. |
 | `adjustments` | `id,consumption,tourist_email,shortfall,funded_amount,forgiven_amount,created_at,resolved_at,resolved_by,resolution,resolution_reason` | Solo lectura. Filtros `tourist,resolved=true|false`; búsqueda email. |
+<<<<<<< HEAD
 | `products` | `id,name,description,image_url,active,stock,price_money,price_credits,demo,version` | POST/PATCH `name,description,image,active,price_money,price_credits` (`version` solo PATCH). `stock` y `demo` son readonly; filtros `active,stock=0`, búsqueda nombre/descripción. |
+=======
+| `products` | `id,name,description,image_url,category,category_name,category_active,active,stock,price_money,price_credits,demo,version` | POST/PATCH `name,description,image,category,active,price_money,price_credits` (`version` solo PATCH). Alta en borrador y stock cero; exige al menos un precio. `stock` y `demo` son readonly. Filtros `active`, `stock=0`, `category`, `availability` (`in_stock`, `low`, `out`) y `price_mode` (`money`, `credits`, `both`); búsqueda nombre/descripción y `ordering` por columnas permitidas. |
+| `product-categories` | `id,name,active,published_products_count,version` | POST/PATCH `name,active`; PATCH exige `version`. Nombres únicos sin distinguir mayúsculas ni espacios exteriores; no se eliminan. Filtro `active`, búsqueda por nombre. |
+>>>>>>> develop
 | `orders` | Lista resumida: `id,customer,customer_email,mode,state,currency,total_money,total_credits,created_at`. Detalle: los anteriores y `pickup_snapshot,reserved_until,stock_released,payment_provider,payment_confirmed,lines,cancellations,payment_operations,audit` | Solo lectura. Filtros `state,mode,customer`; búsqueda email. Líneas: `product,name,quantity,unit_money,unit_credits`; cancelaciones, operaciones y auditoría usan los DTO de sus recursos sin secretos. No se exponen `remote_id`, URL de checkout ni payload. |
 | `cancellations` | `id,order,customer_email,reason,state,created_at,resolved_at,resolved_by,resolution_reason` | Solo lectura. Filtro `state`; búsqueda email. |
 | `credit-rules` | `id,provider,provider_name,reward,version` | POST `provider,reward`; PATCH `reward,version` sin cambio de prestador; acción `remove`. Filtro `provider`; búsqueda negocio. |
@@ -183,8 +303,40 @@ Los comandos usan `POST <recurso>/{id}/actions/<acción>/`, `Idempotency-Key` ob
 
 `GET dashboard/` es operativo y acotado: `{counts,queues,settings,recent_activity,refreshed_at}`. `counts` tiene `active_users,published_providers,current_benefits,enabled_collaborators`; `queues` tiene `draft_providers,draft_benefits,orders_to_prepare,orders_to_deliver,open_cancellations,payment_reviews,pending_refunds,unresolved_adjustments,out_of_stock_products`. Son conteos actuales, enlazables a las listas por sus filtros. `settings` contiene `catalog_enabled,pickup_enabled,pickup_configured,base_reward,target_visits,payment_provider` y lee defaults sin crear singletons. `recent_activity` incluye hasta diez auditorías administrativas nuevas ordenadas por fecha/ID; `refreshed_at` es timestamp UTC de la consulta. No son analíticas E6.
 
+<<<<<<< HEAD
+=======
+`GET collaborators/{id}/summary/` aplica la misma guarda ADMIN activo/staff/superusuario y devuelve exclusivamente `{collaborator_id,linked_clients,valid_attributed_consumptions}`; 404 si el perfil no existe y cero si no tiene historia. `linked_clients` cuenta Clientes distintos (`tourist_id`) en todo el historial de `FolderAccess`, sin duplicarlos al cambiar la versión del QR. No cuenta escaneos ni exige un grant vigente para conservar el vínculo histórico. `valid_attributed_consumptions` cuenta consumos con ese colaborador y estado `VALID`; excluye directos, anulados y atribuidos a otro colaborador. Las consultas son independientes para evitar multiplicación entre vínculos y consumos. La baja del perfil, rotación del QR o cambios de selección no eliminan historia; no expone clientes individuales, correo ni credenciales. Este resumen acotado no implementa analíticas E6.
+
+`GET /api/v1/admin/analytics/visits/` es solo para ADMIN activo con `is_staff` e `is_superuser`. Acepta `from` y `to` como fechas ISO inclusivas (ambas o ninguna), `collaborator_id` UUID opcional y `page` positivo (predeterminado 1; una página inexistente devuelve 400). Sin fechas usa hoy y los 29 días civiles anteriores en `America/Argentina/Ushuaia`; el intervalo máximo es 366 días. `collaborator_id` limita tanto los clientes vinculados como las visitas. Devuelve `period`, `linked_clients`, `valid_attributed_visits` y `businesses` paginados de a 25, ordenados por visitas descendentes, nombre y UUID. `businesses.count` es el total de prestadores con visitas dentro del filtro, y las métricas no cambian al paginar. La métrica de visitas cuenta filas `Consumption` referidas, `VALID`, no DEMO y dentro del rango local; no filtra el estado público actual del Prestador, por lo que conserva visitas históricas. Directos y anulados no cuentan. La respuesta no contiene identidades de Clientes y aplica `Cache-Control: no-store`.
+
+Ejemplo de respuesta:
+
+```json
+{
+  "period": {"from": "2026-11-01", "to": "2026-11-30", "timezone": "America/Argentina/Ushuaia"},
+  "linked_clients": {"status": "available", "value": 24},
+  "valid_attributed_visits": 31,
+  "businesses": {
+    "count": 2,
+    "page": 1,
+    "page_size": 25,
+    "results": [
+      {"provider_id": "0a000000-0000-4000-8000-000000000001", "provider_name": "Comercio de ejemplo", "visits": 18},
+      {"provider_id": "0a000000-0000-4000-8000-000000000002", "provider_name": "Otro comercio", "visits": 13}
+    ]
+  }
+}
+```
+
+La procedencia DEMO usa marcas verificadas: `Consumption.benefit_demo`, `Provider.demo` y `AdminAudit` (`action=DEMO_ACTIVITY`, `resource=users`) para los Clientes sintéticos. El marcador histórico `DemoSeedState(key=credits-2026-10-18)` identifica accesos directos de la semilla E4 sin marca individual. Si el período incluye accesos anteriores a `loaded_at` de esa semilla, la ventana exacta no puede reconstruirse y `linked_clients` devuelve `{status:"unavailable",value:null}`; el conteo de visitas continúa disponible por separado. No se infiere ausencia de DEMO a partir de nombres, emails ni diagnósticos.
+
+>>>>>>> develop
 Filtros de tarjetas/bandeja: `active_users → users/?is_active=true`; `published_providers → providers/?status=PUBLISHED`; `current_benefits → benefits/?current=true`; `enabled_collaborators → collaborators/?enabled=true&user_active=true`; borradores por `status=DRAFT`; pedidos por `state=PAID|READY|PAYMENT_REVIEW|REFUND_PENDING`; cancelaciones por `state=OPEN`; ajustes por `resolved=false`; productos sin stock por `active=true&stock=0`. `GET activity/` incluye tanto auditorías del panel como `OrderAudit` existente, en el mismo DTO saneado; para estas últimas `resource="orders"` y `object_id` es el pedido.
 
 Validación administrativa: las respuestas 400 asocian listas de mensajes seguros a los campos permitidos y usan `non_field_errors` para errores globales. Publicar un beneficio requiere condiciones; las fechas invertidas identifican `valid_from` y `valid_until`, también en PATCH parcial. Los errores internos de modelos se sanean sin devolver valores privados, SQL ni mensajes arbitrarios de `full_clean`. Un 409 conserva la semántica de versión/idempotencia y no es validación de campos.
 
+<<<<<<< HEAD
 Deuda de escala explícita: la lista de pedidos usa un DTO resumido y no precarga historias. Las historias del detalle de pedido y las selecciones/recomendaciones de carpeta conservan el contrato completo actual, sin paginación independiente; fichas o carpetas muy grandes pueden ser costosas. No se ha validado carga ni se define un umbral operativo en esta etapa.
+=======
+Deuda de escala explícita: la lista de pedidos usa un DTO resumido y no precarga historias. Las historias del detalle de pedido y las recomendaciones del espacio propio del Colaborador conservan el contrato completo actual, sin paginación independiente; fichas o carpetas muy grandes pueden ser costosas. La lista plana de selección contextual del Cliente sí pagina, con un máximo de 48 beneficios. No se ha validado carga ni se define un umbral operativo en esta etapa.
+>>>>>>> develop

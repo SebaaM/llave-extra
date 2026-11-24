@@ -128,6 +128,10 @@ class Benefit(models.Model):
     valid_until = models.DateField("Vigente hasta", null=True, blank=True)
     image = models.ImageField("Imagen", upload_to=private_image_path, storage=private_storage, validators=[validate_private_image], blank=True)
     status = models.CharField("Estado", max_length=12, choices=Publication.choices, default=Publication.DRAFT)
+<<<<<<< HEAD
+=======
+    featured = models.BooleanField("Destacado en el inicio", default=False)
+>>>>>>> develop
     demo = models.BooleanField("Datos de prueba", default=False)
     provenance = models.URLField("Fuente", blank=True)
 

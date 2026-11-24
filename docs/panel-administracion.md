@@ -4,14 +4,38 @@ El espacio habitual del Administrador está en `/gestion`. Ingresar con una cuen
 
 ## Inicio y gestión
 
+<<<<<<< HEAD
 Inicio muestra el estado actual de la red, las bandejas de trabajo, la configuración vigente y la actividad reciente. Cada tarjeta abre los registros con su filtro correspondiente. **Actualizar** consulta otra vez al servidor. Esta información es operativa; las analíticas se incorporarán en otra etapa.
 
 El menú permite consultar usuarios, prestadores, beneficios, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas de créditos, movimientos de stock, operaciones de pago y actividad. Las listas admiten búsqueda, filtros disponibles por recurso y paginación. La ficha permite editar los campos habilitados y ejecutar las acciones compatibles con su estado actual.
+=======
+Inicio muestra el estado actual de la red, las bandejas de trabajo, la configuración vigente y la actividad reciente. Cada tarjeta abre los registros con su filtro correspondiente. **Actualizar** consulta otra vez al servidor. Esta información es operativa y no reemplaza el informe de visitas atribuidas.
+
+**Inicio, Pedidos, Productos y Beneficios** tienen acceso directo. El resto del menú se organiza en cuatro grupos desplegables:
+
+- **Red y usuarios** reúne usuarios, prestadores y colaboradores.
+- **Tienda** reúne categorías de tienda, movimientos de stock, cancelaciones y operaciones de pago.
+- **Créditos y visitas** reúne consumos, billeteras, ajustes, reglas de créditos y **Analítica de visitas**.
+- **Administración** reúne actividad y configuración.
+
+El menú abre automáticamente el grupo de la sección actual al entrar a una lista o ficha. **Mi cuenta** queda en la cabecera, junto a **Salir**. Las listas admiten búsqueda, filtros disponibles por recurso y paginación. La ficha permite editar los campos habilitados y ejecutar las acciones compatibles con su estado actual.
+>>>>>>> develop
 
 Los selectores de relaciones permiten buscar por nombre o email. Seleccionar un beneficio para un colaborador agrega únicamente esa oferta concreta a su carpeta. Asignar un usuario Prestador requiere respetar su único negocio; la reasignación debe ser explícita.
 
 Los QR se consultan y descargan desde la ficha correspondiente. Renovarlos invalida las referencias anteriores. El PIN se ingresa en su formulario protegido; nunca se muestra su valor guardado. No compartir capturas de QR, PIN ni datos de cuentas reales.
 
+<<<<<<< HEAD
+=======
+## Beneficios destacados
+
+Cada fila permite alternar **Destacar** y **Quitar destacado**. Quitar sigue disponible aunque los cinco cupos estén ocupados. También se conserva **Quitar** en el resumen de seleccionados.
+
+Entrá en **Beneficios destacados** para buscar por beneficio o prestador y ver todos los registros, incluidos borradores e inactivos. La selección actual y el contador aparecen encima del listado. Usá **Destacar** para sumar un beneficio y **Quitar** para liberar uno de los cinco cupos. Cada acción se guarda en el momento.
+
+Un beneficio seleccionado ocupa un cupo aunque todavía no aparezca en el inicio. El carrusel muestra solo los beneficios publicados y vigentes de prestadores publicados cuando el catálogo público está habilitado.
+
+>>>>>>> develop
 ## Configuración del sitio
 
 Cada pestaña se guarda de manera independiente:
@@ -21,6 +45,26 @@ Cada pestaña se guarda de manera independiente:
 - **Créditos:** recompensa base y meta de visitas. Las excepciones se administran en **Reglas de créditos**. Los valores históricos de consumos se conservan.
 - **Tienda y retiro:** nombre, dirección, horarios y habilitación del punto de retiro para pedidos nuevos. Los pedidos anteriores conservan su información. El proveedor de pagos se consulta y no se cambia desde este panel.
 
+<<<<<<< HEAD
+=======
+## Comisiones por consumos referidos
+
+En **Comisiones** (`/gestion/comisiones`) el estado, la fecha de verificación por QR y PIN y el paso pendiente aparecen con el acordeón cerrado. Los filtros por estado, Prestador y Colaborador se aplican antes de paginar. Abrí una fila para ver la declaración, el monto aproximado, la base aprobada, el porcentaje y la fecha y el responsable de cada paso.
+
+1. El Cliente confirma el beneficio con el QR y el PIN del negocio. El referido queda **Falta verificación del Prestador**.
+2. En **Consumos referidos**, el Prestador declara el resultado y el monto. Cuando declara un importe positivo, la ficha pasa a **A pagar comisión**.
+3. El Administrador confirma la base y aprueba. El Prestador transfiere directamente al Colaborador por fuera de Llave Extra e informa el pago. El Administrador coteja el comprobante, confirma la recepción y marca **Completado**.
+4. En los casos sin comisión, el Administrador puede pedir corrección o registrar el cierre. Si surge una discrepancia tras informar un pago, queda una incidencia en la ficha.
+
+En **Reglas de comisión**, el Administrador configura el porcentaje global. El Prestador elige en **Mis beneficios** si cada beneficio usa esa tasa o una opción de 3 %, 7 % o 10 %. El respaldo global es 5 %. La tasa se guarda al validar el consumo con QR y PIN. Las excepciones por Prestador permanecen disponibles para los casos anteriores sin tasa registrada. Los datos bancarios se consultan por una acción explícita y auditada cuando el estado lo permite. Los referidos históricos sin beneficio siguen visibles como «Beneficio no registrado».
+
+## Analítica de visitas
+
+En **Analítica de visitas** (`/gestion/analitica/visitas`), el Administrador consulta Clientes vinculados, visitas válidas atribuidas y el detalle paginado de comercios para un período. Las fechas y el Colaborador elegido se aplican desde la URL; al cambiar filtros, el informe vuelve a la primera página. La búsqueda de colaboradores usa el listado administrativo y permite recorrer sus páginas. El informe no identifica Clientes. Si la procedencia de un indicador no puede confirmarse, muestra «No disponible para este período» en lugar de presentarlo como cero; un período sin registros sí muestra cero y un estado vacío.
+
+Los filtros presentan primero Desde, Hasta y Colaborador; la búsqueda de colaboradores y las acciones se agrupan debajo. La navegación de comercios aparece al pie de su tabla cuando existe más de una página. El selector de colaboradores tiene su propia navegación, visible solo si sus opciones ocupan varias páginas.
+
+>>>>>>> develop
 ## Guardados, acciones y conflictos
 
 Un formulario con cambios avisa antes de navegar o cerrar la página. Si otra persona actualiza el registro, el servidor rechaza el guardado desactualizado y el formulario conserva el texto para compararlo. Cargar la versión actual descarta los cambios locales después del aviso correspondiente.
@@ -33,4 +77,8 @@ Un rechazo de autenticación o permisos cierra el panel privado. **Mi cuenta** p
 
 ## Alcance y evidencia
 
+<<<<<<< HEAD
 Las analíticas, la experiencia de compra del Cliente y el despliegue productivo quedan fuera de esta etapa. Mercado Pago todavía requiere validación de sandbox externo. Ver el [checklist de entrega](verification/09-panel-admin-checklist.md) y la [evidencia de verificación](verification/09-panel-admin.md), que distinguen comprobaciones realizadas y limitaciones de QA.
+=======
+Esta etapa incorpora únicamente el informe de visitas atribuidas; las demás analíticas, la experiencia de compra del Cliente y el despliegue productivo quedan fuera de este alcance. Mercado Pago todavía requiere validación de sandbox externo. Ver el [checklist de entrega](verification/09-panel-admin-checklist.md) y la [evidencia de verificación](verification/09-panel-admin.md), que distinguen comprobaciones realizadas y limitaciones de QA.
+>>>>>>> develop

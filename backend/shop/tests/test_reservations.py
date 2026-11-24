@@ -207,4 +207,8 @@ def test_confirmation_migration_from_0004_preserves_paid_history_and_unpaid_rese
             assert str(order.total_money) == str(domain.product.price_money)
             assert not order.stock_released
     finally:
+<<<<<<< HEAD
         MigrationExecutor(connection).migrate(new_target)
+=======
+        MigrationExecutor(connection).migrate([("shop", "0006_product_categories")])
+>>>>>>> develop

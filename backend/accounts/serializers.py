@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -5,9 +7,10 @@ from rest_framework import serializers
 
 class StrictSerializer(serializers.Serializer):
     def to_internal_value(self, data):
-        unknown = set(data) - set(self.fields)
-        if unknown:
-            raise serializers.ValidationError({key: "Campo no permitido" for key in unknown})
+        if isinstance(data, Mapping):
+            unknown = set(data) - set(self.fields)
+            if unknown:
+                raise serializers.ValidationError({key: "Campo no permitido" for key in unknown})
         return super().to_internal_value(data)
 
 

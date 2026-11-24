@@ -32,7 +32,11 @@ function djangoProxy(): ProxyOptions {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+<<<<<<< HEAD
   test: { environment: 'jsdom', include: ['src/**/*.test.tsx'], maxWorkers: 1, fileParallelism: false },
+=======
+  test: { environment: 'jsdom', include: ['src/**/*.test.{ts,tsx}'], maxWorkers: 1, fileParallelism: false },
+>>>>>>> develop
   server: {
     // Windows Docker bind mounts do not reliably emit filesystem events to
     // Vite's watcher; polling keeps local preview changes and fixes live.

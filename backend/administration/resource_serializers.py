@@ -11,6 +11,10 @@ from shop.models import (
     OrderLine,
     PaymentOperation,
     Product,
+<<<<<<< HEAD
+=======
+    ProductCategory,
+>>>>>>> develop
     StockAdjustment,
 )
 
@@ -92,7 +96,11 @@ class BenefitReadSerializer(VersionedReadSerializer):
         model = Benefit
         ref_name = "AdminBenefitRead"
         fields = ("id", "provider", "provider_name", "title", "description", "conditions", "valid_from",
+<<<<<<< HEAD
                   "valid_until", "image_url", "status", "demo", "provenance", "version")
+=======
+                  "valid_until", "image_url", "status", "featured", "demo", "provenance", "version")
+>>>>>>> develop
 
     def get_image_url(self, obj) -> str | None:
         return f"/api/v1/admin/benefits/{obj.pk}/image/" if obj.image else None
@@ -105,7 +113,11 @@ class BenefitWriteSerializer(StrictModelSerializer):
         model = Benefit
         ref_name = "AdminBenefitWrite"
         fields = ("provider", "title", "description", "conditions", "valid_from", "valid_until", "image",
+<<<<<<< HEAD
                   "status")
+=======
+                  "status", "featured")
+>>>>>>> develop
 
     def validate(self, attrs):
         def current(name, default=None):
@@ -213,12 +225,48 @@ class AdjustmentReadSerializer(serializers.ModelSerializer):
                   "created_at", "resolved_at", "resolved_by", "resolution", "resolution_reason")
 
 
+<<<<<<< HEAD
 class ProductReadSerializer(VersionedReadSerializer):
     image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = ("id", "name", "description", "image_url", "active", "stock", "price_money",
+=======
+class ProductCategoryReadSerializer(VersionedReadSerializer):
+    published_products_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductCategory
+        fields = ("id", "name", "active", "published_products_count", "version")
+
+    def get_published_products_count(self, obj) -> int:
+        value = getattr(obj, "published_products_count", None)
+        return value if value is not None else obj.products.filter(active=True).count()
+
+
+class ProductCategoryWriteSerializer(StrictModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = ("name", "active")
+
+
+class ProductCategoryPatchRequestSerializer(ProductCategoryWriteSerializer):
+    version = serializers.CharField(required=True, min_length=64, max_length=64)
+
+    class Meta(ProductCategoryWriteSerializer.Meta):
+        fields = (*ProductCategoryWriteSerializer.Meta.fields, "version")
+
+
+class ProductReadSerializer(VersionedReadSerializer):
+    image_url = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source="category.name", read_only=True, allow_null=True, default=None)
+    category_active = serializers.BooleanField(source="category.active", read_only=True, allow_null=True, default=None)
+
+    class Meta:
+        model = Product
+        fields = ("id", "name", "description", "image_url", "category", "category_name", "category_active", "active", "stock", "price_money",
+>>>>>>> develop
                   "price_credits", "demo", "version")
 
     def get_image_url(self, obj) -> str | None:
@@ -230,7 +278,20 @@ class ProductWriteSerializer(StrictModelSerializer):
 
     class Meta:
         model = Product
+<<<<<<< HEAD
         fields = ("name", "description", "image", "active", "price_money", "price_credits")
+=======
+        fields = ("name", "description", "image", "category", "active", "price_money", "price_credits")
+
+    def validate(self, attrs):
+        if not self.instance and attrs.get("active", False):
+            raise serializers.ValidationError({"active": "Creá el producto como borrador y publicalo después."})
+        money = attrs.get("price_money", getattr(self.instance, "price_money", None))
+        credits = attrs.get("price_credits", getattr(self.instance, "price_credits", None))
+        if money is None and credits is None:
+            raise serializers.ValidationError({"price_money": "Indicá al menos un precio.", "price_credits": "Indicá al menos un precio."})
+        return attrs
+>>>>>>> develop
 
 
 class ProductPatchRequestSerializer(ProductWriteSerializer):

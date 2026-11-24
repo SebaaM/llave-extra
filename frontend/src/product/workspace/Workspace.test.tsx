@@ -11,7 +11,39 @@ const benefit = { id: 'benefit-1', title: 'Propuesta de prueba', description: 'D
 const catalogBenefit = { ...benefit, provider }
 const originalLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
 const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+<<<<<<< HEAD
 type Handler = (path: string, init?: RequestInit) => Response | Promise<Response> | undefined
+=======
+type Handler = (path: string, init: RequestInit | undefined, url: URL) => Response | Promise<Response> | undefined
+
+function mockExpiredSession(handler: Handler): Handler {
+  let refreshes = 0
+  return (path, init, url) => path === '/api/v1/auth/refresh/'
+    ? ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
+    : handler(path, init, url)
+}
+
+function mockCollaboratorQr(
+  png: () => Response | Promise<Response> = () => new Response(new Blob(['png'], { type: 'image/png' })),
+) {
+  return (path: string) => {
+    if (path === '/api/v1/collaborator/qr/') return json({ version: 'v1', url: `${window.location.origin}/referencia#token=synthetic-test` })
+    if (path === '/api/v1/collaborator/qr.png') return png()
+  }
+}
+
+async function expectAdminWorkspace() {
+  await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
+  await screen.findByRole('navigation', { name: 'Panel de administración' })
+}
+
+async function expectPrivateQrUnavailable() {
+  await screen.findByText('El acceso a este QR ya no está habilitado. Actualizá para consultar tu autorización.')
+  expect(screen.queryByRole('button', { name: 'Copiar enlace' })).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Descargar QR PNG ↓' })).toBeNull()
+  expect(screen.queryByRole('img', { name: 'QR privado de recomendaciones' })).toBeNull()
+}
+>>>>>>> develop
 
 beforeEach(() => {
   cleanup(); sessionStorage.clear(); invalidatePrivateState()
@@ -31,9 +63,16 @@ function mount(role: User['role'], route: string, handler?: Handler) {
   const calls: { path: string; init?: RequestInit }[] = []
   window.history.replaceState({}, '', route)
   vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo, init?: RequestInit) => {
+<<<<<<< HEAD
     const path = new URL(String(input), window.location.origin).pathname
     calls.push({ path, init })
     const override = handler?.(path, init)
+=======
+    const url = new URL(String(input), window.location.origin)
+    const { pathname: path } = url
+    calls.push({ path, init })
+    const override = handler?.(path, init, url)
+>>>>>>> develop
     if (override) return Promise.resolve(override)
     if (path.endsWith('/auth/csrf/')) return Promise.resolve(json({ csrfToken: 'csrf-test' }))
     if (path.endsWith('/auth/refresh/') || path.endsWith('/auth/login/')) return Promise.resolve(json({ access: 'access-test' }))
@@ -48,10 +87,17 @@ function mount(role: User['role'], route: string, handler?: Handler) {
   return { ...view, calls }
 }
 
+<<<<<<< HEAD
 describe('paneles operativos por rol', () => {
   it('restaura /espacio como Prestador y usa solo su negocio, sin endpoints financieros', async () => {
     const { calls } = mount('PROVIDER', '/espacio')
     await screen.findByRole('heading', { name: provider.name })
+=======
+describe('Rutas y navegación por rol', () => {
+  it('restaura /espacio como Prestador y usa solo su negocio, sin endpoints financieros', async () => {
+    const { calls } = mount('PROVIDER', '/espacio')
+    await screen.findByRole('heading', { name: provider.name }, { timeout: 5000 })
+>>>>>>> develop
     expect(window.location.pathname).toBe('/prestador')
     const editLink = screen.getByRole('link', { name: /Editar información/ })
     expect(editLink.classList.contains('button')).toBe(true)
@@ -87,8 +133,12 @@ describe('paneles operativos por rol', () => {
 
   it('abre el panel React del Administrador al resolver /espacio', async () => {
     mount('ADMIN', '/espacio')
+<<<<<<< HEAD
     await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
     expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
+=======
+    await expectAdminWorkspace()
+>>>>>>> develop
   })
 
   it('abre el panel React del Administrador después del login', async () => {
@@ -97,8 +147,54 @@ describe('paneles operativos por rol', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'otra@example.test' } })
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Clave-ejemplo-123!' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }))
+<<<<<<< HEAD
     await waitFor(() => expect(window.location.pathname).toBe('/gestion'))
     expect(screen.getByRole('navigation', { name: 'Panel de administración' })).toBeTruthy()
+=======
+    await expectAdminWorkspace()
+  })
+
+  it('cierra el menú móvil al navegar y conserva aria-controls', async () => {
+    mount('PROVIDER', '/prestador')
+    fireEvent.click(await screen.findByRole('button', { name: /Menú/ }))
+    expect(screen.getByRole('button', { name: /Menú/ }).getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(screen.getByRole('link', { name: /Mis beneficios/ }))
+    await screen.findByRole('heading', { name: 'Las propuestas de tu negocio' })
+    expect(screen.getByRole('button', { name: /Menú/ }).getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByRole('button', { name: /Menú/ }).getAttribute('aria-controls')).toBe('workspace-nav')
+  })
+
+  it.each(['PROVIDER', 'COLLABORATOR', 'ADMIN'] as const)('no ofrece canje a la cuenta %s', async role => {
+    const { calls } = mount(role, '/referencia')
+    await screen.findByRole('heading', { name: 'Recibí nuevas recomendaciones.' })
+    expect(screen.queryByLabelText('Código de recomendaciones')).toBeNull()
+    expect(screen.getByText('Las recomendaciones recibidas están disponibles para cuentas Cliente.')).toBeTruthy()
+    expect(calls.some(call => call.path === '/api/v1/referrals/redeem/' && call.init?.method === 'POST')).toBe(false)
+  })
+})
+
+describe('Ficha y beneficios del Prestador', () => {
+  it('configura una opción fija de comisión sin editar el beneficio', async () => {
+    const ratePath = '/api/v1/provider/providers/business-1/benefits/benefit-1/commission-rate/'
+    let rate: number | null = null
+    const { calls } = mount('PROVIDER', '/prestador/beneficios', (path, init) => {
+      if (path !== ratePath) return undefined
+      if (init?.method === 'PUT') rate = Number(JSON.parse(String(init.body)).rate)
+      return json({ rate, version: rate === null ? null : 'saved-version', global_rate: '5.00' })
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'Comisión' }))
+    const options = await screen.findByRole('combobox', { name: 'Porcentaje de comisión' })
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      'Usar tasa global (5 %)', '3 %', '7 %', '10 %',
+    ])
+    fireEvent.change(options, { target: { value: '7' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar porcentaje' }))
+    await screen.findByText('Cambios guardados.')
+    const write = calls.find(call => call.init?.method === 'PUT')
+    expect(write?.path).toBe(ratePath)
+    expect(JSON.parse(String(write?.init?.body))).toEqual({ rate: '7', version: null })
+    expect(new Headers(write?.init?.headers).get('Idempotency-Key')).toBeTruthy()
+>>>>>>> develop
   })
 
   it('guarda la ficha por multipart con la whitelist y conserva el nombre informativo', async () => {
@@ -161,11 +257,17 @@ describe('paneles operativos por rol', () => {
   })
 
   it('cierra la ficha del negocio si el PATCH responde 401 y falla la renovación', async () => {
+<<<<<<< HEAD
     let refreshes = 0
     mount('PROVIDER', '/prestador/negocio', path => {
       if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
       if (path === '/api/v1/provider/providers/business-1/') return json({ detail: 'Sesión vencida' }, 401)
     })
+=======
+    mount('PROVIDER', '/prestador/negocio', mockExpiredSession(path => {
+      if (path === '/api/v1/provider/providers/business-1/') return json({ detail: 'Sesión vencida' }, 401)
+    }))
+>>>>>>> develop
     await screen.findByRole('heading', { name: 'Información del negocio' })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar ficha' }))
     await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
@@ -174,12 +276,19 @@ describe('paneles operativos por rol', () => {
   })
 
   it('cierra los borradores si DELETE responde 401 y falla la renovación', async () => {
+<<<<<<< HEAD
     let refreshes = 0
     mount('PROVIDER', '/prestador/beneficios', path => {
       if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
       if (path === '/api/v1/provider/providers/business-1/benefits/') return json([{ ...benefit, status: 'DRAFT' }])
       if (path === '/api/v1/provider/providers/business-1/benefits/benefit-1/') return json({ detail: 'Sesión vencida' }, 401)
     })
+=======
+    mount('PROVIDER', '/prestador/beneficios', mockExpiredSession(path => {
+      if (path === '/api/v1/provider/providers/business-1/benefits/') return json([{ ...benefit, status: 'DRAFT' }])
+      if (path === '/api/v1/provider/providers/business-1/benefits/benefit-1/') return json({ detail: 'Sesión vencida' }, 401)
+    }))
+>>>>>>> develop
     await screen.findByRole('heading', { name: benefit.title })
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar borrador' }))
@@ -210,20 +319,59 @@ describe('paneles operativos por rol', () => {
     expect(screen.getByText('b@example.test')).toBeTruthy()
   })
 
+<<<<<<< HEAD
   it('agrega un beneficio concreto al catálogo privado y deshabilita la repetición', async () => {
+=======
+  it('propaga una denegación de medio privado al panel del Prestador', async () => {
+    mount('PROVIDER', '/prestador', path => {
+      if (path === '/api/v1/provider/providers/') return json([{ ...provider, image_url: '/api/v1/private/provider-image/' }])
+      if (path === '/api/v1/private/provider-image/') return json({ detail: 'Acceso revocado' }, 403)
+    })
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: provider.name })).toBeNull()
+  })
+})
+
+describe('Recomendaciones privadas del Colaborador', () => {
+  it('agrega, quita y vuelve a agregar el beneficio desde la misma tarjeta del catálogo privado', async () => {
+>>>>>>> develop
     let selected = false
     const { calls } = mount('COLLABORATOR', '/colaborador/catalogo', (path, init) => {
       if (path === '/api/v1/collaborator/recommendations/') return json({ recommendations: selected ? [{ benefit_id: benefit.id, available: true, benefit: catalogBenefit }] : [] })
       if (path.endsWith('/recommendations/benefit-1/') && init?.method === 'PUT') { selected = true; return json(null, 201) }
+<<<<<<< HEAD
     })
     fireEvent.click(await screen.findByRole('button', { name: '+ Agregar a mi carpeta' }))
     await screen.findByText('Beneficio agregado a tus recomendaciones.')
     const added = await screen.findByRole('button', { name: '✓ Ya está en tu carpeta' })
     expect((added as HTMLButtonElement).disabled).toBe(true)
+=======
+      if (path.endsWith('/recommendations/benefit-1/') && init?.method === 'DELETE') { selected = false; return json(null, 204) }
+    })
+    fireEvent.click(await screen.findByRole('button', { name: '+ Agregar a mi carpeta' }))
+    await screen.findByText('Beneficio agregado a tus recomendaciones.')
+    const remove = await screen.findByRole('button', { name: 'Quitar de mi carpeta' })
+    expect((remove as HTMLButtonElement).disabled).toBe(false)
+    expect(remove.getAttribute('aria-pressed')).toBe('true')
+>>>>>>> develop
     const put = calls.find(call => call.init?.method === 'PUT')!
     expect(put.path).toBe('/api/v1/collaborator/recommendations/benefit-1/')
     expect(put.init!.body).toBe('{}')
     expect(calls.some(call => call.path.startsWith('/api/v1/catalog/'))).toBe(false)
+<<<<<<< HEAD
+=======
+    fireEvent.click(remove)
+    await screen.findByText('Beneficio quitado de tus recomendaciones.')
+    const add = await screen.findByRole('button', { name: '+ Agregar a mi carpeta' })
+    expect(add.getAttribute('aria-pressed')).toBe('false')
+    expect(selected).toBe(false)
+    const deletion = calls.find(call => call.init?.method === 'DELETE')!
+    expect(deletion.path).toBe('/api/v1/collaborator/recommendations/benefit-1/')
+    expect(deletion.init!.body).toBeUndefined()
+    fireEvent.click(add)
+    await screen.findByRole('button', { name: 'Quitar de mi carpeta' })
+    expect(calls.filter(call => ['PUT', 'DELETE'].includes(call.init?.method ?? '')).map(call => call.init!.method)).toEqual(['PUT', 'DELETE', 'PUT'])
+>>>>>>> develop
   })
 
   it('quita una selección no disponible sin mostrar contenido retirado', async () => {
@@ -239,6 +387,7 @@ describe('paneles operativos por rol', () => {
 
   it('busca y pagina el selector privado con los parámetros de servidor', async () => {
     const queries: URLSearchParams[] = []
+<<<<<<< HEAD
     mount('COLLABORATOR', '/colaborador/catalogo')
     const original = globalThis.fetch
     vi.stubGlobal('fetch', vi.fn((input: URL | RequestInfo, init?: RequestInit) => {
@@ -249,6 +398,14 @@ describe('paneles operativos por rol', () => {
       }
       return original(input, init)
     }))
+=======
+    mount('COLLABORATOR', '/colaborador/catalogo', (path, _init, url) => {
+      if (path !== '/api/v1/collaborator/catalog/benefits/') return
+      queries.push(url.searchParams)
+      const secondPage = url.searchParams.get('page') === '2'
+      return json({ count: 26, next: secondPage ? null : '?page=2', previous: secondPage ? '?page=1' : null, results: [catalogBenefit] })
+    })
+>>>>>>> develop
     await screen.findByRole('heading', { name: benefit.title })
     fireEvent.change(screen.getByLabelText('Buscar beneficio'), { target: { value: 'café' } })
     fireEvent.change(screen.getByLabelText('Categoría'), { target: { value: 'Gastronomía' } })
@@ -296,6 +453,7 @@ describe('paneles operativos por rol', () => {
     expect(screen.queryByRole('img', { name: benefit.title })).toBeNull()
   })
 
+<<<<<<< HEAD
   it('propaga una denegación de medio privado al panel del Prestador', async () => {
     mount('PROVIDER', '/prestador', path => {
       if (path === '/api/v1/provider/providers/') return json([{ ...provider, image_url: '/api/v1/private/provider-image/' }])
@@ -323,10 +481,29 @@ describe('ruta pública de referencia', () => {
     expect(screen.queryByLabelText('Código de referencia')).toBeNull()
     expect(screen.getByText('La vinculación de referencias está disponible para cuentas Cliente.')).toBeTruthy()
     expect(calls.some(call => call.path === '/api/v1/referrals/redeem/' && call.init?.method === 'POST')).toBe(false)
+=======
+  it('retira la lista privada si quitar una recomendación responde 401 y falla la renovación', async () => {
+    mount('COLLABORATOR', '/colaborador/recomendaciones', mockExpiredSession(path => {
+      if (path === '/api/v1/collaborator/recommendations/benefit-1/') return json({ detail: 'Sesión vencida' }, 401)
+    }))
+    await screen.findByRole('heading', { name: benefit.title })
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar recomendación' }))
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: benefit.title })).toBeNull()
+  })
+
+  it('propaga un 401 del catálogo a la vista privada de recomendaciones', async () => {
+    mount('COLLABORATOR', '/colaborador/catalogo', mockExpiredSession(path => {
+      if (path === '/api/v1/collaborator/catalog/benefits/') return json({ detail: 'Sesión vencida' }, 401)
+    }))
+    await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
+    expect(screen.queryByRole('heading', { name: 'Encontrá tu próxima recomendación' })).toBeNull()
+>>>>>>> develop
   })
 })
 
 describe('QR privado y PIN', () => {
+<<<<<<< HEAD
   it('copia el enlace privado solo después de una acción explícita', async () => {
     const copy = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } })
@@ -334,6 +511,20 @@ describe('QR privado y PIN', () => {
       if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
     })
+=======
+  it('abre Mi QR sin pasar por el menú ni renovar el código', async () => {
+    const { calls } = mount('COLLABORATOR', '/colaborador', mockCollaboratorQr())
+    fireEvent.click(await screen.findByRole('link', { name: 'Mostrar mi QR' }))
+    await screen.findByRole('img', { name: 'QR privado de recomendaciones' })
+    expect(calls.filter(call => call.path === '/api/v1/collaborator/qr.png')).toHaveLength(1)
+    expect(calls.some(call => call.path.includes('/renew/'))).toBe(false)
+  })
+
+  it('copia el enlace privado solo después de una acción explícita', async () => {
+    const copy = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } })
+    mount('COLLABORATOR', '/colaborador/qr', mockCollaboratorQr())
+>>>>>>> develop
     const button = await screen.findByRole('button', { name: 'Copiar enlace' })
     expect(copy).not.toHaveBeenCalled()
     fireEvent.click(button)
@@ -341,11 +532,16 @@ describe('QR privado y PIN', () => {
     expect(copy).toHaveBeenCalledTimes(1)
   })
 
+<<<<<<< HEAD
   it('consulta el QR solo en su sección, lo renueva al foco y revoca cada Blob', async () => {
     const { calls } = mount('COLLABORATOR', '/colaborador/qr', path => {
       if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
     })
+=======
+  it('vuelve a consultar el QR al recuperar el foco y revoca el Blob anterior', async () => {
+    const { calls } = mount('COLLABORATOR', '/colaborador/qr', mockCollaboratorQr())
+>>>>>>> develop
     await screen.findByRole('img', { name: 'QR privado de recomendaciones' })
     expect(calls.filter(call => call.path === '/api/v1/collaborator/qr.png')).toHaveLength(1)
     fireEvent(window, new Event('focus'))
@@ -357,11 +553,17 @@ describe('QR privado y PIN', () => {
 
   it('descarta el Blob QR que termina después del logout', async () => {
     let finish!: (response: Response) => void
+<<<<<<< HEAD
     mount('COLLABORATOR', '/colaborador/qr', path => {
       if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Promise<Response>(resolve => { finish = resolve })
       if (path.endsWith('/auth/logout/')) return json(null, 204)
     })
+=======
+    const qr = mockCollaboratorQr(() => new Promise<Response>(resolve => { finish = resolve }))
+    mount('COLLABORATOR', '/colaborador/qr', path =>
+      path.endsWith('/auth/logout/') ? json(null, 204) : qr(path))
+>>>>>>> develop
     await waitFor(() => expect(finish).toBeTypeOf('function'))
     fireEvent.click(screen.getByRole('button', { name: 'Salir' }))
     await act(async () => finish(new Response(new Blob(['late'], { type: 'image/png' }))))
@@ -371,6 +573,7 @@ describe('QR privado y PIN', () => {
 
   it('revoca el Blob QR tardío después de salir de la sección con la misma sesión', async () => {
     let finish!: (response: Response) => void
+<<<<<<< HEAD
     mount('COLLABORATOR', '/colaborador/qr', path => {
       if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return new Promise<Response>(resolve => { finish = resolve })
@@ -378,12 +581,19 @@ describe('QR privado y PIN', () => {
     await waitFor(() => expect(finish).toBeTypeOf('function'))
     fireEvent.click(screen.getByRole('link', { name: /Mi cuenta/ }))
     await screen.findByRole('heading', { name: 'Tu cuenta' })
+=======
+    mount('COLLABORATOR', '/colaborador/qr', mockCollaboratorQr(() => new Promise<Response>(resolve => { finish = resolve })))
+    await waitFor(() => expect(finish).toBeTypeOf('function'))
+    fireEvent.click(screen.getByRole('link', { name: /Mi cuenta/ }))
+    await screen.findByRole('heading', { name: 'Mi cuenta' })
+>>>>>>> develop
     await act(async () => finish(new Response(new Blob(['late'], { type: 'image/png' }))))
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:workspace-test')
     expect(screen.queryByRole('img', { name: 'QR privado de recomendaciones' })).toBeNull()
   })
 
   it('retira el enlace y QR si el PNG responde 403', async () => {
+<<<<<<< HEAD
     mount('COLLABORATOR', '/colaborador/qr', path => {
       if (path === '/api/v1/collaborator/qr/') return json({ url: `${window.location.origin}/referencia#token=synthetic-test` })
       if (path === '/api/v1/collaborator/qr.png') return json({ detail: 'Deshabilitado' }, 403)
@@ -424,6 +634,15 @@ describe('QR privado y PIN', () => {
     })
     await screen.findByRole('heading', { name: 'Tu espacio no está disponible' })
     expect(screen.queryByRole('heading', { name: 'Encontrá tu próxima recomendación' })).toBeNull()
+=======
+    mount('COLLABORATOR', '/colaborador/qr', mockCollaboratorQr(() => json({ detail: 'Deshabilitado' }, 403)))
+    await expectPrivateQrUnavailable()
+  })
+
+  it('retira el enlace y QR si el PNG responde 401 y falla la renovación de sesión', async () => {
+    mount('COLLABORATOR', '/colaborador/qr', mockExpiredSession(mockCollaboratorQr(() => json({ detail: 'Sesión vencida' }, 401))))
+    await expectPrivateQrUnavailable()
+>>>>>>> develop
   })
 
   it('envía PIN solo por PUT y lo limpia inmediatamente sin devolver el valor', async () => {
@@ -448,6 +667,7 @@ describe('QR privado y PIN', () => {
   })
 
   it('cierra el QR del prestador si guardar el PIN responde 401 y falla la renovación', async () => {
+<<<<<<< HEAD
     let refreshes = 0
     mount('PROVIDER', '/prestador/qr', (path, init) => {
       if (path === '/api/v1/auth/refresh/') return ++refreshes === 1 ? json({ access: 'access-test' }) : json({ detail: 'Sin sesión' }, 401)
@@ -455,6 +675,13 @@ describe('QR privado y PIN', () => {
       if (path === '/api/v1/provider/providers/business-1/consumption-credential/') return json({ configured: true, url: `${window.location.origin}/consumo#token=synthetic-test` })
       if (path === '/api/v1/provider/providers/business-1/consumption-credential/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
     })
+=======
+    mount('PROVIDER', '/prestador/qr', mockExpiredSession((path, init) => {
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/' && init?.method === 'PUT') return json({ detail: 'Sesión vencida' }, 401)
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/') return json({ configured: true, url: `${window.location.origin}/consumo#token=synthetic-test` })
+      if (path === '/api/v1/provider/providers/business-1/consumption-credential/qr.png') return new Response(new Blob(['png'], { type: 'image/png' }))
+    }))
+>>>>>>> develop
     await screen.findByRole('img', { name: 'QR privado de consumo del negocio' })
     fireEvent.change(screen.getByLabelText('Nuevo PIN'), { target: { value: '123456' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar PIN' }))

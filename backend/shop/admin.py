@@ -18,11 +18,19 @@ from .models import (
     PaymentInbox,
     PaymentOperation,
     Product,
+<<<<<<< HEAD
+=======
+    ProductCategory,
+>>>>>>> develop
     ShopSettings,
     StockAdjustment,
 )
 from .payments.processing import request_refund, retry_operation
+<<<<<<< HEAD
 from .services import adjust_stock, advance_order, resolve_cancellation
+=======
+from .services import adjust_stock, advance_order, lock_product_categories, resolve_cancellation
+>>>>>>> develop
 
 
 class ShopActionForm(ActionForm):
@@ -57,10 +65,21 @@ class ProductAdmin(ActionMixin, AdminRoleOnlyMixin, admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if change:
             # Never persist stale stock from a form opened before a checkout/delta.
+<<<<<<< HEAD
             Product.objects.select_for_update().get(pk=obj.pk)
             obj.save(update_fields=["name", "description", "image", "active", "price_money", "price_credits"])
         else:
             obj.stock = 0
+=======
+            current = Product.objects.select_for_update().get(pk=obj.pk)
+            if current.category_id != obj.category_id or current.active != obj.active:
+                lock_product_categories([current.category_id, obj.category_id])
+            obj.save(update_fields=["name", "description", "category", "image", "active", "price_money", "price_credits"])
+        else:
+            obj.stock = 0
+            obj.active = False
+            lock_product_categories([obj.category_id])
+>>>>>>> develop
             obj.save()
 
     @admin.action(description="Aplicar variación de stock con motivo")
@@ -69,6 +88,17 @@ class ProductAdmin(ActionMixin, AdminRoleOnlyMixin, admin.ModelAdmin):
             request.user, obj.pk, delta=int(request.POST.get("delta", "")), reason=reason))
 
 
+<<<<<<< HEAD
+=======
+@admin.register(ProductCategory)
+class ProductCategoryAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
+    list_display = ("name", "active")
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+>>>>>>> develop
 @admin.register(ShopSettings)
 class ShopSettingsAdmin(AdminRoleOnlyMixin, admin.ModelAdmin):
     list_display = ("pickup_name", "pickup_enabled", "pickup_address", "pickup_hours")

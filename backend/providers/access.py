@@ -2,13 +2,17 @@ from contextlib import contextmanager
 
 from django.db import models
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from accounts.models import User
 from referrals.access import active_folder_access, locked_folder_access
 from referrals.models import CollaboratorProfile
 
+<<<<<<< HEAD
 from .models import Benefit, Provider, Publication
+=======
+from .models import Benefit, Provider, ProviderMembership, Publication
+>>>>>>> develop
 
 
 def selected_benefits(profile_id):
@@ -26,6 +30,17 @@ def owned_provider(user: User, provider_id) -> Provider:
         raise PermissionDenied("Solo prestadores activos")
     provider = Provider.objects.filter(pk=provider_id, memberships__user=user).first()
     if provider is None:
+        raise NotFound()
+    return provider
+
+
+def locked_owned_provider(user: User, provider_id) -> Provider:
+    """Revalidate ownership inside the caller's transaction, in membership command lock order."""
+    current = User.objects.select_for_update().filter(pk=user.pk, is_active=True, role=User.Role.PROVIDER).first()
+    if current is None:
+        raise PermissionDenied("Solo prestadores activos")
+    provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
+    if provider is None or not ProviderMembership.objects.select_for_update().filter(user=current, provider=provider).exists():
         raise NotFound()
     return provider
 
@@ -49,7 +64,11 @@ def visible_benefits(provider: Provider):
 
 
 @contextmanager
+<<<<<<< HEAD
 def locked_provider_eligibility(user: User, profile_id, provider_id):
+=======
+def locked_provider_eligibility(user: User, profile_id, provider_id, *, benefit_id=None):
+>>>>>>> develop
     """E4: lock a referred folder when supplied, then provider and current benefit."""
     if profile_id is None:
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
@@ -61,6 +80,13 @@ def locked_provider_eligibility(user: User, profile_id, provider_id):
         provider = Provider.objects.select_for_update().filter(pk=provider_id).first()
         if provider is None or provider.status != Publication.PUBLISHED:
             raise PermissionDenied("Prestador no habilitado para la carpeta")
+<<<<<<< HEAD
         if not selected_benefits(profile.pk).filter(provider=provider).select_for_update(of=("self",)).exists():
+=======
+        benefits = selected_benefits(profile.pk).filter(provider=provider).select_for_update(of=("self",))
+        if benefit_id is not None and not benefits.filter(pk=benefit_id).exists():
+            raise ValidationError({"benefit_id": "Elegí un beneficio vigente de esta recomendación y negocio"})
+        if benefit_id is None and not benefits.exists():
+>>>>>>> develop
             raise PermissionDenied("Prestador no habilitado para la carpeta: sin beneficio seleccionado vigente")
         yield profile, provider
