@@ -70,9 +70,7 @@ function Initialize-Environment {
 switch ($Action) {
   'up' {
     Initialize-Environment
-    docker compose up -d --build
-    if ($LASTEXITCODE) { exit $LASTEXITCODE }
-    docker compose exec backend python manage.py migrate
+    docker compose up -d --build --wait
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
     if ($Demo -or $Mode -eq '--demo') {
       docker compose exec backend python manage.py seed_demo

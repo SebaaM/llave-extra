@@ -19,6 +19,12 @@ En macOS/Linux se usa `./scripts/dev.sh` con los mismos subcomandos (`up --demo`
 
 La primera prueba del 02/11/2026 confirmó la conexión a los seis servicios y su detención con `Ctrl+C`, pero no verificó líneas de logs por servicio. El usuario detectó la omisión de logs iniciales al adjuntarse con `compose up` a contenedores ya iniciados. La nueva ejecución real de `dev.ps1 up` verificó líneas con prefijo de backend (81), db (27), frontend (19), Mailpit (9), Nginx (61) y Redis (45), recuperando sus logs disponibles. `Ctrl+C` volvió a detener los seis servicios. Sintaxis PowerShell/POSIX sh y `git diff --check` aprobados. No se modificó código del dominio ni el contrato API.
 
+### Inicio directo con Compose
+
+Con el entorno local ya inicializado, `docker compose up --build` aplica las migraciones pendientes antes de iniciar Django. Si una migración falla, el servidor no arranca y el error queda en los logs del backend. Este comportamiento es exclusivo de desarrollo; producción conserva su procedimiento de migración explícito.
+
+Los scripts de desarrollo siguen disponibles para inicializar el entorno y cargar datos demo. Esperan a que Django abra su puerto después de migrar antes de ejecutar el seed, sin lanzar migraciones en paralelo. Para comprobar la configuración de arranque: `./scripts/tests/Test-ComposeStartup.ps1`.
+
 ## uv nativo opcional
 
 Docker Compose es la forma recomendada de ejecutar y probar la aplicación; no requiere Python ni Node en el host. Para que un IDE use el entorno Python local, ejecutá desde PowerShell:

@@ -43,8 +43,7 @@ EOF
 case "${1:-}" in
   up)
     bootstrap
-    docker compose up -d --build
-    docker compose exec backend python manage.py migrate
+    docker compose up -d --build --wait
     if [ "${2:-}" = "--demo" ] || [ "${2:-}" = "-Demo" ]; then docker compose exec backend python manage.py seed_demo; fi
     trap 'docker compose stop' 0
     trap 'exit 130' INT
