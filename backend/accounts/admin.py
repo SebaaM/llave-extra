@@ -9,10 +9,6 @@ admin.site.site_header = "Administración de Llave Extra"
 admin.site.site_title = "Llave Extra · Administración"
 admin.site.index_title = "Administración de la red"
 
-admin.site.site_header = "Administración de Llave Extra"
-admin.site.site_title = "Llave Extra · Administración"
-admin.site.index_title = "Administración de la red"
-
 
 class AdminRoleOnlyMixin:
     def _is_program_admin(self, request):

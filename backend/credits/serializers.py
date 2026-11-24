@@ -7,8 +7,6 @@ class ConsumptionRequestSerializer(serializers.Serializer):
     pin = serializers.RegexField(r"^[0-9]{6,12}$", write_only=True)
 
 
-<<<<<<< HEAD
-=======
 class ReferredConsumptionRequestSerializer(ConsumptionRequestSerializer):
     folder_id = serializers.UUIDField()
     benefit_id = serializers.UUIDField()
@@ -28,7 +26,6 @@ class ConsumptionOptionsResponseSerializer(serializers.Serializer):
     benefits = ConsumptionOptionSerializer(many=True)
 
 
->>>>>>> develop
 class PinSerializer(serializers.Serializer):
     pin = serializers.RegexField(r"^[0-9]{6,12}$", write_only=True)
 

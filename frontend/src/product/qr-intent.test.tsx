@@ -18,8 +18,6 @@ describe('fragmentos QR efímeros', () => {
     expect(intent.referralToken).toBeNull()
     expect(window.location.hash).toBe('')
   })
-<<<<<<< HEAD
-=======
 
   it('mantiene el QR únicamente en memoria al navegar a ingreso y permite eliminarlo al completar', async () => {
     window.history.replaceState({}, '', '/referencia#token=referencia-sintetica')
@@ -38,5 +36,4 @@ describe('fragmentos QR efímeros', () => {
     nextIntent.setConsumptionToken(null)
     expect(nextIntent.consumptionToken).toBeNull()
   })
->>>>>>> develop
 })

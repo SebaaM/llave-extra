@@ -19,12 +19,6 @@ export type NetworkItem = { provider: PublicProvider; benefit_id: string; benefi
 export type NetworkPage = Page<NetworkItem> & { presentation: Presentation }
 
 export const catalogConfig = (signal?: AbortSignal) => api<{ enabled: boolean }>('/api/v1/catalog/config/', { auth: false, signal })
-<<<<<<< HEAD
-export const catalogBenefits = (page = 1, search = '', category = '', signal?: AbortSignal) => {
-  const params = new URLSearchParams({ page: String(page) })
-  if (search) params.set('search', search)
-  if (category) params.set('category', category)
-=======
 export const catalogCategories = (signal?: AbortSignal) => api<{ results: string[] }>('/api/v1/catalog/categories/', { auth: false, signal })
 export type CatalogOptions = { featured?: boolean; pageSize?: number }
 export const catalogBenefits = (page = 1, search = '', category = '', signal?: AbortSignal, options: CatalogOptions = {}) => {
@@ -33,7 +27,6 @@ export const catalogBenefits = (page = 1, search = '', category = '', signal?: A
   if (category) params.set('category', category)
   if (options.featured !== undefined) params.set('featured', String(options.featured))
   if (options.pageSize !== undefined) params.set('page_size', String(options.pageSize))
->>>>>>> develop
   return api<Page<PublicBenefit>>(`/api/v1/catalog/benefits/?${params}`, { auth: false, signal })
 }
 export const catalogBenefit = (id: string, signal?: AbortSignal) => api<PublicBenefit>(`/api/v1/catalog/benefits/${encodeURIComponent(id)}/`, { auth: false, signal })

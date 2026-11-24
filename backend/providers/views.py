@@ -14,9 +14,6 @@ from referrals.access import active_folder_access
 from referrals.models import CollaboratorProfile
 from referrals.views import current_profile, qr_url
 
-<<<<<<< HEAD
-from .access import owned_provider, selected_benefits, selected_providers, visible_provider
-=======
 from .access import (
     locked_owned_provider,
     owned_provider,
@@ -24,7 +21,6 @@ from .access import (
     selected_providers,
     visible_provider,
 )
->>>>>>> develop
 from .models import Benefit, Provider, ProviderMembership, Publication
 from .serializers import (
     BenefitReadSerializer,
@@ -164,18 +160,11 @@ class OwnBenefitsView(APIView):
 
     @extend_schema(request=BenefitWriteSerializer, responses={201: BenefitReadSerializer})
     def post(self, request, provider_id):
-<<<<<<< HEAD
-        provider = owned_provider(request.user, provider_id)
-        serializer = BenefitWriteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        benefit = serializer.save(provider=provider, demo=provider.demo)
-=======
         with transaction.atomic():
             provider = locked_owned_provider(request.user, provider_id)
             serializer = BenefitWriteSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             benefit = serializer.save(provider=provider, demo=provider.demo)
->>>>>>> develop
         return Response(BenefitReadSerializer(benefit).data, status=status.HTTP_201_CREATED)
 
 

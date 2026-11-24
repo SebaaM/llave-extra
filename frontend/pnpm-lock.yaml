@@ -4,12 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-<<<<<<< HEAD
-=======
 overrides:
   minimatch@<11.0.1: 11.0.1
 
->>>>>>> develop
 importers:
 
   .:
@@ -17,12 +14,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 5.2.0
         version: 5.2.0(vite@7.3.7(jiti@2.7.0)(lightningcss@1.32.0))
-<<<<<<< HEAD
-=======
       jsqr:
         specifier: 1.4.0
         version: 1.4.0
->>>>>>> develop
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -449,12 +443,9 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-<<<<<<< HEAD
-=======
   '@isaacs/nonrecursive-glob-match@1.0.3':
     resolution: {integrity: sha512-SI7kyKHq4XXDRozw+r9GlRZkia1ZkFrpLW98r2IC2Bpr8YkFGE3fvjzmxCG0x78A++69HmDNrDvSMYBZmHGpKA==}
 
->>>>>>> develop
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -1183,12 +1174,9 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-<<<<<<< HEAD
-=======
   jsqr@1.4.0:
     resolution: {integrity: sha512-dxLob7q65Xg2DvstYkRpkYtmKm2sPJ9oFhrhmudT1dZvNFFTlroai3AWSpLey/w5vMcLBXRgOJsbXpdN9HzU/A==}
 
->>>>>>> develop
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
 
@@ -1294,13 +1282,8 @@ packages:
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
-<<<<<<< HEAD
-  minimatch@10.2.6:
-    resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
-=======
   minimatch@11.0.1:
     resolution: {integrity: sha512-t+Vn6DX4wPCxS23y03C0uhF7S1jpi1GfqPrnlEipCJaA2ykiNbMkVlDutZtmvLfRcUN6R8AYVlzTsQrT4RZoLQ==}
->>>>>>> develop
     engines: {node: 18 || 20 || >=22}
 
   ms@2.1.3:
@@ -1891,11 +1874,7 @@ snapshots:
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3
-<<<<<<< HEAD
-      minimatch: 10.2.6
-=======
       minimatch: 11.0.1
->>>>>>> develop
     transitivePeerDependencies:
       - supports-color
 
@@ -1936,11 +1915,8 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-<<<<<<< HEAD
-=======
   '@isaacs/nonrecursive-glob-match@1.0.3': {}
 
->>>>>>> develop
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
@@ -2252,11 +2228,7 @@ snapshots:
       '@typescript-eslint/types': 8.71.2
       '@typescript-eslint/visitor-keys': 8.71.2
       debug: 4.4.3
-<<<<<<< HEAD
-      minimatch: 10.2.6
-=======
       minimatch: 11.0.1
->>>>>>> develop
       semver: 7.8.5
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
@@ -2493,11 +2465,7 @@ snapshots:
       imurmurhash: 0.1.4
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
-<<<<<<< HEAD
-      minimatch: 10.2.6
-=======
       minimatch: 11.0.1
->>>>>>> develop
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
@@ -2642,11 +2610,8 @@ snapshots:
 
   json5@2.2.3: {}
 
-<<<<<<< HEAD
-=======
   jsqr@1.4.0: {}
 
->>>>>>> develop
   keyv@5.6.0:
     dependencies:
       '@keyv/serialize': 1.1.1
@@ -2727,14 +2692,9 @@ snapshots:
 
   mdn-data@2.27.1: {}
 
-<<<<<<< HEAD
-  minimatch@10.2.6:
-    dependencies:
-=======
   minimatch@11.0.1:
     dependencies:
       '@isaacs/nonrecursive-glob-match': 1.0.3
->>>>>>> develop
       brace-expansion: 5.0.12
 
   ms@2.1.3: {}

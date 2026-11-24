@@ -1,12 +1,4 @@
 .admin-workspace { --admin-green:#123e36; --admin-cream:#f5f5ef; --admin-orange:#f7a168; }
-<<<<<<< HEAD
-.admin-sidebar { gap: 18px; }
-.admin-sidebar nav { max-height: calc(100vh - 260px); overflow-y: auto; scrollbar-color: #648578 transparent; }
-.admin-sidebar nav a { min-height: 42px; padding: 8px 12px; font-size: 12px; }
-.admin-sidebar nav a>span { font-size: 19px; }
-.admin-sidebar-bottom { padding-top: 20px; }
-.admin-sidebar-bottom a { display: flex; }
-=======
 .workspace-sidebar.admin-sidebar { position:sticky; top:0; align-self:start; height:100vh; height:100dvh; padding-block:20px; gap:10px; }
 .admin-sidebar nav { flex:1 1 0; min-height:0; align-content:start; gap:3px; overflow-y:auto; scrollbar-color:#648578 transparent; }
 .admin-sidebar nav a,.admin-nav-toggle { display:flex; align-items:center; gap:9px; min-height:42px; padding:7px 10px; font-size:12px; }
@@ -24,7 +16,6 @@
 .admin-account-link { display:grid; padding-block:4px; text-decoration:none; }
 .admin-account-link strong { font-size:13px; }
 .admin-account-link[aria-current=page] strong,.admin-account-link:hover strong { text-decoration:underline; text-underline-offset:3px; }
->>>>>>> develop
 .admin-main { max-width: 1500px; }
 .admin-workspace h2 { margin: 0 0 12px; }
 .admin-workspace h3 { font-family:'Montserrat',sans-serif; font-size:16px; }
@@ -116,22 +107,16 @@
 .admin-network-preview.layout-orbit .admin-network-dots span:nth-child(even) { transform:translateY(-20px); }
 .admin-network-preview.layout-radial .admin-network-dots span:nth-child(3) { transform:translateY(-23px) scale(1.35); }
 @media(max-width:1100px) { .admin-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-queue-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-<<<<<<< HEAD
-@media(max-width:750px) { .admin-dashboard-bottom,.admin-action-grid { grid-template-columns:1fr; } .admin-intro { padding:24px; } .admin-form-grid { grid-template-columns:1fr; } .admin-wide { grid-column:auto; } .admin-sidebar nav { max-height:none; } }
-=======
 @media(max-width:800px) {
   .workspace-sidebar.admin-sidebar { position:static; height:auto; padding-block:16px; gap:14px; }
   .admin-sidebar nav { overflow:visible; }
   .admin-sidebar nav.is-open + .admin-sidebar-bottom { display:block; grid-column:1/-1; }
 }
 @media(max-width:750px) { .admin-dashboard-bottom,.admin-action-grid { grid-template-columns:1fr; } .admin-intro { padding:24px; } .admin-form-grid { grid-template-columns:1fr; } .admin-wide { grid-column:auto; } }
->>>>>>> develop
 @media(max-width:560px) { .admin-card-grid,.admin-queue-grid { grid-template-columns:1fr; } .admin-intro,.admin-record-heading,.admin-form-heading,.admin-section-lead { align-items:stretch; flex-direction:column; } .admin-panel { padding:19px; } .admin-details { grid-template-columns:1fr; } .admin-table-scroll { overflow:visible; border:0; background:transparent; } .admin-table { min-width:0; display:block; } .admin-table thead { display:none; } .admin-table tbody { display:grid; gap:10px; } .admin-table tr { display:block; border:1px solid #dce3d8; border-radius:9px; background:#fff; padding:10px; } .admin-table td { display:flex; justify-content:space-between; gap:12px; border:0; padding:7px; text-align:right; } .admin-table td::before { content:attr(data-label); font-weight:700; color:#61726c; text-align:left; } .admin-tabs a { flex:1; text-align:center; } }
 
 .admin-field-error { color:#8b3518; font-size:12px; }
 .admin-form [aria-invalid=true], .admin-action [aria-invalid=true] { border-color:#b34e29; }
-<<<<<<< HEAD
-=======
 .admin-product-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; }
 .admin-product-filters label:first-child,.admin-product-filters label { min-width:0; }
 .admin-product-filters .admin-field { gap:6px; }
@@ -240,4 +225,3 @@
   .admin-visit-table-scroll .admin-table td { display:table-cell; padding:14px 15px; text-align:left; border-bottom:1px solid #e7ebe3; }
   .admin-visit-table-scroll .admin-table td::before { content:none; }
 }
->>>>>>> develop

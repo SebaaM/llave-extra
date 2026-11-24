@@ -8,29 +8,18 @@ dependencies = [
     "djangorestframework==3.18.3",
     "djangorestframework-simplejwt==5.5.1",
     "drf-spectacular==0.29.0",
-<<<<<<< HEAD
-    "Pillow==11.3.0",
-=======
     "Pillow==13.0.0",
->>>>>>> develop
     "psycopg[binary]==3.2.10",
     "qrcode==8.2",
     "redis==6.4.0",
     "PyYAML==6.0.3",
-<<<<<<< HEAD
-=======
     "gunicorn==23.0.0",
     "cryptography==50.0.2",
->>>>>>> develop
 ]
 
 [dependency-groups]
 dev = [
-<<<<<<< HEAD
-    "pytest==8.4.2",
-=======
     "pytest==9.0.3",
->>>>>>> develop
     "pytest-django==4.11.1",
     "ruff==0.14.0",
 ]

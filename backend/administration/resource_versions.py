@@ -4,10 +4,7 @@ from credits.models import ProviderConsumptionCredential
 from credits.services import Conflict
 from providers.models import FolderBenefit, Provider, ProviderMembership
 from referrals.models import CollaboratorProfile
-<<<<<<< HEAD
-=======
 from shop.models import Product, ProductCategory
->>>>>>> develop
 
 from .concurrency import resource_version, signed_digest
 
@@ -15,8 +12,6 @@ from .concurrency import resource_version, signed_digest
 def admin_resource_version(instance):
     """Sign exactly the related state shown/changed by admin resource commands."""
     base = resource_version(instance)
-<<<<<<< HEAD
-=======
     if isinstance(instance, ProductCategory):
         count = getattr(instance, "published_products_count", None)
         if count is None:
@@ -26,7 +21,6 @@ def admin_resource_version(instance):
         category = instance.category if instance.category_id else None
         state = {"id": str(category.pk), "name": category.name, "active": category.active} if category else None
         return signed_digest("admin-product-version", {"base": base, "category": state})
->>>>>>> develop
     if isinstance(instance, Provider):
         if "consumption_credential" in instance._state.fields_cache:
             obj = instance._state.fields_cache["consumption_credential"]

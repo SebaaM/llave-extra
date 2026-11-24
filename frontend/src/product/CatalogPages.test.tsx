@@ -4,11 +4,8 @@ import { setAccessToken } from './api'
 import { BenefitDetail, CatalogPage } from './CatalogPages'
 import { HomePage } from './HomePage'
 import { NetworkCanvas } from './NetworkCanvas'
-<<<<<<< HEAD
-=======
 import ProductApp from './ProductApp'
 import userEvent from '@testing-library/user-event'
->>>>>>> develop
 
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } })
 const provider = { id: 'p1', slug: 'kuar', name: 'Kuar', category: 'Gastronomía', description: '', address: '', hours: '', contact: '', map_url: '', website: '', demo: true, image_url: null }
@@ -23,8 +20,6 @@ beforeEach(() => {
 afterEach(() => { cleanup(); setAccessToken(null); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('catálogo público', () => {
-<<<<<<< HEAD
-=======
   it.each(['resultados', 'vacío', 'error', 'apagado'])('incluye el recorrido después de los resultados en estado %s, con salto nativo y tienda', async state => {
     const keyboard = userEvent.setup()
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
@@ -52,7 +47,6 @@ describe('catálogo público', () => {
     first.focus(); await keyboard.tab(); await keyboard.keyboard('{Enter}')
     expect(within(steps).getByRole('button', { name: /Visitá un negocio/ }).getAttribute('aria-pressed')).toBe('true')
   })
->>>>>>> develop
   it('muestra la condición real en la portada y no envía JWT en las consultas públicas', async () => {
     const requests: Array<{ url: string; headers: Headers }> = []
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
@@ -64,13 +58,8 @@ describe('catálogo público', () => {
       return json({ detail: 'No encontrado' }, 404)
     }))
     render(<HomePage />)
-<<<<<<< HEAD
-    expect((await screen.findAllByText('10% de descuento en consumo')).length).toBeGreaterThanOrEqual(2)
-    expect(screen.getAllByText(/Dato demo/).length).toBeGreaterThanOrEqual(2)
-=======
     expect(await screen.findAllByText('10% de descuento en consumo')).toHaveLength(1)
     expect(screen.getAllByText(/Ejemplo/)).toHaveLength(1)
->>>>>>> develop
     expect(screen.getByRole('link', { name: /Explorar beneficios/ })).toBeTruthy()
     expect(requests.filter(item => item.url.includes('/catalog/')).every(item => !item.headers.has('Authorization'))).toBe(true)
   })
@@ -83,11 +72,7 @@ describe('catálogo público', () => {
       if (url.includes('/catalog/benefits/')) return json({ count: 1, next: null, previous: null, results: [benefit] })
       return json({ detail: 'No encontrado' }, 404)
     }))
-<<<<<<< HEAD
-    render(<CatalogPage />)
-=======
     render(<CatalogPage search="" />)
->>>>>>> develop
     await screen.findByText('10% de descuento en consumo')
     enabled = false
     fireEvent(window, new Event('focus'))
@@ -108,52 +93,32 @@ describe('catálogo público', () => {
     expect(screen.getByText('10% de descuento en consumo')).toBeTruthy()
     expect(screen.getByText(/19 de octubre de 2026/)).toBeTruthy()
     expect(screen.getByText(/DATO DEMO/)).toBeTruthy()
-<<<<<<< HEAD
-    expect(screen.queryByRole('link', { name: /Sitio del prestador/ })).toBeNull()
-=======
     expect(screen.queryByRole('link', { name: /Sitio del negocio/ })).toBeNull()
->>>>>>> develop
     expect(calls.every(item => !item.headers.has('Authorization'))).toBe(true)
   })
 
   it('busca en todo el catálogo, filtra por categoría y pagina según el servidor', async () => {
     const requested: string[] = []
-<<<<<<< HEAD
-    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
-      const url = String(input)
-      if (url.endsWith('/catalog/config/')) return json({ enabled: true })
-=======
     window.history.replaceState({}, '', '/beneficios')
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
       if (url.endsWith('/catalog/config/')) return json({ enabled: true })
       if (url.endsWith('/catalog/categories/')) return json({ results: ['Gastronomía'] })
       if (!url.includes('/catalog/benefits/')) return json({}, 404)
->>>>>>> develop
       requested.push(url)
       const page = Number(new URL(url).searchParams.get('page'))
       return json({ count: 2, previous: page === 1 ? null : 'prev', next: page === 1 ? 'next' : null, results: [{ ...benefit, id: `b${page}`, title: `Propuesta ${page}` }] })
     }))
-<<<<<<< HEAD
-    render(<CatalogPage />)
-    await screen.findByText('Propuesta 1')
-    fireEvent.change(screen.getByLabelText('Buscar beneficio o prestador'), { target: { value: 'Kuar' } })
-    fireEvent.change(screen.getByLabelText('Categoría exacta'), { target: { value: 'Gastronomía' } })
-=======
     render(<ProductApp />)
     await screen.findByText('Propuesta 1')
     fireEvent.click(await screen.findByRole('button', { name: 'Gastronomía' }))
     fireEvent.change(screen.getByLabelText('Buscar beneficio o negocio'), { target: { value: '  Kuar  ' } })
->>>>>>> develop
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
     await waitFor(() => expect(requested.some(url => url.includes('search=Kuar') && url.includes('category=Gastronom%C3%ADa'))).toBe(true))
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
     await screen.findByText('Propuesta 2')
     expect(requested.at(-1)).toContain('page=2')
-<<<<<<< HEAD
-=======
     expect(window.location.search).toContain('page=2')
->>>>>>> develop
     expect(screen.getByText('Página 2 · 2 beneficios')).toBeTruthy()
   })
 
@@ -165,11 +130,7 @@ describe('catálogo público', () => {
       if (failing) return json({ detail: 'Servicio temporalmente fuera de línea' }, 503)
       return json({ count: 0, next: null, previous: null, results: [] })
     }))
-<<<<<<< HEAD
-    render(<CatalogPage />)
-=======
     render(<CatalogPage search="" />)
->>>>>>> develop
     await screen.findByRole('alert')
     failing = false
     fireEvent.click(screen.getByRole('button', { name: 'Volver a intentar' }))
@@ -192,13 +153,8 @@ describe('catálogo público', () => {
     await screen.findByText('Local 3-0')
     expect(container.querySelector('.network-board')).toBe(board)
     expect(container.querySelectorAll('.network-slot')).toHaveLength(12)
-<<<<<<< HEAD
-    expect(within(board as HTMLElement).getAllByRole('link')).toHaveLength(6)
-    await waitFor(() => expect(screen.getByText('Página 3 de 3 · 30 prestadores')).toBeTruthy())
-=======
     expect(within(board as HTMLElement).getAllByRole('button')).toHaveLength(6)
     await waitFor(() => expect(screen.getByText('Página 3 de 3 · 30 negocios')).toBeTruthy())
->>>>>>> develop
   })
 
   it('distribuye ocho prestadores en ocho posiciones alrededor del centro', async () => {
@@ -296,11 +252,7 @@ describe('catálogo público', () => {
     await screen.findByText('Kuar')
     await waitFor(() => expect(scheduled).toHaveLength(1))
     const section = container.querySelector('.network-section') as HTMLElement
-<<<<<<< HEAD
-    const node = screen.getByRole('link', { name: /Kuar: Beneficio vigente/ })
-=======
     const node = screen.getByRole('button', { name: /Kuar: Beneficio vigente/ })
->>>>>>> develop
     if (order === 'hover después del foco') {
       node.focus()
       fireEvent.focus(node)
@@ -326,8 +278,6 @@ describe('catálogo público', () => {
     await waitFor(() => expect(scheduled).toHaveLength(2))
   })
 })
-<<<<<<< HEAD
-=======
 
 
 describe('exploración visual del catálogo', () => {
@@ -500,4 +450,3 @@ it('conserva el campo y su foco al buscar con Enter y sincroniza URL sin recuper
   expect(input.value).toBe('nuevo')
   expect(document.activeElement).toBe(input)
 })
->>>>>>> develop

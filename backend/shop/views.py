@@ -1,38 +1,23 @@
-<<<<<<< HEAD
-=======
 from django.db.models import F, Q
->>>>>>> develop
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-<<<<<<< HEAD
-from rest_framework import generics, permissions
-from rest_framework.authentication import SessionAuthentication
-=======
 from rest_framework import generics, permissions, serializers
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import ValidationError
->>>>>>> develop
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-<<<<<<< HEAD
-from .models import Order, Product
-=======
 from .models import Order, Product, ProductCategory, ShopSettings
->>>>>>> develop
 from .serializers import (
     CancellationInputSerializer,
     CancellationSerializer,
     CheckoutSerializer,
     OrderSerializer,
     ProductSerializer,
-<<<<<<< HEAD
-=======
     PublicCatalogSerializer,
->>>>>>> develop
 )
 from .services import checkout, request_cancellation, require_admin, require_customer
 
@@ -47,26 +32,17 @@ class NoStoreMixin:
 
 class ShopPagination(PageNumberPagination):
     page_size = 24
-<<<<<<< HEAD
-=======
     page_size_query_param = "page_size"
     max_page_size = 100
 
 
 def public_products():
     return Product.objects.filter(active=True).filter(Q(category__isnull=True) | Q(category__active=True))
->>>>>>> develop
 
 
 class ProductList(NoStoreMixin, generics.ListAPIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
-<<<<<<< HEAD
-    queryset = Product.objects.filter(active=True).order_by("name", "pk")
-    serializer_class = ProductSerializer
-    pagination_class = ShopPagination
-
-=======
     queryset = Product.objects.none()
     serializer_class = ProductSerializer
     pagination_class = ShopPagination
@@ -98,23 +74,16 @@ class ProductList(NoStoreMixin, generics.ListAPIView):
             ordering = field.desc(nulls_last=True) if ordering.startswith("-") else field.asc(nulls_last=True)
         return queryset.order_by(ordering, "pk")
 
->>>>>>> develop
 
 class ProductDetail(NoStoreMixin, generics.RetrieveAPIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
-<<<<<<< HEAD
-    queryset = Product.objects.filter(active=True)
-    serializer_class = ProductSerializer
-
-=======
     queryset = Product.objects.none()
     serializer_class = ProductSerializer
 
     def get_queryset(self):
         return public_products().select_related("category")
 
->>>>>>> develop
 
 class ProductMedia(NoStoreMixin, APIView):
     authentication_classes = []
@@ -122,11 +91,7 @@ class ProductMedia(NoStoreMixin, APIView):
 
     @extend_schema(responses={(200, "image/png"): OpenApiTypes.BINARY})
     def get(self, request, pk):
-<<<<<<< HEAD
-        product = get_object_or_404(Product, pk=pk, active=True)
-=======
         product = get_object_or_404(public_products(), pk=pk)
->>>>>>> develop
         if not product.image:
             raise Http404
         try:
@@ -137,8 +102,6 @@ class ProductMedia(NoStoreMixin, APIView):
         return response
 
 
-<<<<<<< HEAD
-=======
 class PublicCatalog(NoStoreMixin, APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
@@ -151,7 +114,6 @@ class PublicCatalog(NoStoreMixin, APIView):
         return Response(PublicCatalogSerializer({"categories": categories, "pickup": pickup}).data)
 
 
->>>>>>> develop
 class ProductAdminMedia(ProductMedia):
     authentication_classes = [SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]

@@ -71,11 +71,7 @@ class ShopSettingsSerializer(VersionedSettingsSerializer):
 
     class Meta:
         model = ShopSettings
-<<<<<<< HEAD
-        fields = ("pickup_name", "pickup_address", "pickup_hours", "pickup_enabled", "payment_provider", "version")
-=======
         fields = ("pickup_name", "pickup_address", "pickup_hours", "pickup_enabled", "low_stock_threshold", "payment_provider", "version")
->>>>>>> develop
 
     def to_representation(self, instance):
         from django.conf import settings

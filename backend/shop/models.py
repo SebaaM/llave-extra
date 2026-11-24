@@ -3,17 +3,12 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
-<<<<<<< HEAD
-=======
 from django.db.models.functions import Lower, Trim
->>>>>>> develop
 from django.utils import timezone
 
 from .media import product_image_path, product_storage, validate_private_image
 
 
-<<<<<<< HEAD
-=======
 class ProductCategory(models.Model):
     id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("Nombre", max_length=160)
@@ -28,17 +23,13 @@ class ProductCategory(models.Model):
         return self.name
 
 
->>>>>>> develop
 class Product(models.Model):
     demo = models.BooleanField("Producto DEMO", default=False, editable=False)
     id = models.UUIDField("Identificador", primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField("Nombre", max_length=160)
     description = models.TextField("Descripción", blank=True)
-<<<<<<< HEAD
-=======
     category = models.ForeignKey(ProductCategory, verbose_name="Categoría", on_delete=models.PROTECT,
                                  null=True, blank=True, related_name="products")
->>>>>>> develop
     image = models.ImageField("Imagen", upload_to=product_image_path, storage=product_storage,
                               validators=[validate_private_image], blank=True)
     active = models.BooleanField("Activo", default=False)
@@ -66,10 +57,7 @@ class ShopSettings(models.Model):
     pickup_name = models.CharField("Punto de retiro", max_length=160, blank=True)
     pickup_address = models.CharField("Dirección de retiro", max_length=300, blank=True)
     pickup_hours = models.CharField("Horarios de retiro", max_length=300, blank=True)
-<<<<<<< HEAD
-=======
     low_stock_threshold = models.PositiveIntegerField("Umbral de stock bajo", default=5)
->>>>>>> develop
 
     class Meta:
         verbose_name = "Configuración de retiro"

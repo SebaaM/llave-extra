@@ -15,10 +15,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.test import APIClient
 
-<<<<<<< HEAD
-=======
 from accounts.bank import replace_bank_details
->>>>>>> develop
 from accounts.models import User
 from accounts.security import issue_session
 from credits.admin import AdjustmentAdmin, ConsumptionAdmin
@@ -134,8 +131,6 @@ def test_referred_consumption_also_requires_current_benefit(domain):
 
 
 @pytest.mark.django_db
-<<<<<<< HEAD
-=======
 def test_referred_options_and_exact_benefit_snapshot(domain):
     tourist, second, _, profile, provider, other, token, _ = domain
     current = provider.benefits.get()
@@ -249,7 +244,6 @@ def test_v1_referred_cutover_preserves_saved_replay_and_direct(domain):
 
 
 @pytest.mark.django_db
->>>>>>> develop
 @override_settings(RATE_LIMITS={"consumption": (100, 300)})
 def test_direct_requires_valid_customer_qr_pin_provider_and_current_benefit(domain):
     tourist, second, _, _, provider, other, token, other_token = domain

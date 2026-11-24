@@ -1,16 +1,9 @@
-<<<<<<< HEAD
-import { useCallback, useState } from 'react'
-import type { FormEvent } from 'react'
-import { ProductLink } from '../navigation'
-import { collection } from './api'
-=======
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { ApiError, privateImage } from '../api'
 import { ProductLink } from '../navigation'
 import { collection, settings } from './api'
 import { ReferencePicker } from './ReferencePicker'
->>>>>>> develop
 import { fieldLabels } from './data'
 import { useAdminLoad } from './hooks'
 import type { Resource } from './types'
@@ -24,16 +17,6 @@ const extraFilters: Record<string, readonly [string, string, 'text' | 'number' |
   'credit-rules': [['provider', 'ID del prestador', 'text']], 'stock-adjustments': [['product', 'ID del producto', 'text']],
 }
 const dated = new Set(['consumptions', 'adjustments', 'orders', 'cancellations', 'stock-adjustments', 'payment-operations'])
-<<<<<<< HEAD
-
-export function ResourceList({ resource, search }: { resource: Resource; search: string }) {
-  const query = new URLSearchParams(search)
-  const [searchInput, setSearchInput] = useState({ source: search, value: query.get('search') ?? '' })
-  const term = searchInput.source === search ? searchInput.value : query.get('search') ?? ''
-  const page = Math.max(1, Number(query.get('page') ?? '1') || 1)
-  const load = useCallback((signal: AbortSignal) => collection(resource.key, new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(search)), page: String(page) }).toString(), signal), [resource.key, search, page])
-  const { data, loading, error, reload } = useAdminLoad(load)
-=======
 const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
 
 export function ResourceList({ resource, search }: { resource: Resource; search: string }) {
@@ -58,7 +41,6 @@ export function ResourceList({ resource, search }: { resource: Resource; search:
   const { data, loading, error, reload } = useAdminLoad(load)
   const loadShop = useCallback((signal: AbortSignal) => resource.key === 'products' ? settings<{ low_stock_threshold: number }>('shop', signal) : Promise.resolve({ low_stock_threshold: 5 }), [resource.key])
   const shopSettings = useAdminLoad(loadShop)
->>>>>>> develop
   const base = `/gestion/${routeFor(resource.key)}`
   const detailQuery = new URLSearchParams(search)
   if (resource.key === 'wallets') {
@@ -78,16 +60,6 @@ export function ResourceList({ resource, search }: { resource: Resource; search:
     next.set('page', String(target))
     window.dispatchEvent(new CustomEvent('llave:navigate', { detail: `${base}?${next}` }))
   }
-<<<<<<< HEAD
-  return <>
-    <div className="admin-section-lead"><p>{resource.description ?? `Consultá y gestioná ${resource.title.toLowerCase()} de la red.`}</p>{resource.fields && <ProductLink className="button button-orange" href={`${base}/nuevo${search}`}>+ Nuevo {resource.singular.toLowerCase()}</ProductLink>}</div>
-    <form key={search} className="admin-filters" onSubmit={submit}><label>Buscar<input name="search" value={term} onChange={event => setSearchInput({ source: search, value: event.target.value })} placeholder={`Buscar ${resource.title.toLowerCase()}`} /></label>{(extraFilters[resource.key] ?? []).map(([name, label, kind]) => <label key={name}>{label}<input name={name} type={kind} defaultValue={query.get(name) ?? ''} /></label>)}{dated.has(resource.key) && <><label>Desde<input name="created_from" type="date" defaultValue={query.get('created_from') ?? ''} /></label><label>Hasta<input name="created_to" type="date" defaultValue={query.get('created_to') ?? ''} /></label></>}{resource.filters?.map(filter => <label key={filter.name}>{filter.label}<select name={filter.name} defaultValue={query.get(filter.name) ?? ''}><option value="">Todos</option>{filter.options.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>)}<button className="button button-dark" type="submit">Aplicar filtros</button></form>
-    <LoadState loading={loading} error={error} retry={reload} />
-    {data && <><p className="admin-result-count">{data.count.toLocaleString('es-AR')} registros</p>{data.results.length === 0 ? <section className="admin-panel"><h2>Sin resultados</h2><p>No hay registros que coincidan con estos filtros.</p></section> : <div className="admin-table-scroll"><table className="admin-table"><thead><tr>{resource.columns.map(name => <th key={name} scope="col">{fieldLabels[name] ?? name.replaceAll('_', ' ')}</th>)}<th scope="col">Ficha</th></tr></thead><tbody>{data.results.map(row => <tr key={String(row.id)}>{resource.columns.map(name => <td data-label={fieldLabels[name] ?? name} key={name}>{formatValue(row[name])}</td>)}<td data-label="Ficha"><ProductLink href={`${base}/${row.id}${detailQuery.size ? `?${detailQuery}` : ''}`}>Ver detalle →</ProductLink></td></tr>)}</tbody></table></div>}
-      <nav className="admin-pagination" aria-label="Páginas"><button disabled={!data.previous} onClick={() => goto(page - 1)}>← Anterior</button><span>Página {page}</span><button disabled={!data.next} onClick={() => goto(page + 1)}>Siguiente →</button></nav></>}
-  </>
-}
-=======
   const sort = (name: string) => {
     const field = name === 'category_name' ? 'category' : name
     const next = new URLSearchParams(search)
@@ -148,4 +120,3 @@ function ProductThumbnail({ path }: { path: string | null }) {
   }, [path])
   return url ? <img className="admin-product-thumb" src={url} alt="" /> : <span className="admin-product-thumb admin-product-placeholder" aria-label="Sin imagen">◈</span>
 }
->>>>>>> develop

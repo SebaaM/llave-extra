@@ -3,41 +3,26 @@ import type { User } from '../api'
 import { ProductLink } from '../navigation'
 import { adminApi } from './api'
 import { Dashboard } from './Dashboard'
-<<<<<<< HEAD
-import { auditActionLabel, auditResourceLabel, fieldLabels, resourceByKey } from './data'
-=======
 import { Commissions } from './Commissions'
 import { auditActionLabel, auditResourceLabel, fieldLabels, resourceByKey } from './data'
 import { FeaturedBenefitsPage } from './FeaturedBenefitsPage'
->>>>>>> develop
 import { useAdminLoad } from './hooks'
 import { RecordDetail, NewRecord } from './RecordDetail'
 import { ResourceList } from './ResourceList'
 import { keyForRoute } from './routes'
 import { Settings } from './Settings'
-<<<<<<< HEAD
-=======
 import { VisitAnalyticsPage } from './VisitAnalyticsPage'
->>>>>>> develop
 import type { Page, Row } from './types'
 import { LoadState } from './UI'
 import { formatValue } from './formatValue'
 import './admin.css'
 
-<<<<<<< HEAD
-const mainLinks = [['', 'Inicio', '⌂'], ['usuarios', 'Usuarios', '◉'], ['prestadores', 'Prestadores', '▣'], ['beneficios', 'Beneficios', '✳'], ['colaboradores', 'Colaboradores', '♡'], ['consumos', 'Consumos', '◫'], ['billeteras', 'Billeteras', '▤'], ['ajustes', 'Ajustes de créditos', '↗'], ['productos', 'Productos', '◈'], ['pedidos', 'Pedidos', '▦'], ['cancelaciones', 'Cancelaciones', '⊘'], ['reglas-creditos', 'Reglas de créditos', '✦'], ['movimientos-stock', 'Movimientos de stock', '⇅'], ['operaciones-pago', 'Operaciones de pago', '◎'], ['actividad', 'Actividad', '◷'], ['configuracion', 'Configuración', '⚙'], ['cuenta', 'Mi cuenta', '○']] as const
-=======
 const mainLinks = [['', 'Inicio', '⌂'], ['usuarios', 'Usuarios', '◉'], ['prestadores', 'Prestadores', '▣'], ['beneficios', 'Beneficios', '✳'], ['beneficios-destacados', 'Beneficios destacados', '★'], ['colaboradores', 'Colaboradores', '♡'], ['consumos', 'Consumos', '◫'], ['comisiones', 'Comisiones', '◎'], ['reglas-comisiones', 'Reglas de comisión', '▤'], ['billeteras', 'Billeteras', '▤'], ['ajustes', 'Ajustes de créditos', '↗'], ['productos', 'Productos', '◈'], ['categorias-tienda', 'Categorías de tienda', '▣'], ['pedidos', 'Pedidos', '▦'], ['cancelaciones', 'Cancelaciones', '⊘'], ['reglas-creditos', 'Reglas de créditos', '✦'], ['movimientos-stock', 'Movimientos de stock', '⇅'], ['operaciones-pago', 'Operaciones de pago', '◎'], ['actividad', 'Actividad', '◷'], ['configuracion', 'Configuración', '⚙'], ['cuenta', 'Mi cuenta', '○']] as const
 const analyticsLink = ['analitica', 'Analítica de visitas', '◷'] as const
->>>>>>> develop
 export function AdminWorkspace({ user, path, search }: { user: User; path: string; search: string }) {
   const [menu, setMenu] = useState(false)
   const parts = path.replace(/^\/gestion\/?/, '').split('/').filter(Boolean)
   const section = parts[0] ?? ''
-<<<<<<< HEAD
-  const resource = resourceByKey.get(keyForRoute(section) ?? '')
-  const title = mainLinks.find(([route]) => route === section)?.[1] ?? resource?.title ?? 'Sección no disponible'
-=======
   const activeGroup = navGroups.find(group => group.routes.includes(section))?.id
   const [groupChoice, setGroupChoice] = useState({ section, id: activeGroup })
   if (groupChoice.section !== section) setGroupChoice({ section, id: activeGroup })
@@ -47,28 +32,18 @@ export function AdminWorkspace({ user, path, search }: { user: User; path: strin
   const analyticsKey = JSON.stringify([analyticsQuery.get('from') ?? '', analyticsQuery.get('to') ?? '', analyticsQuery.get('collaborator_id') ?? ''])
   const title = (isAnalyticsRoute ? analyticsLink[1] : mainLinks.find(([route]) => route === section)?.[1]) ?? resource?.title ?? 'Sección no disponible'
   const renderLink = ([route, label, icon]: readonly [string, string, string]) => <ProductLink key={route} href={route === 'analitica' ? '/gestion/analitica/visitas' : route ? `/gestion/${route}` : '/gestion'} aria-current={(route === 'analitica' ? isAnalyticsRoute : section === route) ? 'page' : undefined} onClick={() => setMenu(false)}><span aria-hidden="true">{icon}</span>{label}</ProductLink>
->>>>>>> develop
   let content
   if (!section) content = <Dashboard />
   else if (section === 'configuracion') content = <Settings search={search} />
   else if (section === 'cuenta') content = <Account user={user} />
   else if (section === 'actividad') content = <Activity search={search} />
-<<<<<<< HEAD
-=======
   else if (section === 'comisiones' || section === 'reglas-comisiones') content = <Commissions section={section === 'comisiones' ? 'commissions' : 'commission-rules'} />
   else if (section === 'beneficios-destacados') content = <FeaturedBenefitsPage search={search} />
   else if (isAnalyticsRoute) content = <VisitAnalyticsPage key={analyticsKey} search={search} />
->>>>>>> develop
   else if (resource) content = parts[1] === 'nuevo' && resource.fields ? <NewRecord key={`${resource.key}:nuevo`} resource={resource} search={search} /> : parts[1] ? <RecordDetail key={`${resource.key}:${parts[1]}`} resource={resource} id={parts[1]} search={search} /> : <ResourceList key={resource.key} resource={resource} search={search} />
   else content = <section className="admin-panel"><h2>Sección no disponible</h2><ProductLink href="/gestion">Volver al inicio</ProductLink></section>
   return <div className="workspace admin-workspace">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
-<<<<<<< HEAD
-    <aside className="workspace-sidebar admin-sidebar"><a className="workspace-brand" href="/"><img src="/logo-llave-extra.png" width="145" height="81" alt="Llave Extra" /></a><div className="workspace-role"><span className="workspace-dot" />Espacio Administrador</div><button className="workspace-menu" aria-controls="admin-nav" aria-expanded={menu} onClick={() => setMenu(value => !value)}>Menú <span aria-hidden="true">{menu ? '−' : '+'}</span></button><nav id="admin-nav" aria-label="Panel de administración" className={menu ? 'is-open' : ''}>{mainLinks.map(([route, label, icon]) => <ProductLink key={route} href={`/gestion${route ? `/${route}` : ''}`} aria-current={section === route ? 'page' : undefined} onClick={() => setMenu(false)}><span aria-hidden="true">{icon}</span>{label}</ProductLink>)}</nav><div className="workspace-sidebar-bottom"><p>Gestión de la red local.<br /><strong>Llave Extra · Ushuaia</strong></p><ProductLink href="/">↗ Volver al sitio</ProductLink></div></aside>
-    <div className="workspace-body"><header className="workspace-header"><span>USHUAIA · RED LOCAL</span><div><span className="workspace-email">{user.email}</span><button className="button button-ghost" onClick={() => window.dispatchEvent(new Event('llave:logout'))}>Salir</button></div></header><main id="contenido" className="workspace-main admin-main"><div className="workspace-heading"><p className="eyebrow">GESTIÓN DE LLAVE EXTRA</p><h1>{title}</h1></div>{content}<footer className="workspace-footer">LLAVE EXTRA <span>Conectamos lo mejor de Ushuaia.</span></footer></main></div>
-  </div>
-}
-=======
     <aside className="workspace-sidebar admin-sidebar">
       <a className="workspace-brand" href="/"><img src="/logo-llave-extra.png" width="145" height="81" alt="Llave Extra" /></a>
       <div className="workspace-role"><span className="workspace-dot" />Espacio Administrador</div>
@@ -108,7 +83,6 @@ const primaryLinks = [...linksFor(primaryRoutes), ...mainLinks.filter(([route]) 
   route !== 'cuenta' && !primaryRoutes.includes(route) && !navGroups.some(group => group.routes.includes(route))
 )]
 
->>>>>>> develop
 function Account({ user }: { user: User }) { return <section className="admin-panel"><p className="eyebrow">DATOS DE TU SESIÓN</p><h2>Mi cuenta</h2><dl className="admin-details"><div><dt>Email</dt><dd>{user.email}</dd></div><div><dt>Rol</dt><dd>Administrador</dd></div><div><dt>Verificación</dt><dd>{user.email_verified ? 'Email verificado' : 'Email pendiente'}</dd></div></dl><p><a href="/admin/">Administración avanzada</a></p><button className="button button-dark" onClick={() => window.dispatchEvent(new Event('llave:logout'))}>Cerrar sesión</button></section> }
 function Activity({ search }: { search: string }) {
   const [searchInput, setSearchInput] = useState({ source: search, value: new URLSearchParams(search).get('search') ?? '' })

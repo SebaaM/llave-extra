@@ -1,10 +1,6 @@
 # Registro de hallazgos de seguridad
 
-<<<<<<< HEAD
-Estado inicial, 24/10/2026: **auditoría no iniciada; cero hallazgos registrados por esta campaña**. Esto no significa que haya cero vulnerabilidades. No reutilizar problemas históricos como hallazgos nuevos sin reproducirlos en el corte auditado.
-=======
 Auditoría iniciada sobre `7467838` el 05/11/2026. El estado de cada corrección se refiere al caso reproducido de ese hallazgo. Los casos y resultados se registran por corrida. Los problemas históricos requieren una reproducción en el corte auditado.
->>>>>>> develop
 
 Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [checklist](checklist.md), [prompt](prompt-auditor.md).
 
@@ -12,10 +8,6 @@ Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [ch
 
 | ID | Feature / controles | Severidad | Estado | Problema / impacto | Solución | Revisión / evidencia |
 |---|---|---|---|---|---|---|
-<<<<<<< HEAD
-
-La tabla empieza vacía deliberadamente. Agregar una fila por hallazgo real; IDs `SEC-001` en adelante, permanentes. Varias observaciones con la misma causa pueden compartir hallazgo si la reproducción cubre todos los endpoints afectados.
-=======
 | SEC-001 | E2/F2, T08/F03 | Alta | CERRADO | Una pestaña adopta una sesión de otra pestaña al reintentar un 401. | `6490060` | Regresión pasó. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
 | SEC-002 | Catálogos, A10/F05 | Baja | CERRADO | Filtros públicos con NUL provocan 500 de PostgreSQL. | `78df20a` | Regresión y HTTP pasaron. Revisión estática independiente aprobada. [Casos](runs/20261105-1823-7467838/casos.md#http-público) |
 | SEC-003 | E2/F2, T04/T08 | Media | CERRADO | Cierre con access vencido falla con cookie válida. Bearer y cookie de sesiones distintas pueden revocar la equivocada. | `eb97132` | Regresiones pasaron. La revisión detectó el caso independiente SEC-008. [Casos](runs/20261105-1823-7467838/casos.md#sesión-y-entradas) |
@@ -34,7 +26,6 @@ La tabla empieza vacía deliberadamente. Agregar una fila por hallazgo real; IDs
 | SEC-016 | Catálogo privado/Admin, P08/F05/M08 | Baja | CERRADO | Los filtros privados con NUL enviaban datos inválidos a PostgreSQL y devolvían 500. | `859e94d` | Siete RED 500 y siete GREEN 400. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | SEC-017 | Prestadores, P01/C08 | Media | CERRADO | El cambio de PIN podía completarse después de confirmar la revocación de la membresía. | `ae908bb` | RED 200 con hash cambiado. GREEN 404 con hash intacto. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | SEC-018 | QR/Frontend, F04 | Baja | CERRADO | El build podía solicitar fuentes externas antes de limpiar el fragmento del QR. Los marcadores no aparecieron en tráfico ni referrer. | `5793a59` | Edge RED/GREEN en dos rutas sobre build real. Dos regresiones de bootstrap reejecutadas por un revisor independiente. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
->>>>>>> develop
 
 ## Estados y prioridad
 

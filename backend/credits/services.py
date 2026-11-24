@@ -14,11 +14,7 @@ from rest_framework.exceptions import APIException, PermissionDenied, Validation
 from accounts.models import User
 from accounts.security import rate_limit
 from providers.access import locked_provider_eligibility
-<<<<<<< HEAD
-from providers.models import Provider
-=======
 from providers.models import Benefit, Provider
->>>>>>> develop
 
 from .models import (
     AdjustmentCase,
@@ -153,15 +149,6 @@ def refund_wallet(tourist_id, amount: int, reference: str, *, debit_reference: s
     return _entry(wallet, WalletEntry.Kind.REFUND, amount, reference, source_entry=debit)
 
 
-<<<<<<< HEAD
-def _fingerprint(folder_id, token: str, pin: str) -> str:
-    payload = json.dumps([str(folder_id) if folder_id is not None else None, token, pin], separators=(",", ":"))
-    return hmac.new(settings.SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
-
-
-def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, *, origin: str | None = None):
-    digest = _fingerprint(folder_id, qr_token, pin)
-=======
 def _fingerprint(folder_id, token: str, pin: str, benefit_id=None) -> str:
     fields = [str(folder_id) if folder_id is not None else None, token, pin]
     if benefit_id is not None:
@@ -175,7 +162,6 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
     from commissions.services import record_referral
 
     digest = _fingerprint(folder_id, qr_token, pin, benefit_id)
->>>>>>> develop
     with transaction.atomic():
         actor = User.objects.select_for_update().get(pk=user.pk)
         if not actor.is_active or actor.role != User.Role.TOURIST:
@@ -194,11 +180,6 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
         rate_limit("consumption", f"account:{actor.pk}")
         if not actor.email_verified:
             raise PermissionDenied("Verificá tu email antes de acreditar")
-<<<<<<< HEAD
-        provider_id, version = parse_provider_qr(qr_token)
-        rate_limit("consumption", f"account-provider:{actor.pk}:{provider_id}")
-        with locked_provider_eligibility(actor, folder_id, provider_id) as (profile, provider):
-=======
         if folder_id is not None and benefit_id is None and settings.REQUIRE_REFERRED_BENEFIT:
             raise Conflict("Actualizá Llave Extra y elegí el beneficio antes de validar la visita")
         if folder_id is None and benefit_id is not None:
@@ -206,7 +187,6 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
         provider_id, version = parse_provider_qr(qr_token)
         rate_limit("consumption", f"account-provider:{actor.pk}:{provider_id}")
         with locked_provider_eligibility(actor, folder_id, provider_id, benefit_id=benefit_id) as (profile, provider):
->>>>>>> develop
             credential = ProviderConsumptionCredential.objects.select_for_update().filter(provider=provider).first()
             if (credential is None or credential.qr_version != version or not credential.pin_hash
                     or not check_password(pin, credential.pin_hash)):
@@ -214,20 +194,13 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
             existing = Consumption.objects.filter(tourist=actor, provider=provider).first()
             if existing:
                 raise Conflict("Consumo ya registrado para este prestador")
-<<<<<<< HEAD
-=======
             benefit = Benefit.objects.get(pk=benefit_id) if benefit_id is not None else None
->>>>>>> develop
             policy, _ = CreditPolicy.objects.select_for_update().get_or_create(singleton=1)
             rule = ProviderCreditRule.objects.select_for_update().filter(provider=provider).first()
             award = rule.reward if rule is not None else policy.base_reward
             source = "provider" if rule is not None else "global"
             consumption = Consumption.objects.create(
                 tourist=actor, provider=provider, collaborator=profile, award=award,
-<<<<<<< HEAD
-                rule_snapshot={"source": source, "amount": award, "target_visits": policy.target_visits},
-            )
-=======
                 benefit_id=benefit.pk if benefit else None,
                 benefit_title=benefit.title if benefit else "",
                 benefit_demo=bool(benefit and (benefit.demo or provider.demo)),
@@ -235,7 +208,6 @@ def award_consumption(user: User, folder_id, qr_token: str, pin: str, key: str, 
             )
             if benefit is not None and not consumption.benefit_demo:
                 record_referral(consumption, benefit=benefit)
->>>>>>> develop
             if award:
                 credit_wallet(actor.pk, award, f"consumption:{consumption.pk}:earn")
             wallet = _wallet_locked(actor.pk)
@@ -254,11 +226,8 @@ def _require_admin(actor: User):
 
 
 def annul_consumption(consumption_id, actor: User, reason: str) -> AdjustmentCase | None:
-<<<<<<< HEAD
-=======
     from commissions.services import record_annulment
 
->>>>>>> develop
     _require_admin(actor)
     if not reason.strip():
         raise ValidationError({"reason": "Indicá el motivo"})
@@ -274,10 +243,7 @@ def annul_consumption(consumption_id, actor: User, reason: str) -> AdjustmentCas
         consumption.annulled_by = actor
         consumption.annul_reason = reason.strip()
         consumption.save(update_fields=["state", "annulled_at", "annulled_by", "annul_reason"])
-<<<<<<< HEAD
-=======
         record_annulment(consumption, actor, reason.strip())
->>>>>>> develop
         if wallet.balance >= consumption.award:
             _entry(wallet, WalletEntry.Kind.REVERSAL, -consumption.award,
                    f"consumption:{consumption.pk}:reversal")

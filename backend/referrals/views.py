@@ -61,11 +61,7 @@ class FolderListView(APIView):
 def current_profile(user):
     if user.role != User.Role.COLLABORATOR:
         raise PermissionDenied("Solo colaboradores habilitados")
-<<<<<<< HEAD
-    profile = CollaboratorProfile.objects.select_related("user").filter(user=user, enabled=True, user__is_active=True).first()
-=======
     profile = CollaboratorProfile.objects.select_related("user").filter(user=user, enabled=True, user__is_active=True, user__role=User.Role.COLLABORATOR).first()
->>>>>>> develop
     if not profile:
         raise PermissionDenied("Solo colaboradores habilitados")
     return profile
