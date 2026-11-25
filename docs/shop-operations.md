@@ -52,7 +52,7 @@ El scheduler de laboratorio no cambia la programación de producción ni se inic
 En Windows, la ejecución puntual sobre el laboratorio existente es:
 
 ```powershell
-docker compose -p llaveextra-e6-restore --env-file .superpowers/sdd/06-analitica-salida/lab.env -f compose.e6.lab.yaml --profile scheduler-lab run --rm --no-deps --pull never scheduler python manage.py run_shop_scheduler_lab --once --limit 100
+docker compose -p llaveextra-e6-restore --env-file .superpowers/sdd/06-analitica-salida/lab-restore/restore/lab.env -f compose.e6.lab.yaml --profile scheduler-lab run --rm --no-deps --pull never scheduler python manage.py run_shop_scheduler_lab --once --limit 100
 ```
 
 La salida solo informa etapa, conteos, duración y resultado. Un fallo inesperado del worker se representa con `result=blocked` y no incluye el texto de la excepción; `--once` puede terminar con código cero, así que el operador debe revisar todas las líneas de estado. `blocked`, `backlog`, `payment_review`, `ledger_diff` y `commission_incident` son señales de diagnóstico: el scheduler no repara saldos ni comisiones, no reintenta operaciones bloqueadas en bucle y no imprime payloads, tokens o referencias bancarias. Revisar la operación correspondiente con el procedimiento existente antes de una acción administrativa. Tras una interrupción, volver a ejecutar `--once`; la recuperación depende de las claves durables y el fencing de E5, no de reiniciar el contenedor.
