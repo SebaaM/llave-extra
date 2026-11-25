@@ -10,7 +10,7 @@ Inicio muestra el estado actual de la red, las bandejas de trabajo, la configura
 
 - **Red y usuarios** reúne usuarios, prestadores y colaboradores.
 - **Tienda** reúne categorías de tienda, movimientos de stock, cancelaciones y operaciones de pago.
-- **Créditos y visitas** reúne consumos, billeteras, ajustes, reglas de créditos y **Analítica de visitas**.
+- **Créditos y visitas** reúne consumos, billeteras, ajustes, reglas de créditos, **Analítica de visitas** y **Actividad financiera**.
 - **Administración** reúne actividad y configuración.
 
 El menú abre automáticamente el grupo de la sección actual al entrar a una lista o ficha. **Mi cuenta** queda en la cabecera, junto a **Salir**. Las listas admiten búsqueda, filtros disponibles por recurso y paginación. La ficha permite editar los campos habilitados y ejecutar las acciones compatibles con su estado actual.
@@ -52,6 +52,16 @@ En **Reglas de comisión**, el Administrador configura el porcentaje global. El 
 En **Analítica de visitas** (`/gestion/analitica/visitas`), el Administrador consulta Clientes vinculados, visitas válidas atribuidas y el detalle paginado de comercios para un período. Las fechas y el Colaborador elegido se aplican desde la URL; al cambiar filtros, el informe vuelve a la primera página. La búsqueda de colaboradores usa el listado administrativo y permite recorrer sus páginas. El informe no identifica Clientes. Si la procedencia de un indicador no puede confirmarse, muestra «No disponible para este período» en lugar de presentarlo como cero; un período sin registros sí muestra cero y un estado vacío.
 
 Los filtros presentan primero Desde, Hasta y Colaborador; la búsqueda de colaboradores y las acciones se agrupan debajo. La navegación de comercios aparece al pie de su tabla cuando existe más de una página. El selector de colaboradores tiene su propia navegación, visible solo si sus opciones ocupan varias páginas.
+
+## Actividad financiera
+
+En **Créditos y visitas → Actividad financiera** (`/gestion/analitica/actividad`), seleccionar Desde y Hasta para consultar visitas válidas, movimientos de créditos y actividad de la tienda. El informe no reemplaza **Comisiones**, **Pedidos** ni la auditoría de **Administración → Actividad**.
+
+- **Visitas:** se cuentan consumos que siguen válidos por su fecha; directas y referidas se muestran por separado.
+- **Créditos:** el importe conserva su signo y sigue la fecha del movimiento en la billetera. Canjear créditos y contar cuántos pedidos los usaron son indicadores distintos.
+- **Tienda:** los canjes se fechan por creación del pedido; los cobros y reintegros en ARS, por el primer evento verificable de cada tipo. Las confirmaciones sin fecha se cuentan aparte para todo el historial.
+
+«No disponible» indica falta de procedencia verificable, no ausencia de actividad. No se incluyen datos DEMO, simulaciones ni reservas en las cifras de ventas. Este informe no confirma ni corrige pagos.
 
 ## Guardados, acciones y conflictos
 

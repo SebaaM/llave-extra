@@ -74,3 +74,16 @@ En la rama local, `/colaborador` muestra el período, clientes vinculados y visi
 | Ruff, validación OpenAPI, typecheck y lint focal | Aprobados. |
 
 Sin publicación ni cambios al historial de visitas, QR o comisiones. La matriz E6.3, el control real de escritorio/móvil y la auditoría del registro externo no constan ejecutados.
+
+## E6.2 T5 — Actividad financiera
+
+El informe administrativo se sirve por `/gestion/analitica/actividad` y no altera las rutas de visitas, pedidos, comisiones ni auditoría. Presenta cantidades de consumos y pedidos, créditos con signo y ARS por separado. No escribe registros ni confirma pagos.
+
+| Comprobación | Resultado |
+|---|---|
+| PostgreSQL y Redis aislados | 8 pruebas focales y 49 analíticas integradas aprobadas. Verifican la procedencia, las tres referencias de fecha, primer evento por pedido y tipo, exclusión DEMO/fake y guardas administrativas. |
+| Revisión de interfaz y contrato | Reproducido un borrador que reaparecía al volver atrás; corregido y reexaminado. Se incorporaron definiciones de fechas y fuentes en la UI, OpenAPI, API y guía del panel. |
+| Vitest financiero y navegación | 6 pruebas focales y 1 de integración aprobadas tras la corrección. Suite completa final de E6.2: 457/457 en 43 archivos, con avisos conocidos de navegación de jsdom. La aserción de foco del informe de visitas que falló en una ejecución combinada pasó en el reintento focal, en la base y en la suite completa siguiente. |
+| Ruff, OpenAPI (`--validate --fail-on-warn`), lint y tipos | Aprobados. pnpm run build aprobado sobre E6.2 final; Vite advirtió que el paquete principal supera 500 kB (512,10 kB minificado). |
+
+Confirmaciones sin fecha se informan aparte para todo el historial. Sin sandbox oficial de pagos, DNS, SMTP ni actividad en producción. La matriz de seguridad y el simulacro operativo corresponden a E6.3–E6.4.

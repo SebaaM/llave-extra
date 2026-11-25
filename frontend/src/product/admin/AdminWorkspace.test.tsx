@@ -15,6 +15,29 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); if (nativeLocks) Object.defineProperty(navigator, 'locks', nativeLocks); else Reflect.deleteProperty(navigator, 'locks') })
 
 describe('gestión administrativa', () => {
+  it('mantiene la analítica financiera separada de las visitas y la auditoría', async () => {
+    const user = { id: 1, email: 'admin@example.test', role: 'ADMIN' as const, email_verified: true }
+    const requests: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      requests.push(String(input))
+      return String(input).includes('/admin/activity/')
+        ? json({ count: 0, next: null, previous: null, results: [] })
+        : json({ detail: 'Servicio temporalmente no disponible' }, 503)
+    }))
+    const view = render(<AdminWorkspace user={user} path="/gestion/analitica/actividad" search="" />)
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Actividad financiera' })).toBeDefined()
+    const nav = within(screen.getByRole('navigation', { name: 'Panel de administración' }))
+    expect(nav.getByRole('link', { name: 'Actividad financiera' }).getAttribute('aria-current')).toBe('page')
+    expect(nav.getByRole('link', { name: 'Analítica de visitas' }).getAttribute('aria-current')).toBeNull()
+    await waitFor(() => expect(requests.some(url => url.includes('/admin/analytics/finance/'))).toBe(true))
+
+    view.rerender(<AdminWorkspace user={user} path="/gestion/actividad" search="" />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Actividad' })).toBeDefined()
+    expect(nav.getByRole('link', { name: 'Actividad' }).getAttribute('aria-current')).toBe('page')
+    await waitFor(() => expect(requests.some(url => url.includes('/admin/activity/'))).toBe(true))
+  })
+
   it('actualiza el destacado mediante el PATCH de ficha y su versión vigente', async () => {
     const onSaved = vi.fn()
     const requests: Array<{ url: string; method?: string; body: Record<string, unknown> }> = []

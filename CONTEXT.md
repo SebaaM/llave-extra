@@ -8,9 +8,9 @@ El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39
 
 La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
 
-## E6.2 — Lecturas del Prestador y del Colaborador
+## E6.2 — Lecturas por rol y actividad financiera
 
-La rama local `feature/e6-etapas-pendientes` aporta métricas agregadas con período seleccionable en ambos espacios. Prestador consulta solo el negocio que conserva asignado y el historial de beneficios referidos. Colaborador consulta su red propia habilitada: los negocios que ya no están visibles siguen contando en el total, sin mostrar su identidad. La vigencia del alcance y los datos agregados se comprueban en la misma sentencia PostgreSQL. No se suman comisiones a visitas ni se cambia el recorrido del Cliente. Esta parte está verificada localmente; actividad financiera administrativa, controles de seguridad de publicación y simulacro operativo se siguen por separado en el [plan](docs/plans/06-analitica-salida.md).
+La rama local `feature/e6-etapas-pendientes` aporta métricas agregadas con período seleccionable en ambos espacios. Prestador consulta solo el negocio que conserva asignado y el historial de beneficios referidos. Colaborador consulta su red propia habilitada: los negocios que ya no están visibles siguen contando en el total, sin mostrar su identidad. La vigencia del alcance y los datos agregados se comprueban en la misma sentencia PostgreSQL. No se suman comisiones a visitas ni se cambia el recorrido del Cliente. Administración consulta visitas, movimientos de créditos y tienda en `/gestion/analitica/actividad`. Los créditos usan la fecha del movimiento, los pedidos canjeados la fecha de creación y los ARS el primer evento verificable por pedido y tipo. E6.2 está revisada localmente y no está en `develop`. Los controles de seguridad de publicación y el simulacro operativo se siguen en el [plan](docs/plans/06-analitica-salida.md).
 
 ## E6.1 — Visitas atribuidas · 17/11/2026
 
