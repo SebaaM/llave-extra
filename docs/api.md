@@ -121,6 +121,18 @@ Cada acción se envía a `POST <colección>/{consumption_id}/actions/{action}/` 
 
 `GET /api/v1/collaborator/commissions/?page=1` devuelve `{count,next,previous,pending_total,results}` para la cuenta Colaborador activa. Cada fila contiene `id,created_at,provider_name,benefit_title,state,rate,approved_amount,payment_reported`. El historial usa la atribución persistida e incluye casos históricos y anulados. El total en ARS considera todas las aprobaciones positivas en estado `TO_PAY`, incluso con pago informado hasta que se concilie, y se calcula sobre todas las páginas. La respuesta es privada y de solo lectura.
 
+### Analítica del Prestador (E6.2)
+
+`GET /api/v1/provider/analytics/visits/` usa el período civil de los informes administrativos: `from` y `to` ISO inclusivos, o ambos omitidos (últimos 30 días civiles en Ushuaia; máximo 366). El servidor resuelve el negocio de la sesión; no ofrece un filtro para elegir otro. Un Prestador sin asignación recibe 404. La respuesta no se almacena en caché y no incluye identidades de Clientes.
+
+Devuelve `{period,direct_visits,referred_visits,benefits,other_benefit_visits}`. Cuenta consumos válidos no DEMO, sin exigir publicación actual. `benefits` desglosa solo las referidas: hasta 25 grupos por UUID y título histórico, ordenados por visitas descendentes, título e ID. El grupo sin beneficio guardado devuelve ID y título nulos. `other_benefit_visits` contiene las referidas fuera del desglose mostrado. Los totales y el desglose se leen en una sola instantánea PostgreSQL. El historial y los importes de «Consumos referidos» siguen siendo independientes.
+
+### Analítica del Colaborador (E6.2)
+
+`GET /api/v1/collaborator/analytics/visits/` requiere perfil propio habilitado y aplica el mismo período civil que el Prestador, con `page` positivo para el desglose de 25 comercios. El ámbito se deriva de la sesión y se revalida en la consulta. Respuesta privada `Cache-Control: private, no-store`.
+
+Devuelve `{period,linked_clients,valid_attributed_visits,businesses,other_business_visits}`. Los clientes vinculados son distintos por período; `linked_clients` es `{status,value}` con `value: null` y estado `unavailable` cuando la procedencia DEMO no se puede verificar. Las visitas válidas atribuidas conservan historia, sin directas, anuladas ni DEMO. `businesses` presenta solo los comercios que conservan algún beneficio seleccionado, publicado y vigente; el resto suma en `other_business_visits` sin publicar ID ni nombre. Este total no incluye comercios visibles ubicados en otras páginas. Los importes de «Mis comisiones» no forman parte del informe.
+
 ### Red visual de prestadores
 
 `GET /catalog/network/?page=1` es público y queda cerrado por el interruptor del catálogo. `GET /folders/{folder_id}/network/?page=1` requiere Cliente autenticado con `active_folder_access` vigente; la carpeta y sus asignaciones se vuelven a comprobar en cada página. Ambos devuelven `{count,next,previous,presentation,results}`. `presentation` contiene únicamente `title`, `layout`, `theme`, `background`, `page_size`, `interval_seconds` y `city` (`Ushuaia`). Cada elemento de `results` contiene `provider`, `benefit_id` y `benefit_title`; el público usa `PublicProviderSerializer` y la carpeta usa `ProviderReadSerializer` con sus medios autorizados. No se aceptan parámetros aparte de `page`.

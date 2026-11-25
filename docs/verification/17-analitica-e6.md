@@ -45,3 +45,32 @@ La revisión independiente detectó pérdida de foco al desmontar temporalmente 
 | Navegador integrado contra la API real y PostgreSQL sintético de localhost:8086 | Inspección visual en anchos CSS de 320, 390 y 1440 px; geometría adicional a 800 px. Sin desborde horizontal del documento ni de la tabla. Filtro por colaborador: 2 clientes/2 visitas; período sin actividad: 0/0; restablecer: 3/3 y dos comercios. Entrada de fechas comprobada con teclado. |
 
 La demo contiene dos comercios con visitas válidas: la paginación de comercios, que requiere más de 25, se comprobó mediante las pruebas de varias páginas, no cargando más datos. La revisión inicial de código y el reexamen del foco fueron independientes; el navegador y las pruebas de ejecución fueron comprobados por el orquestador. No se repitió el backend porque el ajuste no modifica Python, permisos, datos ni OpenAPI; su evidencia anterior sigue separada arriba. No se modificaron archivos versionados de .superpowers ni se incluyeron accesos o datos locales en la entrega.
+
+## E6.2 T3 — Métricas del Prestador
+
+Implementación local en `feature/e6-etapas-pendientes` sobre `72985b9`. El resumen de `/prestador` agrega visitas directas y referidas del negocio asignado. Las cifras son independientes del flujo de comisiones. La API no acepta un ID de negocio para seleccionar otro, comprueba la titularidad y devuelve solo agregados. Los beneficios usan su título guardado al consumir; no se pierde el historial al cambiar la publicación.
+
+| Comprobación | Resultado |
+|---|---|
+| RED de `analytics/tests/test_provider_metrics.py` y `ProviderMetrics.test.tsx` | El endpoint sin montar y el componente sin implementar fallaron como se esperaba. |
+| Revisión independiente del alcance y la consistencia | Detectó que dos lecturas separadas permitían contar una visita solo en el desglose. La regresión reprodujo total 1 y desglose 2; se corrigió al leer ambos en una sentencia PostgreSQL. Revisión focal aprobada. |
+| `pytest -q analytics/tests` en PostgreSQL/Redis | 27 aprobadas, incluidas las 8 de T3. Verifica reasignación, roles, procedencia DEMO y consistencia de los conteos. |
+| Vitest `ProviderMetrics.test.tsx` y `Workspace.test.tsx` | 48 aprobadas; incluyen acceso retirado, filtros y espacio operativo. |
+| Ruff focal, OpenAPI `spectacular --validate --fail-on-warn`, typecheck y build | Aprobados. |
+
+Seguimiento: se agregó el selector de período y se impidió que una consulta devuelva datos si la membresía, el rol o la cuenta cambian después de la guarda inicial. La regresión reprodujo cuatro respuestas 200 antes del ajuste. La revisión independiente aprobó ambos cambios; 12/12 backend focal, 51/51 Vitest con Workspace y tipos/lint aprobados. La suite analítica conjunta posterior aprobó 41/41 y OpenAPI no emitió advertencias.
+
+Alcance comprobado: pruebas con datos sintéticos. No se ejecutó un recorrido visual en navegador para esta pantalla ni la matriz integral de E6.3. Sin publicación ni cambios en producción.
+
+## E6.2 T4 — Métricas del Colaborador
+
+En la rama local, `/colaborador` muestra el período, clientes vinculados y visitas atribuidas del perfil habilitado. Solo nombra comercios visibles actualmente en la selección vigente; los ocultos conservan sus visitas en un contador separado sin ID ni nombre. «Mis comisiones» conserva su destino y sus propios importes.
+
+| Comprobación | Resultado |
+|---|---|
+| PostgreSQL y Redis aislados | 10 pruebas focales aprobadas; incluyen baja, inactivación o cambio de rol durante la lectura, procedencia, paginación y conservación de comisiones. Suite analítica integrada: 37 aprobadas antes del ajuste de enumeración OpenAPI. |
+| Revisión y reexamen de interfaz | Se corrigieron la falta de filtro de período y la recuperación desde una página que deja de existir. Se preserva el período y se descartan respuestas tardías de otra sesión. |
+| Vitest focal y `Workspace.test.tsx` | 6 y 44 aprobadas tras el ajuste. La ejecución completa anterior al ajuste registró 444/444 y las pruebas locales de proxy/política de auditoría, 25/25. |
+| Ruff, validación OpenAPI, typecheck y lint focal | Aprobados. |
+
+Sin publicación ni cambios al historial de visitas, QR o comisiones. La matriz E6.3, el control real de escritorio/móvil y la auditoría del registro externo no constan ejecutados.

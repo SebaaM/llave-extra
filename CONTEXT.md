@@ -8,11 +8,15 @@ El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39
 
 La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
 
+## E6.2 — Lecturas del Prestador y del Colaborador
+
+La rama local `feature/e6-etapas-pendientes` aporta métricas agregadas con período seleccionable en ambos espacios. Prestador consulta solo el negocio que conserva asignado y el historial de beneficios referidos. Colaborador consulta su red propia habilitada: los negocios que ya no están visibles siguen contando en el total, sin mostrar su identidad. La vigencia del alcance y los datos agregados se comprueban en la misma sentencia PostgreSQL. No se suman comisiones a visitas ni se cambia el recorrido del Cliente. Esta parte está verificada localmente; actividad financiera administrativa, controles de seguridad de publicación y simulacro operativo se siguen por separado en el [plan](docs/plans/06-analitica-salida.md).
+
 ## E6.1 — Visitas atribuidas · 17/11/2026
 
 Ajuste visual solicitado: fechas y Colaborador alineados, búsqueda y acciones separadas, y navegación de comercios junto al pie de la lista. La paginación de colaboradores es independiente y solo aparece cuando hay varias páginas. Este refinamiento no cambia métricas, permisos ni contrato API.
 
-El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integración a `develop` pendiente. Las métricas por rol y los controles operativos siguientes permanecen fuera de este corte.
+El informe administrativo de `/gestion/analitica/visitas` compara, por período de Ushuaia y Colaborador opcional, clientes únicos vinculados por QR y visitas válidas atribuidas. Los conteos son independientes y no constituyen una tasa de conversión. Si no se pueden separar los vínculos heredados de datos DEMO, ese indicador se muestra como no disponible; las visitas verificables se conservan. El desglose por comercio es paginado y no incluye datos personales de Clientes. Implementación local, con revisión y pruebas registradas en [verificación de E6.1](docs/verification/17-analitica-e6.md); integrada en `develop` mediante el PR #30 (`d1f181d`). Las métricas por rol y los controles operativos siguientes permanecen fuera de ese PR.
 
 ## Continuidad de la atribución QR — 16/11/2026
 
