@@ -26,6 +26,28 @@ Referencias: [plan](../superpowers/plans/2026-10-24-auditoria-seguridad.md), [ch
 | SEC-016 | Catálogo privado/Admin, P08/F05/M08 | Baja | CERRADO | Los filtros privados con NUL enviaban datos inválidos a PostgreSQL y devolvían 500. | `859e94d` | Siete RED 500 y siete GREEN 400. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | SEC-017 | Prestadores, P01/C08 | Media | CERRADO | El cambio de PIN podía completarse después de confirmar la revocación de la membresía. | `ae908bb` | RED 200 con hash cambiado. GREEN 404 con hash intacto. Revisión y reejecución independientes en PostgreSQL. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
 | SEC-018 | QR/Frontend, F04 | Baja | CERRADO | El build podía solicitar fuentes externas antes de limpiar el fragmento del QR. Los marcadores no aparecieron en tráfico ni referrer. | `5793a59` | Edge RED/GREEN en dos rutas sobre build real. Dos regresiones de bootstrap reejecutadas por un revisor independiente. [Casos](runs/20261105-1823-7467838/casos.md#continuación-del-06112026) |
+| SEC-019 | E6.3/T6, B07 | Media | CERRADO | La referencia de medios privados se incluía en access logs predeterminados de Nginx y Gunicorn. | Formatos de access log limitados a método, estado, bytes y duración. | RED/GREEN con marcadores sintéticos y reexamen independiente aprobado. [Ficha](#sec-019-ruta-de-medios-privados-expuesta-en-access-logs) |
+
+### SEC-019 — Ruta de medios privados expuesta en access logs
+
+- Estado, severidad y justificación de impacto/precondiciones: CERRADO en laboratorio; severidad media porque un lector autorizado a los logs podía conocer una referencia de medios privados, aunque la URL no concedía acceso al archivo y la solicitud anónima seguía denegada.
+- Fecha/zona, run-id, SHA y hash del diff local si corresponde: 2026-11-25, America/Argentina/Buenos_Aires; laboratorio sintético llaveextra-e6-security-logs; base de la unidad 1fd81c3; evidencia local de T6.
+- Feature/task, control_id y case_id afectados: E6.3, T6, B07; caso sintético T6-LOG-01.
+- Regla vigente y fuente: §E6.3 requiere ausencia de PII, credenciales y enlaces privados en logs.
+- Actor atacante, actor legítimo, ownership y datos sintéticos requeridos: lector de logs; el solicitante anónimo no era propietario ni recibía el contenido. Se usaron solo marcadores sintéticos.
+- Superficie: GET a /api/v1/admin/private-media/<marcador> pasando por Nginx y el access log de Gunicorn.
+- Pasos reproducibles mínimos y request saneado: enviar por TLS local un GET anónimo con un marcador único en la ruta, query y cabecera; repetir la búsqueda del marcador en los access logs de Nginx y Gunicorn. No guardar ni publicar las líneas crudas.
+- Esperado / observado, con status y aserciones de BD/archivos/sesión: esperado, mantener el 401 sin cuerpo y no registrar el marcador. Antes del cambio el marcador de ruta aparecía en ambas capas; después, el GET mantuvo 401 sin cuerpo, ambas capas registraron método/estado y ninguno de los marcadores sintéticos de ruta, query, cabecera o cuerpo apareció.
+- Alcance: access logs de Nginx y Gunicorn en el Compose de laboratorio; la configuración de producción se editó estáticamente, pero no se ejecutó.
+- Evidencia de reproducción y prueba RED: se observó RED en ambas capas con la ruta privada sintética bajo el formato anterior.
+- Causa raíz, archivos y líneas del corte: formato combinado de Nginx incluía $request y el formato predeterminado de Gunicorn incluía la request line, que expone ruta/query.
+- Corrector asignado, archivos permitidos, dependencias y restricciones: corrección acotada a frontend/deploy-nginx.conf, compose.e6.lab.yaml y compose.prod.yaml; no tocar .env.prod ni desplegar producción.
+- Solución aplicada y commit/diff; migración/contrato si corresponde: Nginx y Gunicorn ahora registran únicamente método, status, bytes de respuesta y duración; no se alteró error_log.
+- Prueba GREEN y checks (comando, fecha, exit, conteo real): Compose focal con pytest -q analytics/tests/test_security_boundary.py — 11 passed, exit 0; Ruff focal — All checks passed, exit 0; nginx -t — exit 0. El orquestador confirmó el backend completo 583/583, frontend 459/459, Ruff global y OpenAPI sin advertencias. Una prueba TLS independiente observó 401 y ausencia del marcador en ambos access logs.
+- Revisor independiente, reproducción original/variantes y resultado: prueba TLS independiente del orquestador y revisión focal del corte aprobadas.
+- Verificación final del orquestador y corte final: cerrado para acceso HTTP en el laboratorio; no implica despliegue ni auditoría de todos los registros de error.
+- Riesgo residual, bloqueo/decisión del usuario si existe: los error logs no se modificaron y no se probó una ruta que produzca un error de logging; O02 sigue bloqueado para despliegue real.
+- Historial de estados (fecha, actor, motivo): 2026-11-25 CONFIRMADO (RED en ambos access logs) → EN_CORRECCION → CORREGIDO_PENDIENTE_REVISION (GREEN focal y TLS sintético) → CERRADO (reexamen independiente).
 
 ## Estados y prioridad
 

@@ -87,3 +87,20 @@ El informe administrativo se sirve por `/gestion/analitica/actividad` y no alter
 | Ruff, OpenAPI (`--validate --fail-on-warn`), lint y tipos | Aprobados. pnpm run build aprobado sobre E6.2 final; Vite advirtió que el paquete principal supera 500 kB (512,10 kB minificado). |
 
 Confirmaciones sin fecha se informan aparte para todo el historial. Sin sandbox oficial de pagos, DNS, SMTP ni actividad en producción. La matriz de seguridad y el simulacro operativo corresponden a E6.3–E6.4.
+
+## E6.3 — Matriz integrada y laboratorio TLS
+
+La matriz reúne las analíticas de Administración, Prestador y Colaborador. Comprueba ausencia o revocación de sesión, roles cruzados, requisitos administrativos incompletos, reasignación del negocio y baja de colaborador. En React, una respuesta privada tardía no vuelve a mostrar datos después de revocar el acceso.
+
+| Comprobación | Resultado |
+|---|---|
+| `pytest -q` con PostgreSQL y Redis aislados | 583 aprobadas. El primer intento falló al escribir imágenes de prueba sobre `/app` de solo lectura. Con medios temporales escribibles y el código aún de solo lectura, el testigo de catálogo pasó 5/5 y la suite completa quedó en verde. |
+| Vitest completo, lint y tipos | 459 pruebas aprobadas en 43 archivos; lint y tipos sin errores. |
+| Ruff completo, `makemigrations --check --dry-run` y OpenAPI `--validate --fail-on-warn` | Aprobados. No se detectaron migraciones pendientes ni advertencias en el esquema. |
+| Compose y TLS local | Solo Nginx en `127.0.0.1:8443` publica un puerto; PostgreSQL, Redis y Django quedan en la red interna. La cadena y el nombre del certificado sintético se verificaron por proceso, sin cambiar el almacén de confianza del equipo. Se sirvió React compilado y la API financiera respondió 401 anónimo con `no-store`, `no-referrer`, HSTS y `nosniff`. |
+| Medio privado sintético | El endpoint protegido devolvió 401 sin cuerpo. La ruta estática devolvió HTML de la aplicación, nunca los bytes del marcador. Nginx no monta los volúmenes de medios. |
+| Revisión focal de la matriz y pruebas de proxy | La matriz reforzada aprobó 11/11. Verifica no solo ausencia de claves analíticas: un rechazo debe tener exactamente un detalle escalar. En informes agrupados la página crece de 1 a 20 elementos y el número de consultas no crece. Pruebas Node locales de proxy y política de auditoría: 25/25; no constituyen una auditoría del registro externo. |
+| Registros de acceso | La prueba inicial encontró rutas de medios privados sintéticos en los registros de Nginx y Gunicorn. Ambos registran ahora método, estado, tamaño y duración, sin URI, parámetros, cabeceras, referente ni agente de usuario. Se comprobó que una petición privada sintética queda en 401, ambos registran `GET 401` y el marcador no queda en sus registros. Esta comprobación no cambia la política de registros de error. |
+| Migración y configuración de Django | Una base sintética nueva aplicó las migraciones y pasó `migrate --check`. `check --deploy` salió con código 0 y las advertencias W005/W021 sobre subdominios y preload de HSTS; no se decidió una política para dominios reales. |
+
+La revisión independiente confirmó el cierre de E6.3 para el laboratorio: denegaciones con contrato estricto, cardinalidad de página comprobada y registros de acceso saneados. Persisten fuera del laboratorio el HTTPS público/DNS, SMTP real y el escáner en dispositivos físicos.

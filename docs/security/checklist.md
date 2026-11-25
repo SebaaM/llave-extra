@@ -25,7 +25,7 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | B04 | Host/proxy: headers de cliente falsificados no evaden límites ni generan URLs inseguras | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | B05 | Salud/schema/docs/errores no filtran secretos, configuración o datos privados | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
 | B06 | Task 8: versiones/instalaciones bloqueadas y CI; dependencias/locks/imágenes con advisories y alcance registrados | PARCIAL | EN_CURSO | SEC-011, SEC-012 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
-| B07 | Código/historia/build/logs/artefactos sin secretos, cuentas reales ni archivos privados publicados | PARCIAL | EN_CURSO | NO_EVALUADO | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
+| B07 | Código/historia/build/logs/artefactos sin secretos, cuentas reales ni archivos privados publicados | PARCIAL | EN_CURSO | SEC-019 | [SEC-019: evidencia de access logs](hallazgos.md#sec-019-ruta-de-medios-privados-expuesta-en-access-logs) |
 
 ## E2: cuentas y autenticación
 
@@ -143,7 +143,7 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 | ID | Qué comprobar | Chequeado | Resultado | Hallazgo | Solución / evidencia |
 |---|---|---|---|---|---|
 | O01 | No-store/no-referrer/nosniff y políticas de seguridad según endpoint, incluidos errores | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
-| O02 | TLS/cookies/HSTS/CSP/proxy de un despliegue real autorizado, si existe objetivo | NO | BLOQUEADO | NO_EVALUADO | Falta un despliegue HTTPS autorizado. Retomar con el responsable de infraestructura. |
+| O02 | TLS/cookies/HSTS/CSP/proxy de un despliegue real autorizado, si existe objetivo | NO | BLOQUEADO | NO_EVALUADO | El laboratorio E6.3 verificó HTTPS local con CA sintética; no equivale a un despliegue real autorizado. Retomar la validación de dominio/infraestructura con su responsable. |
 | O03 | Tasks/commands financieros recuperables y restringidos al operador/infraestructura prevista | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | O04 | Evidencia saneada y trazable a corte, caso, hallazgo, fix, test y revisión independiente | PARCIAL | EN_CURSO | NO_EVALUADO | [Regresión integrada](runs/20261105-1823-7467838/casos.md#regresión-integrada) |
 | O05 | Dependencias/DAST/secret scanning tienen alcance real y alertas triadas; fallos de feed explícitos | PARCIAL | EN_CURSO | SEC-011, SEC-012 | [Casos de la corrida](runs/20261105-1823-7467838/casos.md) |
@@ -153,3 +153,13 @@ Si solo se comprobó parte, queda `PARCIAL`; si algo falla se refleja `FAIL` aun
 ## Estado de la corrida
 
 La segunda pasada agregó evidencia a los cinco controles que figuraban pendientes. F04 aprobó en ambas rutas QR canónicas sobre el build integrado. Los controles parciales conservan las variantes sin ejecutar y los hallazgos asociados. La comprobación de TLS real está bloqueada hasta contar con un despliegue autorizado. Las suites y QA históricos siguen en `docs/verification/` y sirven de insumo para repetir casos.
+
+## Evidencia local E6.3 (2026-11-25)
+
+La matriz PostgreSQL focal de analytics/tests/test_security_boundary.py terminó en 11/11. Comprueba respuestas de denegación con sobre JSON exacto (detail string, sin claves adicionales ni datos analíticos/PII), sesiones ausentes/revocadas, roles y atributos administrativos, acceso cruzado, reasignación y allowlists de DTO. La prueba de consultas compara la misma cantidad de consultas cuando los grupos visibles crecen de 1 a 20 beneficios y 1 a 20 negocios distintos dentro de una página de 25 filas. Las pruebas focales de ProductApp.test.tsx y VisitAnalyticsPage.test.tsx aprobaron 29/29; la suite Vitest completa terminó en 459/459. El orquestador confirmó además backend completo 583/583, Ruff global y OpenAPI sin advertencias. Esto aporta evidencia de E6.3, sin cerrar los controles globales M01, F03 u O01. Detalle: [verificación E6](../verification/17-analitica-e6.md).
+
+El proyecto sintético fresco llaveextra-e6-security-logs usó PostgreSQL/Redis internos, claves aleatorias sintéticas y CA local; no hubo pulls ni cambios al almacén de confianza del sistema. Runtime: PostgreSQL, Redis y backend solo en internal=true; Nginx en ambas redes y publicado únicamente en 127.0.0.1:8443. La raíz React se entregó por TLS (200). Un GET anónimo a /api/v1/admin/private-media/<marcador> dio 401 sin cuerpo; /media/<marcador> devolvió la SPA (200) sin el marcador.
+
+Se reprodujo inicialmente que las rutas sintéticas aparecían en los access logs predeterminados de Nginx y Gunicorn (SEC-019). Con formatos restringidos, Nginx y Gunicorn conservaron método/estado y no registraron los marcadores sintéticos de ruta, query, cabecera o cuerpo; el GET privado siguió en 401 y las cabeceras no-store/no-referrer/HSTS/nosniff se mantuvieron. Solo se cambió la configuración de access logs; los error logs quedaron intactos y no se afirma que todos los sinks de logging estén auditados. Evidencia de RED/GREEN y límites: [SEC-019](hallazgos.md#sec-019-ruta-de-medios-privados-expuesta-en-access-logs).
+
+nginx -t pasó. manage.py check --deploy terminó con advertencias de política security.W005 y security.W021 (HSTS para subdominios y preload); no se cambió esa política sin definición del dominio. O02 continúa BLOQUEADO: el CA sintético no verifica DNS, certificados públicos, SMTP ni un despliegue real autorizado.

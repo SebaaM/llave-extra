@@ -80,7 +80,8 @@
     - [x] T3: métricas del Prestador con período seleccionable, verificadas en rama local; integración y control visual aún pendientes. [Evidencia](docs/verification/17-analitica-e6.md#e62-t3--métricas-del-prestador).
     - [x] T4: métricas del Colaborador verificadas en la rama local; integración y control visual aún pendientes. [Evidencia](docs/verification/17-analitica-e6.md#e62-t4--métricas-del-colaborador).
     - [x] T5: actividad financiera administrativa con fechas verificables, créditos y ARS separados. [Evidencia](docs/verification/17-analitica-e6.md#e62-t5--actividad-financiera).
-  - [ ] E6.3–E6.4: seguridad, restauración y conciliación según el [plan](docs/plans/06-analitica-salida.md).
+  - [x] E6.3: matriz de seguridad, logs de acceso y TLS verificados en laboratorio, con revisión independiente. [Evidencia](docs/verification/17-analitica-e6.md#e63--matriz-integrada-y-laboratorio-tls).
+  - [ ] E6.4: restauración y conciliación según el [plan](docs/plans/06-analitica-salida.md).
 - [x] Task 8: migrar backend a uv 0.11.3 y frontend a pnpm 11.22.0 con locks, Docker y CI bloqueados (ver [informe](.superpowers/sdd/00-roadmap/task-8-report.md)).
 - [x] F2 después de E4: conectar la experiencia Beneficios y Mi viaje estilo Pasaporte a las API E2–E4 (ver [plan frontend](docs/plans/frontend.md) e [informe Task 9](.superpowers/sdd/00-roadmap/task-9-report.md)).
 - [ ] Resto de F3 después de E5/E6: tienda/pedidos y analíticas; espacios operativos Prestador/Colaborador adelantados en plan 08, Administrador usa Django. Ver [plan frontend](docs/plans/frontend.md).
