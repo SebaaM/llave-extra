@@ -75,6 +75,18 @@ services:
         condition: service_healthy
     networks:
       - internal
+  scheduler:
+    extends:
+      service: backend
+    profiles:
+      - scheduler-lab
+    command: ["python", "manage.py", "run_shop_scheduler_lab", "--limit", "100"]
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      SHOP_PAYMENT_PROVIDER: fake
+      SHOP_SCHEDULER_LAB_ENABLED: "true"
+      SHOP_SCHEDULER_LAB_DATABASE_NAME: ${E6_POSTGRES_DB:?Set the isolated lab database name}
+      SHOP_SCHEDULER_LAB_DATABASE_HOST: db
   nginx:
     image: nginx:1.27.5-alpine
     pull_policy: never

@@ -8,6 +8,10 @@ El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39
 
 La fila de Beneficios destacados permite Destacar y Quitar destacado sin ir a la selección superior; retirar sigue disponible con los cinco cupos ocupados. En el catálogo privado del Colaborador, el mismo botón alterna Agregar a mi carpeta y Quitar de mi carpeta. Se reutilizan PATCH con versión y PUT/DELETE propios: no cambian permisos, límites ni reglas del dominio. La indicación histórica de botón seleccionado deshabilitado queda sustituida por esta corrección.
 
+## E6.4 — Restauración y scheduler de laboratorio
+
+Se restauraron PostgreSQL y ambos volúmenes de medios desde una copia sintética. Coincidieron la identidad, los agregados, saldo/libro, pedidos y hashes de medios. El destino usó un cliente Django con esquema seguro simulado porque Docker no pudo abrir otro proxy TLS; no se midió duración ni se probó una comisión poblada. La rotación JWT rechazó un refresh antiguo aún vigente y se verificó por separado la firma del access ya vencido. El scheduler local exige una base identificada y proveedor simulado; reutiliza los workers de E5 sin habilitar pagos, checkout ni operación externa. [Evidencia](docs/verification/18-operacion-e6.md) · [Traspaso](docs/operations/e6-handoff.md).
+
 ## E6.3 — Seguridad comprobada en laboratorio
 
 La matriz de analítica privada verifica permisos, revocación, DTOs mínimos, ausencia de caché y consultas acotadas. El Compose aislado publica solo Nginx en loopback. Se comprobó TLS con CA sintética y denegación de medios privados. Nginx y Gunicorn registran método, estado, tamaño y duración sin ruta, parámetros ni cabeceras en el registro de acceso. Esto corrige SEC-019; no audita todos los registros de error ni valida HTTPS público, SMTP o dispositivos físicos. Evidencia en [verificación de E6](docs/verification/17-analitica-e6.md#e63--matriz-integrada-y-laboratorio-tls).

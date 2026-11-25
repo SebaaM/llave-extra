@@ -63,7 +63,7 @@ Productos demo, stock, pedidos por dinero o créditos, canjes atómicos, reserva
 
 Métricas por rol, referencias atribuidas, consumo/crédito/venta derivados del servidor, controles de seguridad, backups/restauración, tareas de reconciliación y documentación. Sin despliegue productivo ni cambio del sitio actual. Archivo: `06-analitica-salida.md`.
 
-E6.1, informe administrativo de visitas atribuidas, integrada por el PR #30 (`d1f181d`). Ver [plan por etapas](06-analitica-salida.md) y [verificación](../verification/17-analitica-e6.md). E6.2 y E6.3 están implementadas y revisadas en la rama local. E6.4 sigue pendiente; los controles de un despliegue real no se aprueban con evidencia local. Este corte todavía no está en `develop`.
+E6.1, informe administrativo de visitas atribuidas, integrada por el PR #30 (`d1f181d`). Ver [plan por etapas](06-analitica-salida.md) y [verificación](../verification/17-analitica-e6.md). E6.2–E6.4 están implementadas y revisadas en la rama local. El [simulacro operativo](../verification/18-operacion-e6.md) registra la restauración, el scheduler simulado y los límites de la evidencia. Los [controles del piloto](../operations/e6-handoff.md) siguen pendientes; las comprobaciones locales no autorizan un despliegue real. Este corte todavía no está en `develop`.
 
 ## Task 7: F1 - Prototipos de frontend
 

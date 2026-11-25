@@ -48,3 +48,14 @@ Revisión independiente: se verificaron la identidad del destino, la secuencia d
 ## Límites y pendientes operativos
 
 RPO/RTO, ubicación y retención del respaldo, custodia de llaves, TLS/Nginx restaurado, SMTP público, scheduler real, sandbox de pagos y restauración productiva requieren definición y evidencia del operador. El destino se probó solo mediante test client interno porque Docker no pudo asignar otro pool de red; no limpiar/reutilizar redes existentes sin autorización. La primera ejecución del helper de auth creó una sesión sintética y falló al leer `FileResponse.content`; se corrigió a `streaming_content` y la repetición pasó, creando una segunda sesión de prueba. No se eliminó estado ni se repitió backup/restauración.
+
+## E6.4 T8 — Scheduler de laboratorio
+
+| Comprobación | Resultado |
+|---|---|
+| PostgreSQL/Redis y proveedor simulado: `pytest -q shop/tests/test_scheduler_lab.py` | 5 aprobadas. Las pruebas verifican rechazo antes de iniciar workers, límites del laboratorio, diagnósticos sin escrituras y un reintegro/reposición de stock únicos al repetir el ciclo tras una interrupción. |
+| Revisión de la guarda de ejecución | Se reprodujo que la configuración de pruebas permitía una identidad de base arbitraria. Ahora la lista de hosts y bases permitidos se exige siempre; solo el fixture adapta los valores para su PostgreSQL desechable. Reexamen independiente aprobado. |
+| Compose de laboratorio: `docker compose run --rm --no-deps --pull never scheduler python manage.py run_shop_scheduler_lab --once --limit 1` | Un ciclo real sobre la copia sintética ya verificada: código 0, outbox 1, reservas vencidas 0, conciliación 1, backlog 2, bloqueadas 0, diferencias saldo/libro 0. No se abrió ningún puerto ni se llamó a un proveedor externo. El ciclo se ejecutó antes de endurecer la guarda; la identidad usada continúa autorizada. |
+| Ruff focal y Compose `config --quiet` | Aprobados. Las suites completas previas al scheduler fueron 583 backend y 459 frontend; se eligió verificación focal para el corte final. |
+
+El ciclo de recuperación comprobó el comportamiento simulado, no un scheduler productivo, ni un pago real. El [checklist de traspaso](../operations/e6-handoff.md) separa ambos alcances.
