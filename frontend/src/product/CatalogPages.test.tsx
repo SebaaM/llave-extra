@@ -122,6 +122,34 @@ describe('catálogo público', () => {
     expect(screen.getByText('Página 2 · 2 beneficios')).toBeTruthy()
   })
 
+  it('mantiene el filtro por negocio al buscar, cambiar categoría y paginar, y lo quita sin perder otros filtros', async () => {
+    const merchant = { ...provider, id: '49643f2a-ca4d-43b2-a0ba-68885fa2c582' }
+    const requested: URLSearchParams[] = []
+    window.history.replaceState({}, '', `/beneficios?provider=${merchant.id}`)
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/config/')) return json({ enabled: true })
+      if (url.pathname.endsWith('/categories/')) return json({ results: ['Gastronomía'] })
+      if (url.pathname !== '/api/v1/catalog/benefits/') return json({}, 404)
+      requested.push(url.searchParams)
+      const page = url.searchParams.get('page')
+      return json({ count: 25, previous: page === '1' ? null : 'prev', next: page === '1' ? 'next' : null, results: [{ ...benefit, provider: merchant }] })
+    }))
+    render(<ProductApp />)
+    await screen.findByRole('button', { name: 'Quitar filtro por negocio: Kuar' })
+    expect(requested.at(-1)?.get('provider')).toBe(merchant.id)
+    fireEvent.click(await screen.findByRole('button', { name: 'Gastronomía' }))
+    fireEvent.change(screen.getByLabelText('Buscar beneficio o negocio'), { target: { value: '  Mar  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
+    await screen.findByRole('button', { name: 'Quitar filtro por negocio: Kuar' })
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente →' }))
+    await screen.findByText('Página 2 · 25 beneficios')
+    expect(Object.fromEntries(requested.at(-1)!)).toEqual({ page: '2', search: 'Mar', category: 'Gastronomía', provider: merchant.id })
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar filtro por negocio: Kuar' }))
+    await screen.findByText('Página 1 · 25 beneficios')
+    expect(Object.fromEntries(requested.at(-1)!)).toEqual({ page: '1', search: 'Mar', category: 'Gastronomía' })
+  })
+
   it('muestra error recuperable y vacío real sin ofertas inventadas', async () => {
     let failing = true
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {

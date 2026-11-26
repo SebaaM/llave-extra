@@ -54,10 +54,12 @@ export function CatalogPage({ search }: { search: string }) {
   const searchContext = useMemo(() => ({ search }), [search])
   const [draft, setDraft] = useState<{ context: object; value: string } | null>(null)
   const searchValue = draft?.context === searchContext ? draft.value : query.search
-  const { enabled, data, loading, error, retry } = usePublicCatalog(query.page, query.search, query.category)
+  const { enabled, data, loading, error, retry } = usePublicCatalog(query.page, query.search, query.category, { providerId: query.provider })
   const categories = useCatalogCategories(enabled)
   const apply = (changes: Partial<typeof query>) => navigate(catalogHref({ ...query, ...changes }))
-  const hasFilters = Boolean(query.search || query.category)
+  const clearFilters = () => apply({ search: '', category: '', provider: undefined, page: 1 })
+  const hasFilters = Boolean(query.search || query.category || query.provider)
+  const providerName = query.provider ? data?.results.find(item => item.provider.id === query.provider)?.provider.name : undefined
   const missingPage = enabled === true && Boolean(error) && query.page > 1
   return <main id="contenido" className="catalog-page client-catalog-page"><div className="content-width">
     <p className="eyebrow">LLAVE EXTRA · USHUAIA</p><h1>Beneficios para vivir más la ciudad.</h1>
@@ -75,14 +77,16 @@ export function CatalogPage({ search }: { search: string }) {
     <CategoryChips categories={categories.categories} value={query.category} onChange={category => apply({ category, page: 1 })} />
     {categories.loading && <p className="form-help" role="status">Consultando categorías…</p>}
     {categories.error && <div className="client-category-error" role="status"><p>No pudimos cargar las categorías. Podés seguir buscando beneficios.</p><button type="button" onClick={categories.retry}>Reintentar categorías</button></div>}
+    {query.provider && <p className="form-help">Estás viendo los beneficios de un solo negocio.</p>}
     {hasFilters && <div className="client-active-filters" role="group" aria-label="Filtros activos">
       {query.search && <button type="button" aria-label={`Quitar búsqueda: ${query.search}`} onClick={() => apply({ search: '', page: 1 })}>Búsqueda: {query.search} ×</button>}
       {query.category && <button type="button" aria-label={`Quitar categoría: ${query.category}`} onClick={() => apply({ category: '', page: 1 })}>Categoría: {query.category} ×</button>}
-      <button type="button" onClick={() => apply({ search: '', category: '', page: 1 })}>Limpiar filtros</button>
+      {query.provider && <button type="button" aria-label={providerName ? `Quitar filtro por negocio: ${providerName}` : 'Quitar filtro por negocio'} onClick={() => apply({ provider: undefined, page: 1 })}>{providerName ? `Negocio: ${providerName}` : 'Un solo negocio'} ×</button>}
+      <button type="button" onClick={clearFilters}>Limpiar filtros</button>
     </div>}
     {loading ? <CardSkeleton count={3} /> : missingPage ? <EmptyState title="Esta página ya no existe." description="La lista de beneficios pudo cambiar. Volvé al inicio de los resultados para continuar."><ButtonLink href={catalogHref({ ...query, page: 1 })}>Volver a la página 1</ButtonLink></EmptyState> : <CatalogState enabled={enabled} loading={false} error={error} retry={retry} />}
     {enabled && data && <>
-      {data.results.length ? <div className="catalog-grid">{data.results.map(item => <BenefitCard key={item.id} benefit={item} />)}</div> : <EmptyState title="No encontramos beneficios para esta búsqueda." description="Probá con otros términos o revisá todas las categorías.">{hasFilters && <button className="button button-dark" onClick={() => apply({ search: '', category: '', page: 1 })}>Ver todos los beneficios</button>}</EmptyState>}
+      {data.results.length ? <div className="catalog-grid">{data.results.map(item => <BenefitCard key={item.id} benefit={item} />)}</div> : <EmptyState title="No encontramos beneficios para esta búsqueda." description={query.provider ? 'Probá con otros filtros o consultá los beneficios de toda la red.' : 'Probá con otros términos o revisá todas las categorías.'}>{hasFilters && <button className="button button-dark" onClick={clearFilters}>Ver todos los beneficios</button>}</EmptyState>}
       <nav className="catalog-pagination" aria-label="Páginas de beneficios">
         <button disabled={!data.previous || query.page === 1} onClick={() => apply({ page: query.page - 1 })}>← Anterior</button>
         <span aria-live="polite">Página {query.page} · {data.count} beneficios</span>
