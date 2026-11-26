@@ -4,13 +4,13 @@ import { catalogBenefits, catalogConfig } from './catalog'
 import type { CatalogOptions, Page, PublicBenefit } from './catalog'
 import { messageOf } from './shared'
 
-type CatalogRequest = { page: number; search: string; category: string; revision: number; featured?: boolean; pageSize?: number }
+type CatalogRequest = { page: number; search: string; category: string; revision: number } & CatalogOptions
 type CatalogState = { request: CatalogRequest; enabled: boolean | null; data: Page<PublicBenefit> | null; error: string }
 
-export function usePublicCatalog(page = 1, search = '', category = '', { featured, pageSize }: CatalogOptions = {}) {
+export function usePublicCatalog(page = 1, search = '', category = '', { featured, pageSize, providerId }: CatalogOptions = {}) {
   const [state, setState] = useState<CatalogState | null>(null)
   const [revision, setRevision] = useState(0)
-  const request = useMemo(() => ({ page, search, category, revision, featured, pageSize }), [page, search, category, revision, featured, pageSize])
+  const request = useMemo(() => ({ page, search, category, revision, featured, pageSize, providerId }), [page, search, category, revision, featured, pageSize, providerId])
   const retry = useCallback(() => setRevision(value => value + 1), [])
   useEffect(() => {
     const controller = new AbortController()

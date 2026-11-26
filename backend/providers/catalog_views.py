@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
@@ -53,6 +55,7 @@ class CatalogBenefitsView(APIView):
             OpenApiParameter("page_size", OpenApiTypes.INT, description="24 por defecto; máximo 48"),
             OpenApiParameter("search", OpenApiTypes.STR),
             OpenApiParameter("category", OpenApiTypes.STR),
+            OpenApiParameter("provider", OpenApiTypes.UUID, description="Opcional; filtra por el UUID de un prestador publicado."),
             OpenApiParameter("featured", OpenApiTypes.BOOL, description="Opcional; solo true o false. La selección tiene hasta cinco beneficios y sigue sujeta a publicación y vigencia."),
         ],
         responses={200: PublicBenefitPageSerializer, 400: OpenApiTypes.OBJECT},
@@ -60,6 +63,15 @@ class CatalogBenefitsView(APIView):
     def get(self, request):
         require_catalog()
         benefits = catalog_benefits()
+        provider_values = request.query_params.getlist("provider")
+        if len(provider_values) > 1:
+            raise ValidationError({"provider": "El filtro solo puede aparecer una vez."})
+        if provider_values:
+            try:
+                provider_id = UUID(provider_values[0])
+            except (AttributeError, TypeError, ValueError):
+                raise ValidationError({"provider": "Ingresá un UUID válido."}) from None
+            benefits = benefits.filter(provider_id=provider_id)
         featured = request.query_params.get("featured")
         if featured is not None and featured not in ("true", "false"):
             raise ValidationError({"featured": "Usá true o false."})
