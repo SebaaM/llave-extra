@@ -79,7 +79,7 @@ export function ClientNavigation({ user, path }: { user: User | null; path: stri
     closeMenu()
   }
 
-  if (!isMobile) return <><nav ref={desktopNav} aria-label="Navegación principal">
+  if (!isMobile) return <><nav ref={desktopNav} className="client-navigation-desktop" aria-label="Navegación principal">
     <ProductLink href="/beneficios" aria-current={active('/beneficios')}>Beneficios</ProductLink>
     <ProductLink href="/tienda" aria-current={active('/tienda')}>Tienda</ProductLink>
     <a href="/#como-funciona">Cómo funciona</a>

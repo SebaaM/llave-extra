@@ -51,6 +51,22 @@ async function prepareApp(path: string, fragment = '') {
 }
 
 describe('Navegación del Cliente', () => {
+  it('mantiene un único escáner como acción primaria de la navegación de escritorio', async () => {
+    vi.stubGlobal('matchMedia', vi.fn((media: string) => ({
+      media, matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })))
+    vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => mockTouristAuth(String(input)) ?? json({}, 404)))
+    const ProductApp = await prepareApp('/beneficios')
+    render(<ProductApp />)
+    const scan = await screen.findByRole('button', { name: 'Escanear QR' }, { timeout: 5000 })
+    const nav = screen.getByRole('navigation', { name: 'Navegación principal' })
+    expect(nav.classList.contains('client-navigation-desktop')).toBe(true)
+    expect(within(nav).getByRole('button', { name: 'Escanear QR' })).toBe(scan)
+    expect(screen.getAllByRole('button', { name: 'Escanear QR' })).toHaveLength(1)
+    fireEvent.click(scan)
+    expect(screen.getByRole('dialog', { name: 'Escanear QR' })).toBeTruthy()
+  })
+
   it.each(['/consumo', '/referencia'])('abre el recorrido existente desde el escáner: %s', async path => {
     vi.stubGlobal('fetch', vi.fn(async (input: URL | RequestInfo) => {
       const url = String(input)
