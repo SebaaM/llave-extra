@@ -67,6 +67,36 @@
 .product-shell .client-scan-button:hover { background: #d3e5db; }
 .client-scan-button svg { flex: none; }
 .client-scan-button:focus-visible { outline: 2px solid #16464a; outline-offset: 3px; }
+
+.product-shell .product-header .client-navigation-desktop {
+  gap: clamp(.55rem, 1.4vw, 1.2rem);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.product-shell .product-header .client-navigation-desktop .client-scan-button {
+  min-height: 44px;
+  padding: 0 .9rem;
+  gap: .5rem;
+  margin-inline-start: .2rem;
+  border-color: transparent;
+  border-radius: 7px;
+  background: var(--peel, #ff802d);
+  color: var(--ink, #272720);
+  white-space: nowrap;
+  font-size: .8rem;
+}
+.product-shell .product-header .client-navigation-desktop .client-scan-button:hover { background: #ff984d; }
+.product-shell .product-header .client-navigation-desktop .client-scan-button:focus-visible { outline-color: var(--ember, #ae4308); }
+
+@media (min-width: 681px) and (max-width: 940px) {
+  .product-shell .product-header .client-navigation-desktop {
+    flex-basis: 100%;
+    order: 3;
+    padding-block-end: .25rem;
+  }
+}
+
 @media (max-width: 680px) {
   .product-shell .client-navigation .client-scan-button { flex-direction: column; min-height: 52px; gap: .18rem; padding: .2rem; font-size: .75rem; }
 }
