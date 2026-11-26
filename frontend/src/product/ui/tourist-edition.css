@@ -1,0 +1,153 @@
+/* Tourist-facing surfaces only. Store and staff routes keep their own themes. */
+.product-shell.tourist-edition {
+  --paper: #f8f6f0;
+  --porcelain: #fffdf8;
+  --ink: #272720;
+  --ember: #ae4308;
+  --peel: #ff802d;
+  --line: #d5d1c6;
+  --muted: #5b594f;
+  --elevation: 0 14px 32px -18px rgb(60 47 28 / 32%);
+  --client-sand: var(--paper);
+  --client-ink: var(--ink);
+  --client-petrol: #37372e;
+  --client-orange: var(--peel);
+  --client-muted: var(--muted);
+  --client-border: var(--line);
+  --client-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  caret-color: var(--ember);
+}
+.tourist-edition ::selection { background: #ffd0a8; color: var(--ink); }
+.tourist-edition :focus-visible { outline: 3px solid var(--ember); outline-offset: 4px; }
+.tourist-edition :is(h1,h2,h3) { font-family: Arial, Helvetica, sans-serif; text-wrap: balance; }
+.tourist-edition .product-header { background: var(--porcelain); border-bottom: 1px solid var(--line); box-shadow: none; }
+.tourist-edition .product-footer { border-top: 1px solid var(--line); }
+.tourist-edition .product-header :is(a,button)[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--ember); text-underline-offset: 6px; }
+.tourist-edition .button { border-radius: 7px; font-weight: 700; min-height: 44px; }
+.tourist-edition .button-orange { background: var(--peel); color: var(--ink); border-color: transparent; }
+.tourist-edition .button-dark { background: var(--ink); color: var(--porcelain); }
+.tourist-edition .button-white, .tourist-edition .button-ghost { color: var(--ink); background: var(--porcelain); border: 1px solid var(--line); }
+.tourist-edition .eyebrow { color: var(--ember); }
+.tourist-edition .home-hero { background: var(--paper); color: var(--ink); border-bottom: 1px solid var(--line); }
+.tourist-edition .home-hero::before { content: none; }
+.tourist-edition .home-hero-copy h1, .tourist-edition .edition-cover-copy h1 {
+  color: var(--ink); font: 750 clamp(3rem,6.3vw,5.6rem)/.99 Arial,Helvetica,sans-serif;
+  letter-spacing: -.054em; margin: 0 0 .28em; max-width: 14ch;
+}
+.tourist-edition .home-hero-copy > p:not(.eyebrow), .tourist-edition .edition-cover-copy > p {
+  max-width: 45ch; font-size: clamp(1rem,1.4vw,1.18rem); color: var(--muted); line-height: 1.55;
+}
+.tourist-edition .home-hero-copy .eyebrow { color: var(--ember); margin-bottom: 1.3rem; }
+.tourist-edition .client-home-postcard { background: var(--ink); color: var(--porcelain); padding: clamp(16px,2vw,26px); border: 0; box-shadow: var(--elevation); }
+.tourist-edition .client-home-postcard > span { color: #ffc79c; }
+.tourist-edition .client-home-postcard:not(:has(.catalog-card))::before {
+  content: ''; display: block; aspect-ratio: 3 / 1; border-radius: 6px; margin-bottom: 15px;
+  background: url('/images/ushuaia-beagle.jpg') center 48%/cover;
+}
+.tourist-edition .client-home-postcard :is(.catalog-state,.client-empty-state) { background: var(--porcelain); color: var(--ink); }
+.tourist-edition .client-home-postcard .catalog-card { color: var(--ink); }
+.tourist-edition .client-home-postcard :focus-visible { outline-color: #ffaf70; }
+
+.tourist-edition .edition-cover {
+  display: grid; grid-template-columns: minmax(0,1.12fr) minmax(0,.88fr); align-items: center;
+  gap: clamp(24px,6vw,88px); padding: clamp(8px,3vw,42px) 0 clamp(36px,5vw,76px);
+  border-bottom: 1px solid var(--line);
+}
+.tourist-edition .edition-cover-copy h1 em { font-style: normal; color: var(--ember); }
+.edition-cover-actions { display: flex; align-items: center; gap: 14px 24px; flex-wrap: wrap; margin-top: 24px; }
+.edition-cover-actions a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
+.edition-text-link { font-weight: 700; color: var(--ink); text-decoration: underline; text-underline-offset: 5px; }
+.tourist-edition .edition-postcard {
+  position: relative; isolation: isolate; overflow: hidden; min-width: 0;
+  background: var(--porcelain); padding: 9px 9px 0; border: 1px solid var(--line);
+  border-radius: 11px; box-shadow: var(--elevation); transform: rotate(1.4deg);
+}
+.edition-print {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 9px; padding: 18px;
+  aspect-ratio: 2 / 1; border-radius: 5px; color: white;
+  background: linear-gradient(180deg, rgb(26 30 27/.62),transparent 72%), url('/images/ushuaia-beagle.jpg') center 53%/cover;
+  font-size: .7rem; letter-spacing: .13em; font-weight: 700;
+}
+.edition-postcard-foot {
+  position: relative; margin: 9px -9px 0; padding: 13px 22px 16px; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; border-top: 1px dashed #aba493;
+  background: radial-gradient(circle at left top,var(--paper) 8px,transparent 9px),radial-gradient(circle at right top,var(--paper) 8px,transparent 9px);
+}
+.edition-postcard-foot strong { font-size: clamp(2.1rem,4vw,4rem); line-height: 1; letter-spacing: -.065em; }
+.edition-postcard-foot strong span { color: var(--peel); }
+.edition-postcard-foot > span { color: var(--muted); font-size: .75rem; text-align: right; line-height: 1.4; }
+.tourist-edition .edition-catalog-title { margin: clamp(30px,5vw,60px) 0 16px; font-size: clamp(1.8rem,3vw,3rem); letter-spacing: -.045em; }
+.tourist-edition .client-catalog-page { background: var(--paper); }
+.tourist-edition .client-catalog-search input { background: var(--porcelain); border-color: var(--line); }
+.tourist-edition .client-category-chips button { background: var(--porcelain); border-color: var(--line); color: var(--ink); }
+.tourist-edition :is(.client-category-chips,.client-trip-modes,.client-journey-steps) button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--porcelain); }
+.tourist-edition .client-benefit-card { background: var(--porcelain); border: 1px solid var(--line); box-shadow: none; overflow: hidden; }
+.tourist-edition .client-benefit-card .catalog-photo { overflow: hidden; background: #ebe5d9; color: var(--ember); }
+.tourist-edition .client-benefit-card .catalog-card-copy { position: relative; border-top: 1px dashed #bcb5a6; }
+.tourist-edition .client-benefit-card .catalog-card-copy::before,
+.tourist-edition .client-benefit-card .catalog-card-copy::after {
+  content: ''; position: absolute; top: -7px; width: 14px; height: 14px;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--paper);
+}
+.tourist-edition .catalog-card-copy::before { left: -8px; }
+.tourist-edition .catalog-card-copy::after { right: -8px; }
+.tourist-edition .catalog-card-copy h3 { color: var(--ember); letter-spacing: -.037em; line-height: 1.12; }
+.tourist-edition .client-benefit-card .client-benefit-provider { color: var(--ink); font-size: 1rem; font-weight: 700; }
+.tourist-edition .catalog-card-link, .tourist-edition .back-link { color: var(--ember); text-underline-offset: 4px; }
+.tourist-edition .client-detail-sections > section, .tourist-edition .client-account-passport,
+.tourist-edition .qr-form, .tourist-edition .contact-form-panel { background-color: var(--porcelain); border-color: var(--line); border-radius: 12px; }
+.tourist-edition .client-detail-photo { border-radius: 12px; overflow: hidden; }
+.tourist-edition .catalog-conditions { border-top: 1px dashed #a89e8d; }
+.tourist-edition .client-how-it-works { background-color: #eeeae1; color: var(--ink); }
+.tourist-edition .client-auth-page .auth-art { background: linear-gradient(180deg, rgb(30 33 29/.48),rgb(26 28 24/.8)),url('/images/ushuaia-harbor.jpg') center/cover; color: white; }
+.tourist-edition .client-auth-page .auth-art > div { color: #ffad72; border-color: #ffe3cb88; }
+.tourist-edition .auth-panel :is(input,select), .tourist-edition .qr-form :is(input,select) { accent-color: var(--ember); }
+.tourist-edition .client-trip .trip-balance {
+  color: var(--porcelain); background-color: var(--ink);
+  background-image: repeating-radial-gradient(ellipse at 115% 100%,transparent 0 16px,#ffffff0e 17px 18px,transparent 19px 24px);
+}
+.tourist-edition .client-trip .trip-balance > strong { color: #ffad72; font-variant-numeric: tabular-nums; }
+.tourist-edition .trip-progress { background-color: var(--porcelain); }
+.tourist-edition .trip-progress progress { appearance: none; border: 0; border-radius: 99px; overflow: hidden; background: var(--line); accent-color: var(--ember); }
+.tourist-edition .trip-progress progress::-webkit-progress-bar { background: var(--line); }
+.tourist-edition .trip-progress progress::-webkit-progress-value { background: var(--ember); }
+.tourist-edition .trip-progress progress::-moz-progress-bar { background: var(--ember); }
+.product-shell.tourist-edition .client-scan-button { color: var(--ink); background: #ffead5; border-color: #d9a67c; }
+.product-shell.tourist-edition .client-scan-button:hover { background: #ffdbb9; }
+.tourist-edition .trip-stamp { color: var(--ember); border-color: var(--ember); }
+.tourist-edition .product-footer-links a { text-underline-offset: 4px; }
+@media (max-width: 720px) {
+  .tourist-edition .edition-cover { grid-template-columns: minmax(0,1fr); gap: 26px; }
+  .tourist-edition .edition-postcard { transform: none; }
+  .tourist-edition .edition-print { aspect-ratio: 3.3 / 1; padding: 12px; }
+  .tourist-edition .edition-cover-actions { gap: 5px 14px; }
+}
+@media (min-width: 340px) and (max-width: 680px) {
+  .tourist-edition .guest-header .product-header-inner { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 0 8px; }
+  .tourist-edition .guest-header .product-brand { grid-area: 1/1; }
+  .tourist-edition .guest-header .product-brand img { width: 76px; }
+  .tourist-edition .guest-header .product-header-actions { grid-area: 1/2; justify-content: flex-end; }
+  .tourist-edition .guest-header .product-header-actions .button { flex: 0 1 auto; padding-inline: 9px; }
+  .tourist-edition .guest-header nav { position: static; grid-area: 2/1/3/-1; background: transparent; padding: 0; }
+  .tourist-edition .client-catalog-page { padding-top: 26px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tourist-edition .edition-postcard { animation: edition-print-settle 460ms cubic-bezier(.21,.75,.21,1) both; }
+  .tourist-edition .button, .tourist-edition .client-benefit-card, .tourist-edition .catalog-photo img {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, background-color 160ms ease-out;
+  }
+  .tourist-edition .button:active:not(:disabled) { transform: translateY(1px); }
+  @media (hover:hover) and (pointer:fine) {
+    .tourist-edition .client-benefit-card:hover { transform: translateY(-3px); box-shadow: var(--elevation); }
+    .tourist-edition .client-benefit-card:hover .catalog-photo img { transform: scale(1.025); }
+    .tourist-edition .button-orange:hover { background: #ff984d; }
+  }
+}
+@keyframes edition-print-settle { from { translate: 0 5px; rotate: -.7deg; } to { translate: 0; rotate: 0deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .tourist-edition .edition-postcard, .tourist-edition .client-benefit-card, .tourist-edition .catalog-photo img, .tourist-edition .button { animation: none; transition: none; }
+  .tourist-edition .client-benefit-card:hover { transform: none; }
+}

@@ -5,16 +5,14 @@ import { useFeaturedCatalog } from './useFeaturedCatalog'
 import { NetworkCanvas } from './NetworkCanvas'
 import type { SiteSettings } from './admin/types'
 import { defaultSiteSettings } from './useSiteSettings'
-import type { Progress, Wallet } from './api'
 import { HowItWorks } from './HowItWorks'
-import { TripSummary } from './journey/TripSummary'
 import { useCatalogCategories } from './useCatalogCategories'
 import { CategoryChips } from './ui/CategoryChips'
 import { EmptyState } from './ui/EmptyState'
 import { catalogHref } from './catalog-query'
 import { navigate } from './navigate'
 
-export function HomePage({ settings = defaultSiteSettings, trip }: { settings?: SiteSettings; trip?: { wallet: Wallet; progress: Progress } }) {
+export function HomePage({ settings = defaultSiteSettings }: { settings?: SiteSettings }) {
   const { enabled, benefit, count, index, select, loading, error, retry } = useFeaturedCatalog()
   const categories = useCatalogCategories(enabled)
   return <main id="contenido" className="product-home">
@@ -50,7 +48,7 @@ export function HomePage({ settings = defaultSiteSettings, trip }: { settings?: 
     </section>
     <section className="trip-intro" aria-label="Pasaporte">
       <div className="trip-passport client-passport-preview" aria-hidden="true"><span>MI VIAJE</span><strong>LE</strong><small>USHUAIA · ARGENTINA</small></div>
-      <div><p className="eyebrow">TU PASAPORTE, A TU RITMO</p><h2>Un viaje que deja huella.</h2><p>En Mi viaje encontrás tus visitas verificadas, tu meta actual y los créditos disponibles. Usar créditos no borra tus visitas.</p><TripSummary wallet={trip?.wallet ?? null} progress={trip?.progress ?? null} /></div>
+      <div><p className="eyebrow">TU PASAPORTE, A TU RITMO</p><h2>Un viaje que deja huella.</h2><p>En Mi viaje encontrás tus visitas verificadas, tu meta actual y los créditos disponibles. Usar créditos no borra tus visitas.</p><a href="#como-funciona" className="inline-link">Cómo sumar visitas →</a></div>
     </section>
   </main>
 }

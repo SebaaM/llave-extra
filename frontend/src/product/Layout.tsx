@@ -7,11 +7,13 @@ import { defaultSiteSettings } from './useSiteSettings'
 import { ProductLink } from './navigation'
 import { contactEmailHref } from './contactLinks'
 import { WhatsAppIcon } from './WhatsAppIcon'
+import { isPublicShowcase } from './public-showcase'
 import './ui/contact.css'
+import './ui/tourist-edition.css'
 export function Brand({ name = 'Llave Extra' }: { name?: string }) { return <a href="/" className="product-brand"><img src="/logo-llave-extra.png" alt={name} width="145" height="81" /></a> }
 
 function Header({ user, settings, path }: { user: User | null; settings: SiteSettings; path: string }) {
-  return <header className="product-header">
+  return <header className={user ? 'product-header' : 'product-header guest-header'}>
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
     <div className="product-header-inner">
       <Brand name={settings.site_name} />
@@ -53,7 +55,8 @@ function Footer({ settings }: { settings: SiteSettings }) {
 }
 
 export function ProductShell({ user, path, children, settings = defaultSiteSettings, settingsError = false, retrySettings }: { user: User | null; path: string; children: ReactNode; settings?: SiteSettings; settingsError?: boolean; retrySettings?: () => void }) {
-  return <div className="product-shell">
+  const useRedesign = isPublicShowcase(path) || ((!user || user.role === 'TOURIST') && !/^\/(?:tienda|gestion|prestador|colaborador|admin)(?:\/|$)/.test(path))
+  return <div className={useRedesign ? 'product-shell tourist-edition' : 'product-shell'}>
     <Header user={user} path={path} settings={settings} />
     {settingsError && <div className="product-notice" role="status">No pudimos actualizar los textos y contactos del sitio. <button onClick={retrySettings}>Volver a intentar</button></div>}
     <div className="client-page-content" role="region" aria-label="Contenido de la página" tabIndex={-1}>{children}</div>

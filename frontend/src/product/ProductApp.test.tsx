@@ -199,8 +199,9 @@ describe('Sesión y cuenta del Cliente', () => {
     const tripCallsBeforeHome = calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url)).length
     setUrl('/')
     window.dispatchEvent(new PopStateEvent('popstate'))
-    const summaryA = await screen.findByRole('region', { name: 'Resumen de Mi viaje' })
-    await waitFor(() => expect(within(summaryA).getByText('777')).toBeTruthy())
+    await screen.findByRole('heading', { name: 'Un viaje que deja huella.' })
+    expect(screen.queryByRole('region', { name: 'Resumen de Mi viaje' })).toBeNull()
+    expect(screen.queryByText('777')).toBeNull()
     expect(calls.filter(url => /\/me\/(wallet|progress|consumptions)\//.test(url))).toHaveLength(tripCallsBeforeHome)
 
     setUrl('/ingresar')
@@ -221,14 +222,16 @@ describe('Sesión y cuenta del Cliente', () => {
 
     setUrl('/')
     window.dispatchEvent(new PopStateEvent('popstate'))
-    const summaryB = await screen.findByRole('region', { name: 'Resumen de Mi viaje' })
-    await waitFor(() => expect(within(summaryB).getByText('22')).toBeTruthy())
-    expect(within(summaryB).queryByText('777')).toBeNull()
+    await screen.findByRole('heading', { name: 'Un viaje que deja huella.' })
+    expect(screen.queryByRole('region', { name: 'Resumen de Mi viaje' })).toBeNull()
+    expect(screen.queryByText('777')).toBeNull()
 
     setUrl('/mi-viaje')
     window.dispatchEvent(new PopStateEvent('popstate'))
     await screen.findByRole('heading', { name: 'Tu pasaporte local.' })
-    await waitFor(() => expect(screen.queryByText('777')).toBeNull())
+    const creditsB = await screen.findByRole('region', { name: 'Créditos disponibles' })
+    await waitFor(() => expect(within(creditsB).getByText('22')).toBeTruthy())
+    expect(screen.queryByText('777')).toBeNull()
     expect(screen.getByRole('navigation', { name: 'Tu viaje' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Salir' }))
     expect(screen.queryByText('777')).toBeNull()

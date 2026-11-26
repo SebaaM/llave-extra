@@ -38,15 +38,35 @@ export function CatalogState({ enabled, loading, error, retry }: { enabled: bool
 }
 
 export function BenefitCard({ benefit }: { benefit: PublicBenefit }) {
+  // Historical demo imports have a source label instead of an offer title.
+  // Show the complete published conditions, never an inferred discount.
+  const useConditions = benefit.demo && benefit.title === 'Beneficio informado en fuente pública' && Boolean(benefit.conditions.trim())
   return <article className="catalog-card client-benefit-card">
     <PublicPhoto path={benefit.image_url ?? benefit.provider.image_url} alt={`Imagen de ${benefit.provider.name}`} name={benefit.provider.name} />
     <div className="catalog-card-copy">
       <span>{benefit.provider.category || 'Beneficio local'} {benefit.demo && '· Ejemplo'}</span>
-      <h3>{benefit.title}</h3><p className="client-benefit-provider">{benefit.provider.name}</p>
-      {benefit.conditions && <p className="catalog-card-conditions">{benefit.conditions}</p>}
+      <h3>{useConditions ? benefit.conditions : benefit.title}</h3><p className="client-benefit-provider">{benefit.provider.name}</p>
+      {benefit.conditions && <p className="catalog-card-conditions">{useConditions ? benefit.title : benefit.conditions}</p>}
       <ProductLink className="catalog-card-link" href={`/beneficios/${benefit.id}`}>Ver beneficio y condiciones <span aria-hidden="true">↗</span></ProductLink>
     </div>
   </article>
+}
+
+function CatalogCover() {
+  return <header className="edition-cover">
+    <div className="edition-cover-copy">
+      <h1>Menos gasto. <br /><em>Más Ushuaia.</em></h1>
+      <p>Encuentra descuentos en los comercios de la red. Elige un beneficio, consulta sus condiciones y visita el local.</p>
+      <div className="edition-cover-actions">
+        <a className="button button-orange" href="#beneficios-de-la-red">Ver beneficios <span aria-hidden="true">↓</span></a>
+        <a className="edition-text-link" href="#como-funciona">Cómo funciona ↓</a>
+      </div>
+    </div>
+    <div className="edition-postcard" aria-hidden="true">
+      <div className="edition-print"><span>LLAVE EXTRA</span><span>54°48′ S · 68°18′ O</span></div>
+      <div className="edition-postcard-foot"><strong>Ushuaia<span>.</span></strong><span>Tierra del Fuego<br />Argentina</span></div>
+    </div>
+  </header>
 }
 
 export function CatalogPage({ search }: { search: string }) {
@@ -62,9 +82,8 @@ export function CatalogPage({ search }: { search: string }) {
   const providerName = query.provider ? data?.results.find(item => item.provider.id === query.provider)?.provider.name : undefined
   const missingPage = enabled === true && Boolean(error) && query.page > 1
   return <main id="contenido" className="catalog-page client-catalog-page"><div className="content-width">
-    <p className="eyebrow">LLAVE EXTRA · USHUAIA</p><h1>Beneficios para vivir más la ciudad.</h1>
-    <p className="catalog-intro">Explorá las propuestas publicadas y vigentes de la red. Consultá las condiciones de cada una antes de visitar el local.</p>
-    <a className="inline-link" href="#como-funciona">Cómo funciona ↓</a>
+    <CatalogCover />
+    <h2 className="edition-catalog-title" id="beneficios-de-la-red" tabIndex={-1}>Beneficios de la red</h2>
     <form className="client-catalog-search" onSubmit={event => {
       event.preventDefault()
       const value = String(new FormData(event.currentTarget).get('search') ?? '').trim()
