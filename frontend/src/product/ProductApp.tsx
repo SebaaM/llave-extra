@@ -22,6 +22,7 @@ import { checkAdminNavigation } from './admin/hooks'
 import { useSiteSettings } from './useSiteSettings'
 import { useQrContext } from './useQrContext'
 import { useVisitCommand } from './useVisitCommand'
+import { isPublicHome, isPublicShowcase } from './public-showcase'
 
 const clientPath = (path: string) => path.replace(/\/+$/, '') === '/recomendaciones' ? '/beneficios' : path
 
@@ -36,7 +37,6 @@ export default function ProductApp() {
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [progress, setProgress] = useState<Progress | null>(null)
   const [history, setHistory] = useState<Consumption[]>([])
-  const [tripOwner, setTripOwner] = useState<{ identity: number; version: number } | null>(null)
   const [pageError, setPageError] = useState('')
   const [verifiedLink, setVerifiedLink] = useState(false)
   const identityRef = useRef<number | null>(null)
@@ -75,7 +75,6 @@ export default function ProductApp() {
     setWallet(null)
     setProgress(null)
     setHistory([])
-    setTripOwner(null)
   }, [resetVisit])
 
   const loadTrip = useCallback(async () => {
@@ -90,7 +89,6 @@ export default function ProductApp() {
     setWallet(nextWallet)
     setProgress(nextProgress)
     setHistory(nextHistory)
-    setTripOwner({ identity: identity!, version })
   }, [stillCurrent])
 
   const clearAccount = useCallback((keepIntent = false) => {
@@ -156,9 +154,10 @@ export default function ProductApp() {
       if (!active) return
       identityRef.current = current?.id ?? null
       setUser(current)
-      if (current?.role === 'TOURIST') {
-        const openingShop = window.location.pathname === '/tienda' || window.location.pathname.startsWith('/tienda/')
-        await Promise.all(openingShop ? [] : [loadTrip()]).catch(error => {
+      const openingPath = clientPath(window.location.pathname)
+      const openingShop = openingPath === '/tienda' || openingPath.startsWith('/tienda/')
+      if (current?.role === 'TOURIST' && !openingShop && !isPublicShowcase(openingPath)) {
+        await loadTrip().catch(error => {
           if (active && identityRef.current === current.id) setPageError(messageOf(error))
         })
       }
@@ -263,7 +262,7 @@ export default function ProductApp() {
     }
   }, [visit.newIntent])
 
-  const isProductPublic = path === '/' || path === '/index.html'
+  const isProductPublic = isPublicHome(path)
   const isAuth = ['/registro', '/ingresar', '/recuperar', '/restablecer-clave'].includes(path)
   const redirectToRole = user && user.role !== 'TOURIST'
   const shellUser = authReady ? user : null
@@ -292,7 +291,7 @@ export default function ProductApp() {
   }
 
   const renderContent = () => {
-    if (isProductPublic) return <HomePage settings={site.settings} trip={user?.role === 'TOURIST' && wallet && progress && tripOwner?.identity === user.id && tripOwner.version === currentSessionVersion() ? { wallet, progress } : undefined} />
+    if (isProductPublic) return <HomePage settings={site.settings} />
     if (path === '/tienda' || path === '/tienda/') return <ShopPage />
     if (path.startsWith('/tienda/')) return <ShopDetail slug={path.slice('/tienda/'.length).replace(/\/$/, '')} />
     if (path === '/beneficios') return <CatalogPage search={search} />

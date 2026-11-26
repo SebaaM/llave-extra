@@ -1,5 +1,7 @@
 # Pendientes
 
+- [ ] Revisar el rediseño del [inicio y catálogo compartidos](docs/verification/rediseno-vista-turista.md) con y sin sesión para todos los roles antes de integrarlo en `develop`.
+
 - [x] Preparar auditoría CI con excepción visible, acotada y con vencimiento para picomatch 4.0.7 sin parche oficial. No equivale a corregir la vulnerabilidad. [Verificación](docs/verification/19-auditoria-picomatch.md).
 - [ ] Sustituir la excepción de GHSA-fc5q-39xc-vjpf por una actualización corregida y verificada antes del 25/11/2026 a las 00:00 UTC; no prorrogar automáticamente.
 
