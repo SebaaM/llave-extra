@@ -74,9 +74,17 @@
 - [x] F1 histórico: tres prototipos se usaron para elegir Beneficios como portada y Pasaporte en Mi viaje. Las rutas y el código demo se retiraron del producto actual; ver [archivo histórico](docs/frontend-prototipos.md).
 - [x] E4: consumos únicos, créditos, anulaciones y ajustes pendientes (ver [detalle](docs/plans/04-consumos-creditos.md)).
 - [x] E5 backend/API/Admin: tienda, stock, canjes, retiro y pagos recuperables. [PR #11](https://github.com/SebaaM/llave-extra/pull/11) abierto contra develop, sin fusionar; depende de #10. Producto revisado y CI aprobado; sandbox externo pendiente.
-- [ ] E6: analítica, preparación operativa y seguridad.
-  - [x] E6.1 local: informe de visitas atribuidas en `/gestion`, con filtros, permisos y resguardo ante procedencia DEMO ambigua. [Verificación](docs/verification/17-analitica-e6.md); integración a `develop` pendiente.
-  - [ ] E6.2–E6.4: métricas por rol, seguridad, restauración y conciliación según el [plan](docs/plans/06-analitica-salida.md).
+- [x] E6: entrega de analítica, seguridad y operación verificada en la rama local. No implica integración o producción.
+  - [x] E6.1 integrada en `develop` (PR #30, `d1f181d`): informe de visitas atribuidas en `/gestion`, con filtros, permisos y resguardo ante procedencia DEMO ambigua. [Verificación](docs/verification/17-analitica-e6.md).
+  - [x] E6.2: métricas por rol y actividad financiera revisadas localmente; no publicadas.
+    - [x] T3: métricas del Prestador con período seleccionable, verificadas en rama local; integración y control visual aún pendientes. [Evidencia](docs/verification/17-analitica-e6.md#e62-t3--métricas-del-prestador).
+    - [x] T4: métricas del Colaborador verificadas en la rama local; integración y control visual aún pendientes. [Evidencia](docs/verification/17-analitica-e6.md#e62-t4--métricas-del-colaborador).
+    - [x] T5: actividad financiera administrativa con fechas verificables, créditos y ARS separados. [Evidencia](docs/verification/17-analitica-e6.md#e62-t5--actividad-financiera).
+  - [x] E6.3: matriz de seguridad, logs de acceso y TLS verificados en laboratorio, con revisión independiente. [Evidencia](docs/verification/17-analitica-e6.md#e63--matriz-integrada-y-laboratorio-tls).
+  - [x] E6.4: restauración sintética y scheduler de laboratorio verificados con los límites registrados.
+    - [x] T7: respaldo y restauración sintéticos, con límites de TLS del destino, comisiones y duración registrados. [Evidencia](docs/verification/18-operacion-e6.md).
+    - [x] T8: scheduler optativo con proveedor simulado; repetición después de interrupción sin duplicar el reintegro o la reposición de stock. [Traspaso](docs/operations/e6-handoff.md).
+  - [ ] E6 antes del piloto: HTTPS/SMTP públicos, dispositivos físicos, políticas de respaldo y recuperación, scheduler real y sandbox de pagos. [Checklist](docs/operations/e6-handoff.md).
 - [x] Task 8: migrar backend a uv 0.11.3 y frontend a pnpm 11.22.0 con locks, Docker y CI bloqueados (ver [informe](.superpowers/sdd/00-roadmap/task-8-report.md)).
 - [x] F2 después de E4: conectar la experiencia Beneficios y Mi viaje estilo Pasaporte a las API E2–E4 (ver [plan frontend](docs/plans/frontend.md) e [informe Task 9](.superpowers/sdd/00-roadmap/task-9-report.md)).
 - [ ] Resto de F3 después de E5/E6: tienda/pedidos y analíticas; espacios operativos Prestador/Colaborador adelantados en plan 08, Administrador usa Django. Ver [plan frontend](docs/plans/frontend.md).

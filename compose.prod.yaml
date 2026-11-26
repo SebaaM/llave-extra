@@ -23,7 +23,7 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-", "--error-logfile", "-"]
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-", "--access-logformat", "%(m)s %(s)s %(b)s %(L)s", "--error-logfile", "-"]
     env_file: .env.prod
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod

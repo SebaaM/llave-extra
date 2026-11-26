@@ -45,6 +45,18 @@ CREATE conserva request/seller esperados congelados en `PaymentContext`, además
 
 Cambiar vendedor configurado bloquea operaciones de contratos antiguos. `disabled` detiene nuevas compras monetarias y llamadas de workers; los pedidos conservan sus claves y snapshots. Los errores permanentes 400/401/404, formatos desconocidos y discrepancias bloquean la operación o entrega. Revisar configuración/contrato y usar la acción «Reintentar operaciones bloqueadas» con motivo; conserva payload y clave. No editar tablas históricas ni marcar pagos manualmente.
 
+## Scheduler de laboratorio E6
+
+El scheduler de laboratorio no cambia la programación de producción ni se inicia con el perfil Compose predeterminado. Solo ejecutarlo con el perfil explícito `scheduler-lab`, proveedor `fake` y la identidad PostgreSQL exacta de la base aislada. `--once` ejecuta los tres comandos existentes una vez; el modo continuo consulta outbox cada 10 segundos y vencimientos/reconciliación cada 60. Cada llamada conserva límites de 1–1000 y las claves, locks e idempotencia de E5.
+
+En Windows, la ejecución puntual sobre el laboratorio existente es:
+
+```powershell
+docker compose -p llaveextra-e6-restore --env-file .superpowers/sdd/06-analitica-salida/lab-restore/restore/lab.env -f compose.e6.lab.yaml --profile scheduler-lab run --rm --no-deps --pull never scheduler python manage.py run_shop_scheduler_lab --once --limit 100
+```
+
+La salida solo informa etapa, conteos, duración y resultado. Un fallo inesperado del worker se representa con `result=blocked` y no incluye el texto de la excepción; `--once` puede terminar con código cero, así que el operador debe revisar todas las líneas de estado. `blocked`, `backlog`, `payment_review`, `ledger_diff` y `commission_incident` son señales de diagnóstico: el scheduler no repara saldos ni comisiones, no reintenta operaciones bloqueadas en bucle y no imprime payloads, tokens o referencias bancarias. Revisar la operación correspondiente con el procedimiento existente antes de una acción administrativa. Tras una interrupción, volver a ejecutar `--once`; la recuperación depende de las claves durables y el fencing de E5, no de reiniciar el contenedor.
+
 Una revisión no extiende una reserva impaga. `Order.payment_confirmed` conserva si alguna vez un GET financiero íntegro confirmó el pago (o refund total) y PostgreSQL impide revertir esa marca. Mientras sea falsa, una reserva `PENDING_PAYMENT` o `PAYMENT_REVIEW` sin operación de refund puede vencer a los 15 minutos o cancelarse, tenga o no ID remoto. Batch y servicio usan la misma elegibilidad bajo locks; liberan una vez y conservan referencias, claves y auditoría de revisión. Si posteriormente se recupera CREATE y aparece un pago, pasa a revisión sin habilitar entrega ni reservar nuevamente. Un pedido antes PAID/READY, o con refund pendiente, conserva stock hasta GET de restitución total.
 
 La migración nueva `shop.0005_payment_confirmation_history` reconstruye la marca con estados monetarios acreditados/reintegrados y auditorías inmutables de pago, incluido pago tardío observado en revisión. Un refund pendiente sin evidencia de pago sigue protegido por su estado/operación, sin inventar una confirmación. No modifica las migraciones 0001–0004, snapshots, claves ni cantidades. Aplicar mediante `manage.py migrate` en el entorno autorizado; la actualización desde 0004 con datos históricos se prueba sobre PostgreSQL. La base principal requiere su autorización operativa independiente.

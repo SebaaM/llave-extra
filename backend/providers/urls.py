@@ -1,5 +1,7 @@
 from django.urls import path
 
+from analytics.provider_views import ProviderVisitsAnalyticsView
+
 from .catalog_views import (
     CatalogBenefitMediaView,
     CatalogBenefitsView,
@@ -35,6 +37,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("provider/analytics/visits/", ProviderVisitsAnalyticsView.as_view(), name="provider-analytics-visits"),
     path("collaborator/catalog/benefits/", CollaboratorCatalogView.as_view()),
     path("collaborator/recommendations/", CollaboratorRecommendationsView.as_view()),
     path("collaborator/recommendations/<uuid:benefit_id>/", CollaboratorRecommendationView.as_view()),

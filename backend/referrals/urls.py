@@ -1,8 +1,11 @@
 from django.urls import path
 
+from analytics.collaborator_views import CollaboratorVisitsAnalyticsView
+
 from .views import FolderListView, QRPNGView, QRRenewalView, QRView, RedeemView
 
 urlpatterns = [
+    path("collaborator/analytics/visits/", CollaboratorVisitsAnalyticsView.as_view(), name="collaborator-analytics-visits"),
     path("referrals/redeem/", RedeemView.as_view()),
     path("me/folders/", FolderListView.as_view()),
     path("collaborator/qr/", QRView.as_view()),

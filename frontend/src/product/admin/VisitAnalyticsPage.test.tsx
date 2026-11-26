@@ -438,3 +438,29 @@ describe('informe administrativo de visitas', () => {
     expect(reportCalls.at(-1)?.searchParams.toString()).not.toContain('marina')
   })
 })
+
+describe('minimización del informe de visitas', () => {
+  it('muestra conteos independientes y no renderiza campos privados ajenos al DTO', async () => {
+    const report = {
+      ...visitReport(),
+      private_details: {
+        customer_email: 'cliente-privado@example.test',
+        qr_token: 'synthetic-private-qr-token',
+      },
+    }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/admin/analytics/visits/')) return json(report)
+      return json(collaboratorPage([]))
+    }))
+
+    render(<AdminWorkspace user={admin} path="/gestion/analitica/visitas" search="" />)
+
+    expect(await screen.findByText('24', { selector: 'dd' })).toBeTruthy()
+    expect(screen.getByText('31', { selector: 'dd' })).toBeTruthy()
+    expect(screen.getByText('Comercio Sur')).toBeTruthy()
+    expect(screen.getByText(/no representan una tasa de conversión/)).toBeTruthy()
+    expect(screen.queryByText('cliente-privado@example.test')).toBeNull()
+    expect(screen.queryByText('synthetic-private-qr-token')).toBeNull()
+  })
+})

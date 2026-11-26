@@ -9,9 +9,10 @@ Estado de la interfaz disponible; las rutas privadas requieren sesión y control
 - `/referencia`: ingreso de QR de colaborador; `/recomendaciones`: carpeta autorizada del Cliente.
 - `/consumo`: acreditación directa o referida; `/mi-viaje`: saldo, historial y progreso; `/perfil`: cuenta del Cliente.
 - `/espacio`: deriva al panel correspondiente.
-- `/prestador`: resumen; `/prestador/negocio`, `/prestador/beneficios`, `/prestador/qr`, `/prestador/cuenta`.
-- `/colaborador`: resumen; `/colaborador/recomendaciones`, `/colaborador/catalogo`, `/colaborador/qr`, `/colaborador/cuenta`.
+- `/prestador`: resumen con analítica del negocio asignado; `/prestador/negocio`, `/prestador/beneficios`, `/prestador/consumos-referidos`, `/prestador/qr`, `/prestador/cuenta`.
+- `/colaborador`: resumen con analítica de la red propia; `/colaborador/recomendaciones`, `/colaborador/catalogo`, `/colaborador/comisiones`, `/colaborador/qr`, `/colaborador/cuenta`.
 - `/gestion`: panel Admin; secciones usuarios, prestadores, beneficios, beneficios-destacados, colaboradores, consumos, billeteras, ajustes, productos, pedidos, cancelaciones, reglas-creditos, movimientos-stock, operaciones-pago, actividad y configuracion.
+- `/gestion/analitica/visitas`: informe de atribución; `/gestion/analitica/actividad`: informe de actividad financiera. `/gestion/actividad` sigue siendo la auditoría administrativa.
 - `/admin/`: Django Admin, sesión independiente.
 - `/creditos-imagenes`: fuentes de imágenes.
 - `/api/v1/`: API; `/api/v1/health/`: salud; `/api/schema/`: OpenAPI; `/api/docs/`: documentación interactiva.

@@ -472,3 +472,45 @@ describe('Validación de visitas del Cliente', () => {
     await screen.findByText('Visita verificada')
   })
 })
+
+describe('revocación del acceso administrativo', () => {
+  it('retira el panel y descarta el informe que responde después de revocar la sesión', async () => {
+    let finishReport: ((response: Response) => void) | undefined
+    const lateReport = {
+      period: { from: '2026-11-01', to: '2026-11-07', timezone: 'America/Argentina/Ushuaia' },
+      linked_clients: { status: 'available', value: 999 },
+      valid_attributed_visits: 999,
+      businesses: {
+        count: 1,
+        page: 1,
+        page_size: 25,
+        results: [{ provider_id: 'late-provider', provider_name: 'Visita tardía privada', visits: 999 }],
+      },
+    }
+    const admin = { id: 805, email: 'admin@example.test', role: 'ADMIN', email_verified: true }
+
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/auth/csrf/')) return json({ csrfToken: 'csrf-admin' })
+      if (url.pathname.endsWith('/auth/refresh/')) return json({ access: 'admin-access' })
+      if (url.pathname.endsWith('/auth/me/')) return json(admin)
+      if (url.pathname.endsWith('/admin/analytics/visits/')) {
+        return new Promise<Response>(resolve => { finishReport = resolve })
+      }
+      if (url.pathname.endsWith('/admin/collaborators/')) return json({ detail: 'Acceso revocado' }, 403)
+      return json({}, 404)
+    }))
+
+    const ProductApp = await prepareApp('/gestion/analitica/visitas')
+    render(<ProductApp />)
+    await waitFor(() => expect(finishReport).toBeTypeOf('function'))
+    await screen.findByRole('heading', { name: 'Qué bueno verte' })
+    expect(window.location.pathname).toBe('/ingresar')
+
+    await act(async () => finishReport?.(json(lateReport)))
+
+    expect(screen.queryByRole('heading', { name: 'Visitas atribuidas' })).toBeNull()
+    expect(screen.queryByText('Visita tardía privada')).toBeNull()
+    expect(screen.queryByText('999')).toBeNull()
+  })
+})
