@@ -1,5 +1,7 @@
 # Contexto y decisiones
 
+La Red Llave Extra pública abre una ficha rápida sin perder el lugar en el inicio. Consulta los beneficios públicos del comercio y enlaza a su catálogo filtrado. No cambia el acceso a la red privada de un Colaborador. [Verificación](docs/verification/red-publica-ficha-prestador.md).
+
 ## Auditoría de picomatch — excepción temporal propuesta en PR · 17/11/2026
 
 El PR #17 ya había corregido minimatch; no corrige la alerta nueva GHSA-fc5q-39xc-vjpf de picomatch 4.0.7. npm sigue sin publicar 4.0.8. Tras el pedido de corregir o actualizar la auditoría, este corte prepara una aceptación temporal y visible del riesgo de tooling, no una corrección de la biblioteca. La auditoría moderate conserva el informe real; su evaluador permite únicamente paquete/versión/rangos/rutas previstos y caduca el 25/11/2026 a las 00:00 UTC. Nuevas alertas, rutas de aplicación, errores o informes incoherentes bloquean. El cambio permanece sujeto a revisión en el PR #30, sin merge; [evidencia y retirada](docs/verification/19-auditoria-picomatch.md).

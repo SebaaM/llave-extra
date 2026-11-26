@@ -5,6 +5,7 @@ import type { NetworkItem, NetworkPage, Presentation } from './catalog'
 import { PublicPhoto } from './CatalogPages'
 import { PrivatePhoto } from './PrivatePhoto'
 import { NetworkPreview } from './NetworkPreview'
+import { NetworkProviderDialog } from './NetworkProviderDialog'
 import { messageOf } from './shared'
 
 function NetworkPhoto({ item, folderId, onDenied, onMissing }: { item: NetworkItem; folderId?: string; onDenied: () => void; onMissing: (path: string) => void }) {
@@ -28,8 +29,11 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked, onAva
   const [revision, setRevision] = useState(0)
   const [view, setView] = useState<'network' | 'list'>(() => window.matchMedia?.('(max-width: 680px)').matches ? 'list' : 'network')
   const section = useRef<HTMLElement>(null)
+  const heading = useRef<HTMLHeadingElement>(null)
   const resizeFocus = useRef<string | null>(null)
   const [selection, setSelection] = useState<{ key: string; id: string } | null>(null)
+  const [pointedNode, setPointedNode] = useState<string | null>(null)
+  const [focusedNode, setFocusedNode] = useState<string | null>(null)
   const [missingImages, setMissingImages] = useState<{ context: string; paths: string[] }>({ context: '', paths: [] })
   const sessionVersion = folderId ? currentSessionVersion() : 0
   const context = `${folderId ?? 'public'}:${sessionVersion}`
@@ -38,6 +42,7 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked, onAva
   if (selection && selection.key !== key) setSelection(null)
   const previewId = useId()
   const selectedButton = useRef<HTMLButtonElement | null>(null)
+  const dialogWasOpen = useRef(false)
   const requestRef = useRef<AbortController | null>(null)
   const loading = response.key !== key
   const data = loading ? null : response.data
@@ -101,6 +106,14 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked, onAva
   const nodes = (data?.results ?? []).map(item => missingImages.context === context && missingImages.paths.includes(item.provider.image_url ?? '')
     ? { ...item, provider: { ...item.provider, image_url: null } } : item)
   const selected = selection?.key === key ? nodes.find(item => item.provider.id === selection.id) : undefined
+  const dialogProvider = folderId ? undefined : selected?.provider
+  const dialogOpen = Boolean(dialogProvider)
+  const activeNode = dialogProvider?.id ?? pointedNode ?? focusedNode
+
+  useLayoutEffect(() => {
+    if (dialogWasOpen.current && !dialogOpen && !selectedButton.current?.isConnected) heading.current?.focus({ preventScroll: true })
+    dialogWasOpen.current = dialogOpen
+  }, [dialogOpen])
 
   useEffect(() => {
     const visibility = () => { setHidden(document.visibilityState === 'hidden'); if (document.visibilityState === 'visible') setRevision(value => value + 1) }
@@ -129,17 +142,31 @@ export function NetworkCanvas({ folderId, onOpenProvider, onAccessRevoked, onAva
     selectedButton.current = button
     setSelection({ key, id: item.provider.id })
   }
-  const nodeButton = (item: NetworkItem) => <button data-network-id={item.provider.id} ref={button => { if (button && selected?.provider.id === item.provider.id) selectedButton.current = button }} onClick={event => selectItem(item, event.currentTarget)} aria-label={`${item.provider.name}: ${item.benefit_title}`} aria-pressed={selected?.provider.id === item.provider.id} aria-controls={previewId}>
+  const closeSelection = () => {
+    setSelection(null)
+    if (selectedButton.current?.isConnected) selectedButton.current.focus()
+  }
+  const nodeButton = (item: NetworkItem) => <button type="button" data-network-id={item.provider.id} ref={button => { if (button && selected?.provider.id === item.provider.id) selectedButton.current = button }} onClick={event => selectItem(item, event.currentTarget)} aria-label={`${item.provider.name}: ${item.benefit_title}`}
+    {...(folderId ? { 'aria-pressed': selected?.provider.id === item.provider.id, 'aria-controls': previewId } : {
+      'aria-haspopup': 'dialog',
+      'aria-controls': dialogProvider?.id === item.provider.id ? previewId : undefined,
+      onPointerEnter: () => setPointedNode(item.provider.id), onPointerLeave: () => setPointedNode(null),
+      onFocus: () => setFocusedNode(item.provider.id), onBlur: () => setFocusedNode(null),
+    })}>
     <NetworkPhoto key={`${key}:${item.provider.id}`} item={item} folderId={folderId} onDenied={denyMedia} onMissing={missingMedia} /><span>{item.provider.name}</span>{view === 'list' && <span>{item.benefit_title}</span>}
   </button>
-  return <section ref={section} className={`network-section network-${presentation.theme.toLowerCase()}`} aria-label={presentation.title} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocusWithin(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false) }}>
-    <div className="content-width network-heading"><div><p className="eyebrow">{folderId ? 'RECOMENDACIONES RECIBIDAS' : 'RED ACTIVA EN USHUAIA'}</p><h2>{presentation.title}</h2><p>Negocios con beneficios vigentes.{view === 'network' && ' Cada punto representa un lugar de la red; su posición es visual y no indica una ubicación real.'}</p></div><span className="network-city">{presentation.city} · Tierra del Fuego</span></div>
-    <div className="network-scene" hidden={view !== 'network'} style={{ backgroundImage: `linear-gradient(90deg,rgba(12,50,53,.78),rgba(12,50,53,.3)),url(${backgroundImage[presentation.background]})` }}><div className="network-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" className="network-lines">{slots.map((slot, index) => <line key={index} x1="50" y1="50" x2={slot.x} y2={slot.y} />)}</svg><div className="network-center"><img src="/logo-llave-extra.png" alt="" /><strong>La red que conecta tu viaje</strong></div>{slots.map((slot, index) => {
+  return <section ref={section} className={`network-section network-${presentation.theme.toLowerCase()}${folderId ? '' : ' network-public'}`} aria-label={presentation.title} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} onFocusCapture={() => setFocusWithin(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false) }}>
+    <div className="content-width network-heading"><div><p className="eyebrow">{folderId ? 'RECOMENDACIONES RECIBIDAS' : 'RED ACTIVA EN USHUAIA'}</p><h2 ref={heading} tabIndex={folderId ? undefined : -1}>{presentation.title}</h2><p>Negocios con beneficios vigentes.{view === 'network' && ' Cada punto representa un lugar de la red; su posición es visual y no indica una ubicación real.'}{!folderId && ' Seleccioná un negocio para conocer sus beneficios.'}</p></div><span className="network-city">{presentation.city} · Tierra del Fuego</span></div>
+    <div className="network-scene" hidden={view !== 'network'} style={{ backgroundImage: `linear-gradient(90deg,rgba(12,50,53,.78),rgba(12,50,53,.3)),url(${backgroundImage[presentation.background]})` }}><div className="network-board"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" className="network-lines">
+      {slots.map((slot, index) => <line key={index} x1="50" y1="50" x2={slot.x} y2={slot.y} />)}
+      {!folderId && slots.map((slot, index) => <line key={`signal-${index}`} className="network-signal" data-active={Boolean(activeNode && nodes[index]?.provider.id === activeNode)} pathLength="1" x1="50" y1="50" x2={slot.x} y2={slot.y} />)}
+    </svg><div className="network-center"><img src="/logo-llave-extra.png" alt="" /><strong>La red que conecta tu viaje</strong></div>{slots.map((slot, index) => {
       const item: NetworkItem | undefined = nodes[index]
       return <div key={index} className={`network-slot ${item ? 'network-slot-filled' : ''}`} style={{ left: `${slot.x}%`, top: `${slot.y}%` }}>{view === 'network' && item && nodeButton(item)}</div>
     })}</div></div>
     {view === 'list' && <ul className="content-width client-network-list" aria-label="Negocios de esta página">{nodes.map(item => <li key={item.provider.id}>{nodeButton(item)}</li>)}</ul>}
-    <div className="content-width network-controls"><div>{loading ? <span role="status">Cargando red…</span> : error ? <span role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Reintentar</button></span> : data?.count === 0 ? <span>Pronto habrá negocios con beneficios para mostrar.</span> : <span>Página {page} de {totalPages} · {data?.count ?? 0} negocios</span>}</div><div><button disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)} aria-label="Página anterior">←</button><button onClick={() => setPaused(value => !value)} aria-pressed={paused}>{paused ? 'Reanudar' : 'Pausar'}</button><button disabled={loading || !data?.next} onClick={() => setPage(value => value + 1)} aria-label="Página siguiente">→</button></div></div>
-    <div className="content-width" id={previewId}>{selected && <NetworkPreview key={`${key}:${selected.provider.id}`} item={selected} folderId={folderId} onOpenProvider={onOpenProvider ? id => { setSelection(null); onOpenProvider(id) } : undefined} onClose={() => { setSelection(null); if (selectedButton.current?.isConnected) selectedButton.current.focus() }} onDenied={denyMedia} onMissing={missingMedia} />}</div>
+    <div className="content-width network-controls"><div>{loading ? <span role="status">Cargando red…</span> : error ? <span role="alert">{error} <button onClick={() => setRevision(value => value + 1)}>Reintentar</button></span> : data?.count === 0 ? <span>Pronto habrá negocios con beneficios para mostrar.</span> : <span>Página {page} de {totalPages} · {data?.count ?? 0} negocios</span>}</div><div><button disabled={dialogOpen || loading || page <= 1} onClick={() => setPage(value => value - 1)} aria-label="Página anterior">←</button><button disabled={dialogOpen} onClick={() => setPaused(value => !value)} aria-pressed={paused}>{paused ? 'Reanudar' : 'Pausar'}</button><button disabled={dialogOpen || loading || !data?.next} onClick={() => setPage(value => value + 1)} aria-label="Página siguiente">→</button></div></div>
+    {folderId && <div className="content-width" id={previewId}>{selected && <NetworkPreview key={`${key}:${selected.provider.id}`} item={selected} folderId={folderId} onOpenProvider={onOpenProvider ? id => { setSelection(null); onOpenProvider(id) } : undefined} onClose={closeSelection} onDenied={denyMedia} onMissing={missingMedia} />}</div>}
+    {dialogProvider && <NetworkProviderDialog key={`${key}:${dialogProvider.id}`} id={previewId} provider={dialogProvider} onDismiss={closeSelection} />}
   </section>
 }
