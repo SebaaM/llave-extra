@@ -297,7 +297,10 @@ describe('informe administrativo de visitas', () => {
 
     render(<WorkspaceHarness />)
     await screen.findByText('Comercio página uno')
-    const next = screen.getByRole('button', { name: 'Siguiente →' })
+    const previousPagination = screen.getByRole('navigation', { name: 'Páginas de comercios' })
+    const staleFocus = vi.fn()
+    previousPagination.addEventListener('focus', staleFocus)
+    const next = within(previousPagination).getByRole('button', { name: 'Siguiente →' })
     next.focus()
     expect(document.activeElement).toBe(next)
     fireEvent.click(next)
@@ -309,7 +312,10 @@ describe('informe administrativo de visitas', () => {
       await pageTwo.promise
     })
     await screen.findByText('Comercio página dos')
-    expect(document.activeElement).toBe(screen.getByRole('navigation', { name: 'Páginas de comercios' }))
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('navigation', { name: 'Páginas de comercios' }))
+    })
+    expect(staleFocus).not.toHaveBeenCalled()
   })
 
   it('aplica filtros y descarta la consulta anterior', async () => {

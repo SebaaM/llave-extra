@@ -57,7 +57,7 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   const [collaboratorLookup, setCollaboratorLookup] = useState<CollaboratorLookup>({ search: '', page: 1 })
   const [selectedDraftCollaborator, setSelectedDraftCollaborator] = useState<Collaborator | null>(null)
   const [reportRevoked, setReportRevoked] = useState(false)
-  const paginationFocusPending = useRef(false)
+  const paginationFocusRequest = useRef<string | null>(null)
   const paginationRef = useRef<HTMLElement | null>(null)
   const collaboratorFocusPending = useRef(false)
   const collaboratorSelectRef = useRef<HTMLSelectElement | null>(null)
@@ -107,10 +107,10 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   }, [collaborators.loading])
 
   useEffect(() => {
-    if (!paginationFocusPending.current || !reportData || reportLoading) return
-    paginationFocusPending.current = false
+    if (paginationFocusRequest.current !== reportRequestKey || !reportData || reportLoading) return
+    paginationFocusRequest.current = null
     paginationRef.current?.focus()
-  }, [reportData, reportLoading])
+  }, [reportData, reportLoading, reportRequestKey])
 
   useEffect(() => {
     const clearReport = () => {
@@ -168,7 +168,9 @@ export function VisitAnalyticsPage({ search }: { search: string }) {
   }
 
   const changeReportPage = (nextPage: number) => {
-    paginationFocusPending.current = true
+    const nextRequestParams = new URLSearchParams(reportParams)
+    nextRequestParams.set('page', String(nextPage))
+    paginationFocusRequest.current = nextRequestParams.toString()
     const params = new URLSearchParams(search)
     params.set('page', String(nextPage))
     dispatchNavigation(params)
